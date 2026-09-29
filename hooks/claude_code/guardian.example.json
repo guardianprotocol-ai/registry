@@ -1,0 +1,6 @@
+{
+  "mode": "monitor",
+  "allowlist": ["yourcompany.com"],
+  "state_dir": ".guardian/hook-state",
+  "evidence_path": ".guardian/evidence.jsonl"
+}

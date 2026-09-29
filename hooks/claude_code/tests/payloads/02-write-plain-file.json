@@ -1,0 +1,14 @@
+{
+  "recorded_from": "Claude Code 2.1.274 PreToolUse hook, Sep 29 2026",
+  "note": "Writing ordinary content is not an attack and must not be blocked.",
+  "expect": "allow",
+  "payload": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Write",
+    "tool_input": {
+      "file_path": "/work/checked.txt",
+      "content": "ok\n"
+    },
+    "session_id": "recorded-session"
+  }
+}
