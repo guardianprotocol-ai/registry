@@ -16,11 +16,12 @@ New here? Start with [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of de
 | `schema.yaml` | The pattern format |
 | `coverage/` | Every MITRE ATLAS technique, triaged by where the protocol can act on it |
 | `sensor/` | Prototype MCP proxy that enforces detections in real time |
+| `hooks/` | Client hooks that cover an agent's own tools, which never pass through MCP |
 | `demo/` | A 90-second end-to-end demo with a visual report |
 
 No dependencies beyond the Python 3.9+ standard library.
 
-Coming next: a scanner that runs each pattern's test many times and reports an attack success rate, and hooks that cover an agent client's built-in tools (Claude Code first).
+Coming next: a scanner that runs each pattern's test many times and reports an attack success rate, which is also what moves a pattern from draft to verified.
 
 ## Pattern lifecycle
 
