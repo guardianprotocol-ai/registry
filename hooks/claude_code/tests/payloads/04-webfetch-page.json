@@ -1,0 +1,14 @@
+{
+  "recorded_from": "Claude Code 2.1.274 PreToolUse hook, Sep 29 2026",
+  "note": "Fetching a page before anything has tainted the session must not be blocked.",
+  "expect": "allow",
+  "payload": {
+    "hook_event_name": "PreToolUse",
+    "tool_name": "WebFetch",
+    "tool_input": {
+      "url": "https://example.com",
+      "prompt": "What is the page title?"
+    },
+    "session_id": "recorded-session"
+  }
+}
