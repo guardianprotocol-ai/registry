@@ -1,0 +1,32 @@
+# Guardian Protocol Registry: pattern format (v0.1 draft)
+# Every pattern file in patterns/ must include these fields.
+# Compatibility: within a major schema version, fields are only ever added, never
+# renamed or removed, so older patterns stay valid. IDs are never reused.
+
+schema_version: # format version this file follows, e.g. "0.1"
+id:            # GP-0001 style, never reused
+title:         # short name of the attack
+status:        # draft | verified | enforced
+version:       # 1, 2, 3 ... bumped on any change to test or detection
+summary:       # 1 to 3 sentences in plain language
+severity:      # low | medium | high | critical, with a one-line reason
+surfaces:      # where it happens, e.g. mcp_tool_output, mcp_tool_definition, agent_to_agent, retrieved_document
+maps_to:
+  owasp:       # list of OWASP IDs, e.g. LLM01:2025
+  atlas:       # list of MITRE ATLAS technique IDs, e.g. AML.T0051.001
+preconditions: # what must be true for the attack to work
+test:
+  target:      # reference_agent_vulnerable (must be exploited) and reference_agent_hardened (must resist)
+  setup:       # fixtures the test loads
+  steps:       # ordered steps
+  payload:     # harmless payload; destinations use reserved .test domains
+  success_when: # observable condition that proves the attack worked
+detection:
+  type:        # rule | signature | behavior
+  signals:     # what the sensor watches for
+  logic:       # plain-language rule; machine-readable rule lives beside the file
+  false_alarm_rate: # measured on the benign corpus by CI, filled in automatically
+mitigations:   # what a team should change
+references:    # links to papers, advisories, incidents
+credits:       # [{name, organization}]
+created:       # YYYY-MM-DD
