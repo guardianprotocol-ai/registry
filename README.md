@@ -15,13 +15,14 @@ New here? Start with [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of de
 | `patterns/` | One YAML file per attack pattern |
 | `schema.yaml` | The pattern format |
 | `coverage/` | Every MITRE ATLAS technique, triaged by where the protocol can act on it |
+| `scanner/` | Validates the registry and measures an attack success rate against an agent |
 | `sensor/` | Prototype MCP proxy that enforces detections in real time |
 | `hooks/` | Client hooks that cover an agent's own tools, which never pass through MCP |
 | `demo/` | A 90-second end-to-end demo with a visual report |
 
 No dependencies beyond the Python 3.9+ standard library.
 
-Coming next: a scanner that runs each pattern's test many times and reports an attack success rate, which is also what moves a pattern from draft to verified.
+Coming next: reference agents beyond Claude Code, so an attack success rate can be compared across models, and scenarios for the patterns the scan cannot yet run.
 
 ## Pattern lifecycle
 
