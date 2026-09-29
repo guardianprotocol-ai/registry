@@ -1,0 +1,209 @@
+id,name,tactics,maturity,category,sensor,scan,status
+AML.T0000,Search Open Technical Databases,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0000.000,Search Open Technical Databases: Journals and Conference Proceedings,Reconnaissance,Feasible,Attacker preparation (before contact),no,no,draft triage
+AML.T0000.001,Search Open Technical Databases: Pre-Print Repositories,Reconnaissance,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0000.002,Search Open Technical Databases: Technical Blogs,Reconnaissance,Feasible,Attacker preparation (before contact),no,no,draft triage
+AML.T0000.003,Search Open Technical Databases: Scan Databases,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0001,Search Open AI Vulnerability Analysis,Reconnaissance,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0002,Acquire Public AI Artifacts,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0002.000,Acquire Public AI Artifacts: Datasets,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0002.001,Acquire Public AI Artifacts: Models,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0002.002,Acquire Public AI Artifacts: AI Agent Configuration,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0003,Search Victim-Owned Websites,Reconnaissance,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0004,Search Application Repositories,Reconnaissance,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0005,Create Proxy AI Model,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0005.000,Create Proxy AI Model: Train Proxy via Gathered AI Artifacts,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0005.001,Create Proxy AI Model: Train Proxy via Replication,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0005.002,Create Proxy AI Model: Use Pre-Trained Model,AI Attack Adaptation,Feasible,Model and training pipeline,no,partial,draft triage
+AML.T0006,Active Scanning,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0006.000,Active Scanning: Enumerate Hosted AI Resources,Reconnaissance,Feasible,Attacker preparation (before contact),no,no,draft triage
+AML.T0006.001,Active Scanning: Query Platform Metadata APIs,Reconnaissance,Feasible,Attacker preparation (before contact),no,no,draft triage
+AML.T0006.002,Active Scanning: Scan for Exposed AI Infrastructure,Reconnaissance,Feasible,Attacker preparation (before contact),no,no,draft triage
+AML.T0006.003,Active Scanning: Probe AI Agent Trigger Channels,Reconnaissance,Demonstrated,Agent runtime,partial,yes,draft triage
+AML.T0007,Discover AI Artifacts,Discovery,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0008,Acquire Infrastructure,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0008.000,Acquire Infrastructure: AI Development Workspaces,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0008.001,Acquire Infrastructure: Consumer Hardware,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0008.002,Acquire Infrastructure: Domains,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0008.003,Acquire Infrastructure: Physical Countermeasures,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0008.004,Acquire Infrastructure: Serverless,Resource Development,Feasible,Attacker preparation (before contact),no,no,draft triage
+AML.T0008.005,Acquire Infrastructure: AI Service Proxies,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0010,AI Supply Chain Compromise,Initial Access,Realized,Supply chain,partial,partial,draft triage
+AML.T0010.000,AI Supply Chain Compromise: Hardware,Initial Access,Feasible,Supply chain,partial,partial,draft triage
+AML.T0010.001,AI Supply Chain Compromise: AI Software,Initial Access,Realized,Supply chain,partial,partial,draft triage
+AML.T0010.002,AI Supply Chain Compromise: Data,Initial Access,Realized,Supply chain,partial,partial,draft triage
+AML.T0010.003,AI Supply Chain Compromise: Model,Initial Access,Realized,Supply chain,partial,partial,draft triage
+AML.T0010.004,AI Supply Chain Compromise: Container Registry,Initial Access,Demonstrated,Supply chain,partial,partial,draft triage
+AML.T0010.005,AI Supply Chain Compromise: AI Agent Tool,Initial Access,Realized,Agent runtime,yes,yes,draft triage
+AML.T0011,User Execution,Execution,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0011.000,User Execution: Unsafe AI Artifacts,Execution,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0011.001,User Execution: Malicious Package,Execution,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0011.002,User Execution: Poisoned AI Agent Tool,Execution,Realized,Agent runtime,yes,yes,draft triage
+AML.T0011.003,User Execution: Malicious Link,Execution,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0012,Valid Accounts,Initial Access; Privilege Escalation; Lateral Movement,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0013,Discover AI Model Ontology,Discovery,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0014,Discover AI Model Family,Discovery,Feasible,General security with an AI angle,partial,partial,draft triage
+AML.T0015,Evade AI Model,Initial Access; Defense Evasion; Impact,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0016,Obtain Capabilities,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0016.000,Obtain Capabilities: Adversarial AI Attack Implementations,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0016.001,Obtain Capabilities: Software Tools,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0016.002,Obtain Capabilities: Generative AI,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0016.003,Obtain Capabilities: Exploits,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0016.004,Obtain Capabilities: AI Agent Tools,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0017,Develop Capabilities,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0017.000,Develop Capabilities: Adversarial AI Attacks,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0017.001,Develop Capabilities: Autonomous Exploit Development,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0017.002,Develop Capabilities: AI Agent Tools,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0018,Manipulate AI Model,AI Attack Adaptation; Persistence,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0018.000,Manipulate AI Model: Poison AI Model,AI Attack Adaptation; Persistence,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0018.001,Manipulate AI Model: Modify AI Model Architecture,AI Attack Adaptation; Persistence,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0018.002,Manipulate AI Model: Embed Malware,AI Attack Adaptation; Persistence,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0018.003,Manipulate AI Model: Modify Prompt Construction Logic,AI Attack Adaptation; Persistence,Demonstrated,Agent runtime,partial,yes,draft triage
+AML.T0020,Training Data Poisoning,Persistence,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0021,Establish Accounts,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0024,Exfiltration via AI Inference API,Exfiltration,Realized,Agent runtime,partial,yes,draft triage
+AML.T0024.000,Exfiltration via AI Inference API: Infer Training Data Membership,Exfiltration,Feasible,Model and training pipeline,partial,partial,draft triage
+AML.T0024.001,Exfiltration via AI Inference API: Invert AI Model,Exfiltration,Feasible,Model and training pipeline,partial,partial,draft triage
+AML.T0024.002,Exfiltration via AI Inference API: Extract AI Model,Exfiltration,Realized,Model and training pipeline,partial,partial,draft triage
+AML.T0025,Exfiltration via Cyber Means,Exfiltration,Realized,Agent runtime,partial,yes,draft triage
+AML.T0029,Denial of AI Service,Impact,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0031,Erode AI Model Integrity,Impact,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0034,Cost Harvesting,Impact,Feasible,Model and training pipeline,no,partial,draft triage
+AML.T0034.000,Cost Harvesting: Excessive Queries,Impact,Feasible,Model and training pipeline,no,partial,draft triage
+AML.T0034.001,Cost Harvesting: Resource-Intensive Queries,Impact,Feasible,Model and training pipeline,no,partial,draft triage
+AML.T0034.002,Cost Harvesting: Agentic Resource Consumption,Impact,Feasible,Agent runtime,yes,yes,draft triage
+AML.T0035,AI Artifact Collection,Collection,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0036,Data from Information Repositories,Collection,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0037,Data from Local System,Collection,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0040,AI Model Inference API Access,AI Model Access,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0041,Physical Environment Access,AI Model Access,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0042,Verify Attack,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0043,Craft Adversarial Data,AI Attack Adaptation,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0043.000,Craft Adversarial Data: White-Box Optimization,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0043.001,Craft Adversarial Data: Black-Box Optimization,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0043.002,Craft Adversarial Data: Black-Box Transfer,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0043.003,Craft Adversarial Data: Manual Modification,AI Attack Adaptation,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0043.004,Craft Adversarial Data: Insert Backdoor Trigger,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0044,Full AI Model Access,AI Model Access,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0046,Spamming AI System with Chaff Data,Impact,Feasible,Model and training pipeline,no,partial,draft triage
+AML.T0047,AI-Enabled Product or Service,AI Model Access,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0048,External Harms,Impact,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0048.000,External Harms: Financial Harm,Impact,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0048.001,External Harms: Reputational Harm,Impact,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0048.002,External Harms: Societal Harm,Impact,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0048.003,External Harms: User Harm,Impact,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0048.004,External Harms: AI Intellectual Property Theft,Impact,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0049,Exploit Public-Facing Application,Initial Access,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0050,Command and Scripting Interpreter,Execution,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0051,LLM Prompt Injection,Execution,Realized,Agent runtime,yes,yes,draft triage
+AML.T0051.000,LLM Prompt Injection: Direct,Execution,Realized,Agent runtime,yes,yes,draft triage
+AML.T0051.001,LLM Prompt Injection: Indirect,Execution,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0051.002,LLM Prompt Injection: Triggered,Execution,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0052,Phishing,Initial Access; Lateral Movement,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0052.000,Phishing: Spearphishing via Social Engineering LLM,Initial Access; Lateral Movement,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0052.001,Phishing: Deepfake-Assisted Phishing,Initial Access; Lateral Movement,Feasible,General security with an AI angle,partial,partial,draft triage
+AML.T0053,AI Agent Tool Invocation,Execution; Privilege Escalation; Lateral Movement,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0054,LLM Jailbreak,Defense Evasion; Privilege Escalation,Realized,Agent runtime,yes,yes,draft triage
+AML.T0055,Unsecured Credentials,Credential Access,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0056,Extract LLM System Prompt,Exfiltration,Feasible,Agent runtime,yes,yes,draft triage
+AML.T0057,LLM Data Leakage,Exfiltration,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0059,Erode Dataset Integrity,Impact,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0060,Publish Hallucinated Entities,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0061,LLM Prompt Self-Replication,Persistence,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0062,Discover LLM Hallucinations,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0063,Discover AI Model Outputs,Discovery,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0064,Gather RAG-Indexed Targets,Reconnaissance,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0065,LLM Prompt Crafting,AI Attack Adaptation,Realized,Agent runtime,yes,yes,draft triage
+AML.T0066,Retrieval Content Crafting,AI Attack Adaptation,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0067,LLM Trusted Output Components Manipulation,Defense Evasion,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0067.000,LLM Trusted Output Components Manipulation: Citations,Defense Evasion,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0068,LLM Prompt Obfuscation,Defense Evasion,Realized,Agent runtime,yes,yes,draft triage
+AML.T0069,Discover LLM System Information,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0069.000,Discover LLM System Information: Special Character Sets,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0069.001,Discover LLM System Information: System Instruction Keywords,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0069.002,Discover LLM System Information: System Prompt,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0070,RAG Poisoning,Persistence,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0071,False RAG Entry Injection,Defense Evasion,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0072,Cyber Communication Channel,Command and Control,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0073,Impersonation,Defense Evasion,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0074,Masquerading,Defense Evasion,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0075,Enterprise Resource Discovery,Discovery,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0076,Corrupt AI Model,Defense Evasion,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0077,LLM Response Rendering,Exfiltration,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0078,Drive-by Compromise,Initial Access,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0079,Stage Capabilities,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0080,AI Agent Context Poisoning,Persistence,Realized,Agent runtime,yes,yes,draft triage
+AML.T0080.000,AI Agent Context Poisoning: Memory,Persistence,Realized,Agent runtime,yes,yes,draft triage
+AML.T0080.001,AI Agent Context Poisoning: Thread,Persistence,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0081,Modify AI Agent Configuration,Persistence; Defense Evasion,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0082,RAG Credential Harvesting,Credential Access,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0083,Credentials from AI Agent Configuration,Credential Access,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0084,Discover AI Agent Configuration,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0084.000,Discover AI Agent Configuration: Embedded Knowledge,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0084.001,Discover AI Agent Configuration: Tool Definitions,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0084.002,Discover AI Agent Configuration: Activation Triggers,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0084.003,Discover AI Agent Configuration: Call Chains,Discovery,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0085,Data from AI Services,Collection,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0085.000,Data from AI Services: RAG Databases,Collection,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0085.001,Data from AI Services: AI Agent Tools,Collection,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0086,Exfiltration via AI Agent Tool Invocation,Exfiltration,Realized,Agent runtime,yes,yes,draft triage
+AML.T0087,Gather Victim Identity Information,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0088,Generate Deepfakes,AI Attack Adaptation,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0089,Enterprise Environment Discovery,Discovery,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0090,OS Credential Dumping,Credential Access,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0091,Use Alternate Authentication Material,Lateral Movement,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0091.000,Use Alternate Authentication Material: Application Access Token,Lateral Movement,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0091.001,Use Alternate Authentication Material: Web Session Cookie,Lateral Movement,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0092,Manipulate User LLM Chat History,Defense Evasion,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0093,Prompt Infiltration via Public-Facing Application,Initial Access; Persistence,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0094,Delay Execution of LLM Instructions,Defense Evasion,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0095,Search Open Websites/Domains,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0095.000,Search Open Websites/Domains: Code Repositories,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0096,AI Service API,Command and Control,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0097,Virtualization/Sandbox Evasion,Defense Evasion,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0098,AI Agent Tool Credential Harvesting,Credential Access,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0099,AI Agent Tool Data Poisoning,Persistence,Feasible,Agent runtime,yes,yes,draft triage
+AML.T0100,AI Agent Clickbait,Execution,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0101,Data Destruction via AI Agent Tool Invocation,Impact,Realized,Agent runtime,yes,yes,draft triage
+AML.T0102,Generate Malicious Commands,AI Attack Adaptation,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0103,Deploy AI Agent,Execution,Realized,Agent runtime,yes,yes,draft triage
+AML.T0105,Escape to Host,Privilege Escalation,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0106,Exploitation for Credential Access,Credential Access,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0107,Exploitation for Defense Evasion,Defense Evasion,Demonstrated,Model and training pipeline,no,partial,draft triage
+AML.T0108,AI Agent,Command and Control,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0109,AI Supply Chain Rug Pull,Defense Evasion,Realized,Supply chain,partial,partial,draft triage
+AML.T0110,AI Agent Tool Poisoning,Persistence,Realized,Agent runtime,yes,yes,draft triage
+AML.T0110.000,AI Agent Tool Poisoning: Definition and Instructions,Persistence,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0110.001,AI Agent Tool Poisoning: Implementation,Persistence,Realized,Agent runtime,yes,yes,draft triage
+AML.T0110.002,AI Agent Tool Poisoning: Runtime Response,Persistence,Feasible,Agent runtime,yes,yes,draft triage
+AML.T0111,AI Supply Chain Reputation Inflation,Defense Evasion,Demonstrated,Supply chain,partial,partial,draft triage
+AML.T0112,Machine Compromise,Impact,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0112.000,Machine Compromise: Local AI Agent,Impact,Demonstrated,Agent runtime,yes,yes,draft triage
+AML.T0112.001,Machine Compromise: AI Artifacts,Impact,Feasible,General security with an AI angle,partial,partial,draft triage
+AML.T0113,Steal Web Session Cookie,Credential Access,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0114,AI Service Web Interface,Command and Control,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0115,Publish Poisoned AI Artifacts,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0115.000,Publish Poisoned AI Artifacts: Datasets,Resource Development,Demonstrated,Attacker preparation (before contact),no,no,draft triage
+AML.T0115.001,Publish Poisoned AI Artifacts: Models,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0115.002,Publish Poisoned AI Artifacts: AI Agent Tools,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0116,Autonomous Reconnaissance,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0117,Autonomous Attack-Path Adaptation,AI Attack Adaptation,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0118,Autonomous AI Agent Communication,AI Attack Adaptation,Realized,Agent runtime,yes,yes,draft triage
+AML.T0118.000,Autonomous AI Agent Communication: Communication via Shared Artifacts,AI Attack Adaptation,Realized,Agent runtime,yes,yes,draft triage
+AML.T0118.001,Autonomous AI Agent Communication: Direct Agent Communication,AI Attack Adaptation,Realized,Agent runtime,yes,yes,draft triage
+AML.T0119,Exploit Automated Artifact Processing Pipeline,Initial Access,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0120,AI Artifact Repository,Command and Control,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0121,AI Agent Environment Reconstruction,Persistence,Realized,Agent runtime,yes,yes,draft triage
+AML.T0122,Exploitation of Remote Services,Lateral Movement,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0123,Obfuscated Files or Information,Defense Evasion,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0124,Autonomous Attack Orchestration,AI Attack Adaptation,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0125,Create Account,Persistence,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0126,Automated Collection,Collection,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0127,Data Staged,Collection,Realized,General security with an AI angle,partial,partial,draft triage
+AML.T0128,Compromise Infrastructure,Resource Development,Realized,Attacker preparation (before contact),no,no,draft triage
+AML.T0129,Triggers in Multimodal Inputs,Defense Evasion,Feasible,General security with an AI angle,partial,partial,draft triage
+AML.T0130,AI Agent Response Biasing,Impact,Realized,Agent runtime,yes,yes,draft triage
+AML.T0131,Crafted AI Assistant Links,Initial Access,Realized,Model and training pipeline,no,partial,draft triage
+AML.T0132,Misconfigured or Publicly Exposed AI Services,Initial Access,Demonstrated,General security with an AI angle,partial,partial,draft triage
+AML.T0133,Discover AI Agent Runtime Capabilities,Discovery,Feasible,Agent runtime,yes,yes,draft triage
+AML.T0134,AI Targeted Cloaking,Defense Evasion,Feasible,General security with an AI angle,partial,partial,draft triage
