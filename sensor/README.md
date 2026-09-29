@@ -1,6 +1,6 @@
 # Guardian sensor v0 (prototype)
 
-An MCP proxy that sits between an agent and any MCP server, relays every message, and blocks known attack patterns from the registry. Built for anything that speaks MCP over stdio: Claude Code, Codex, Cursor, and agents built on open models. So far it has been tested end to end with a simulated MCP client and server; testing inside each client is next.
+An MCP proxy that sits between an agent and any MCP server, relays every message, and blocks known attack patterns from the registry. Built for anything that speaks MCP over stdio: Claude Code, Codex, Cursor, and agents built on open models. Tested end to end with a simulated MCP client and server, and inside a real Claude Code session as a proxy in front of both a test server and the filesystem server. Other clients are next.
 
 **Prototype. Not for production data yet.** No dependencies beyond Python 3.9+.
 
