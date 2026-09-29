@@ -1,0 +1,10 @@
+# Reviewers for each area. Every pull request needs approval from an owner of the files it changes.
+# Add reviewers here as the project grows; see GOVERNANCE.md.
+
+*                   @faalbane
+/patterns/          @faalbane
+/schema.yaml        @faalbane
+/coverage/          @faalbane
+/sensor/            @faalbane
+/demo/              @faalbane
+/GOVERNANCE.md      @faalbane
