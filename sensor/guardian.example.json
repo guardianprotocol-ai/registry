@@ -1,0 +1,6 @@
+{
+  "mode": "block",
+  "allowlist": ["yourcompany.com"],
+  "pins_path": ".guardian/pins.json",
+  "evidence_path": ".guardian/evidence.jsonl"
+}
