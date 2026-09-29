@@ -12,7 +12,7 @@ An MCP proxy that sits between an agent and any MCP server, relays every message
 | GP-0002 Sensitive data sent out through a tool call | Blocks tool calls whose arguments contain canary tokens or secrets (API keys, private keys, tokens) |
 | GP-0003 Tampered MCP tool | Pins every tool definition the first time it's seen; blocks a tool whose definition later changes; flags descriptions that contain instructions |
 
-The shared rule engine (`guardian_sensor/rules.py`) also has draft checks for GP-0004 to GP-0012 (memory writes, destructive actions, hidden content, credential file reads, agent-to-agent messages, writes to agent config files, source steering, runaway repetition, system prompt leaks). Those checks aren't covered by tests yet, and their registry entries are still to be written.
+The shared rule engine (`guardian_sensor/rules.py`) also has draft checks for GP-0004 to GP-0012 (memory writes, destructive actions, hidden content, credential file reads, agent-to-agent messages, writes to agent config files, source steering, runaway repetition, system prompt leaks). Those checks are covered by `tests/test_rules.py`. Their registry entries are still to be written, so they stay draft.
 
 Every block or flag is written to `.guardian/evidence.jsonl`. If the sensor itself hits an error, it relays the message unchanged (fails open) and logs the fault.
 
@@ -36,9 +36,12 @@ Copy `guardian.example.json` to `guardian.json` and list the domains your agents
 
 ```bash
 python3 tests/test_sensor.py
+python3 tests/test_rules.py
 ```
 
-The test runs the same attack twice through a fake MCP server: without the sensor the canary leaks; with it, the exfiltration and the tampered tool are both blocked, a legitimate send to an allowed domain goes through, and evidence is recorded.
+`test_rules.py` covers the draft rules GP-0004 to GP-0012 directly, each with an attack that must be caught and ordinary work that must not be. The benign half is the point: a rule that blocks real work gets turned off, and a rule that is turned off protects nobody.
+
+`test_sensor.py` runs the same attack twice through a fake MCP server: without the sensor the canary leaks; with it, the exfiltration and the tampered tool are both blocked, a legitimate send to an allowed domain goes through, and evidence is recorded.
 
 ## Known limits (v0)
 
