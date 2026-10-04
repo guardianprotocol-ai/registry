@@ -12,7 +12,7 @@ permissions:
 # A new push to the same branch makes the previous run pointless.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -37,6 +37,13 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
+
+      # If setup-python ever soft-fails, python3 would quietly be the runner's own
+      # interpreter and every leg of the matrix would pass against the same version.
+      - name: Confirm the matrix version is the one running
+        run: |
+          python3 -VV
+          python3 -c "import sys; want='${{ matrix.python-version }}'; got='.'.join(map(str, sys.version_info[:2])); assert got == want, f'expected {want}, running {got}'"
 
       - name: Run every check
         run: python3 check.py
