@@ -98,6 +98,8 @@ through the API and have to be clicked.
 | Secret scanning and push protection | Repo, Settings, Code security | On |
 | Private vulnerability reporting | Repo, Settings, Code security | On |
 | Dependabot alerts and security updates | Repo, Settings, Code security | On |
+| Code scanning (CodeQL) | `.github/workflows/codeql.yml` | On, for `python` and `actions` |
+| OpenSSF Scorecard | `.github/workflows/scorecard.yml` | On, weekly and on every push to `main` |
 
 ### Still to do
 
