@@ -47,10 +47,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Check out the base branch, not the pull request
+      # No ref on purpose. Under pull_request_target, checkout defaults to the base
+      # branch, which is this repository's own code. Naming the ref explicitly, even as
+      # base.sha, matches the pattern scanners use to find workflows that check out a
+      # pull request's code, and the default says the same thing without the ambiguity.
+      - name: Check out the base branch, never the pull request
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
 
       - name: Label a pull request that maps a pattern to no ATLAS technique
