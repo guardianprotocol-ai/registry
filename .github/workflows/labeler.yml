@@ -1,0 +1,71 @@
+name: labeler
+
+# Why pull_request_target rather than pull_request: a pull request from a fork gets a
+# read-only token, and labelling needs write. pull_request_target runs with the base
+# repository's token, which has it.
+#
+# That makes the trigger dangerous in the usual case, because the token is privileged.
+# It is safe here because this workflow never touches the pull request's code:
+#
+#   * it does not check out the pull request, so none of its files reach the runner
+#   * it runs no script from the repository and no command of its own
+#   * the only action it runs reads the list of changed file names from the API and the
+#     label rules from .github/labeler.yml on the base branch, which a contributor cannot
+#     change in their own pull request
+#   * permissions are the two it needs and nothing more
+#
+# If a step is ever added here that checks out or executes pull request code, this trigger
+# must change with it.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Apply the track labels for the files this pull request touches
+        uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6.0.1
+        with:
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+
+  # custom-mapping depends on what a pattern says, not on which files changed, so the
+  # labeler above cannot decide it. This checks out the BASE branch, which is this
+  # repository's own code, never the pull request's. The pull request's diff is pulled
+  # through the API into a file and read as text, so nothing in it is ever executed.
+  custom-mapping:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the base branch, not the pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Label a pull request that maps a pattern to no ATLAS technique
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPO/pulls/$NUMBER/files" --paginate \
+            --jq '[.[] | select(.filename | startswith("patterns/")) | .patch // ""] | join("\n")' \
+            > pattern-diff.txt
+          if [ "$(python3 scripts/detect_custom_mapping.py pattern-diff.txt)" = "yes" ]; then
+            gh pr edit "$NUMBER" --repo "$REPO" --add-label custom-mapping
+            echo "Labelled: this pull request maps a pattern to no ATLAS technique."
+          else
+            echo "No custom mapping added."
+          fi

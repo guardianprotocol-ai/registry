@@ -29,6 +29,7 @@ CHECKS = [
     ("Status guard tests", ".", ["scripts/tests/test_check_status_changes.py"]),
     ("Contributor data tests", ".", ["scripts/tests/test_build_contributors.py"]),
     ("Meeting summary tests", ".", ["scripts/tests/test_shipped.py"]),
+    ("Custom mapping detector tests", ".", ["scripts/tests/test_detect_custom_mapping.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]

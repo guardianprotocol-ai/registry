@@ -1,0 +1,44 @@
+# Which track a pull request belongs to, decided by the files it touches.
+# Used by .github/workflows/labeler.yml. Labels are created by scripts/create_starter_issues.sh.
+"track:patterns":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "patterns/**"
+          - "schema.yaml"
+          - "docs/pattern-template.yaml"
+
+"track:scanner":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "scanner/**"
+          - "corpus/**"
+          - "scripts/rule_gate.py"
+
+"track:sensor":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "sensor/**"
+          - "hooks/**"
+          - "scripts/lint_rules.py"
+          - "scripts/require_rule_tests.py"
+
+"track:coverage":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "coverage/**"
+
+"track:research":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/research/**"
+          - "docs/proposals/**"
+
+"docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+
+# custom-mapping is not here on purpose. It depends on what a file says, not on its name,
+# so the labeler cannot decide it. The custom-mapping job in .github/workflows/labeler.yml
+# applies it instead.
