@@ -36,6 +36,30 @@ class YamlishError(ValueError):
     """The file used something outside the supported subset, or is malformed."""
 
 
+def _strip_comment(raw):
+    """Drop a trailing comment from a plain scalar.
+
+    YAML starts a comment at a `#` preceded by whitespace, so a `#` inside quotes or in a
+    url fragment is left alone. The pattern template is written with these, and without
+    this a newcomer copying it gets a parse error instead of a pattern.
+    """
+    quote, depth = None, 0
+    for i, ch in enumerate(raw):
+        if quote:
+            if ch == quote:
+                quote = None
+            continue
+        if ch in "\"'":
+            quote = ch
+        elif ch in "[{":
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+        elif ch == "#" and depth == 0 and (i == 0 or raw[i - 1] in " \t"):
+            return raw[:i].rstrip()
+    return raw
+
+
 def _split_top_level(text, sep=","):
     """Split on `sep`, ignoring separators inside quotes or nested brackets."""
     out, buf, depth, quote = [], "", 0, None
@@ -170,7 +194,7 @@ class _Reader:
             if rest == "":
                 items.append(self.parse(indent + 1))
             elif rest[0] in "\"'[{":
-                items.append(_scalar(rest))
+                items.append(_scalar(_strip_comment(rest)))
             elif MAPLIKE.match(rest):
                 # YAML reads "- some words: more" as a map, which is never what a pattern
                 # means. Refusing it is what stops a file being read one way here and
@@ -179,7 +203,7 @@ class _Reader:
                     f"line {self.i}: a list item reading as a map, {rest!r}. "
                     "Quote the whole item, or reword it so it has no colon followed by a space.")
             else:
-                items.append(" ".join([rest] + self._wrapped(indent)))
+                items.append(_strip_comment(" ".join([rest] + self._wrapped(indent))))
         return items
 
     def _map(self, indent):
@@ -193,16 +217,16 @@ class _Reader:
             m = KEY.match(stripped)
             if not m:
                 raise YamlishError(f"line {self.i + 1}: expected 'key: value', got {stripped!r}")
-            key, raw = m.group(1), (m.group(2) or "").strip()
+            key, raw = m.group(1), _strip_comment((m.group(2) or "").strip())
             self.i += 1
             if raw == ">":
                 out[key] = self._folded(indent)
             elif raw == "":
                 out[key] = self.parse(indent + 1)
             elif raw[0] in "\"'[{":
-                out[key] = _scalar(raw)
+                out[key] = _scalar(_strip_comment(raw))
             else:
-                out[key] = _scalar(" ".join([raw] + self._wrapped(indent)))
+                out[key] = _scalar(_strip_comment(" ".join([raw] + self._wrapped(indent))))
         return out
 
 

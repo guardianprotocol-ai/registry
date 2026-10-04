@@ -118,6 +118,42 @@ def test_a_url_keeps_its_scheme():
           got == {"references": ["https://atlas.mitre.org/techniques/AML.T0080"]}, str(got))
 
 
+def test_inline_comment_after_a_value():
+    got = yamlish.loads("status: draft  # draft | verified | enforced\nid: X\n")
+    check("an inline comment is not part of the value",
+          got == {"status": "draft", "id": "X"}, str(got))
+
+
+def test_inline_comment_after_an_inline_list():
+    got = yamlish.loads("surfaces: [mcp_tool_output]  # where it happens\n")
+    check("an inline comment after a list is dropped",
+          got == {"surfaces": ["mcp_tool_output"]}, str(got))
+
+
+def test_inline_comment_after_a_list_item_and_a_bare_key():
+    got = yamlish.loads("maps_to:  # the frameworks\n  owasp: [A]  # ids\npreconditions:\n  - a thing  # why\n")
+    check("comments are dropped from keys, nested values and list items",
+          got == {"maps_to": {"owasp": ["A"]}, "preconditions": ["a thing"]}, str(got))
+
+
+def test_a_hash_inside_quotes_or_a_url_survives():
+    got = yamlish.loads('title: "a # b"\nlink: https://example.test/x#frag\n')
+    check("a hash inside quotes or a url is not a comment",
+          got == {"title": "a # b", "link": "https://example.test/x#frag"}, str(got))
+
+
+def test_the_pattern_template_parses():
+    """The template is the documented first contribution. If it cannot be read, nor can
+    anything a newcomer copies from it."""
+    path = os.path.join(os.path.dirname(PATTERNS), "docs", "pattern-template.yaml")
+    try:
+        got = yamlish.load_file(path)
+        ok = isinstance(got, dict) and "detection" in got and "test" in got
+        check("docs/pattern-template.yaml parses", ok, str(got)[:120])
+    except Exception as e:
+        check("docs/pattern-template.yaml parses", False, f"{type(e).__name__}: {e}")
+
+
 def test_tabs_are_refused():
     try:
         yamlish.loads("a:\n\t- one\n")
