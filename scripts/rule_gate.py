@@ -182,7 +182,23 @@ def markdown(result, diff=None):
     known = [b for b in result["benign"] if b["verdict"] == "known false alarm"]
     if known:
         lines += ["", "### Known false alarms (tracked)", ""] + [f"- {b['id']}: {b['known']}" for b in known]
+    # Custom mappings are listed on every report so their number stays in plain sight.
+    custom = custom_patterns()
+    if custom:
+        lines += ["", "### Patterns with no ATLAS mapping", ""]
+        lines += [f"- {pid}: {reason}" for pid, reason in custom]
+        lines += ["", "Check these against each ATLAS release. See docs/MAINTAINING.md."]
     return "\n".join(lines) + "\n"
+
+
+def custom_patterns():
+    """Patterns that map to no ATLAS technique, from the validator."""
+    sys.path.insert(0, os.path.join(ROOT, "scanner"))
+    try:
+        from guardian_scanner import patterns as pattern_validator
+    except ImportError:
+        return []
+    return pattern_validator.validate_dir(os.path.join(ROOT, "patterns")).custom
 
 
 def main():

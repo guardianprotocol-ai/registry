@@ -13,7 +13,8 @@ severity:      # low | medium | high | critical, with a one-line reason
 surfaces:      # where it happens, e.g. mcp_tool_output, mcp_tool_definition, agent_to_agent, retrieved_document
 maps_to:
   owasp:       # list of OWASP IDs, e.g. LLM01:2025
-  atlas:       # list of MITRE ATLAS technique IDs, e.g. AML.T0051.001
+  atlas:       # list of MITRE ATLAS technique IDs, e.g. AML.T0051.001, each one in coverage/atlas-coverage.csv
+  custom_reason: # optional. Only when atlas is empty: the closest ATLAS technique you considered and why it does not fit
 preconditions: # what must be true for the attack to work
 test:
   target:      # reference_agent_vulnerable (must be exploited) and reference_agent_hardened (must resist)

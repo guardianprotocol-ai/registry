@@ -103,6 +103,89 @@ def test_filenames_are_not_mistaken_for_destinations():
               "; ".join(report.problems[:2]))
 
 
+# ---------- mappings and credits ----------
+
+def test_an_atlas_id_that_does_not_exist_is_caught():
+    report = validate_with(lambda good: good.replace("AML.T0080.000", "AML.T9999.123"))
+    check("an ATLAS id outside the coverage map is caught", not report.ok,
+          "validator said it was fine")
+    check("the message names the id", any("AML.T9999.123" in p for p in report.problems),
+          str(report.problems))
+
+
+def test_a_near_miss_atlas_id_suggests_the_real_one():
+    report = validate_with(lambda good: good.replace("AML.T0080.000", "AML.T0080.00"))
+    check("a near miss suggests the closest ids",
+          any("Closest in the coverage map" in p for p in report.problems), str(report.problems))
+
+
+def test_no_mapping_and_no_reason_is_caught():
+    def strip_atlas(good):
+        return "\n".join(l for l in good.splitlines() if "atlas:" not in l) + "\n"
+    report = validate_with(strip_atlas)
+    check("a pattern with no ATLAS mapping and no reason is caught", not report.ok,
+          "validator said it was fine")
+
+
+def test_a_custom_mapping_needs_a_real_reason():
+    def shallow(good):
+        out = []
+        for line in good.splitlines():
+            out.append('  atlas: []\n  custom_reason: "too new"' if "atlas:" in line else line)
+        return "\n".join(out) + "\n"
+    report = validate_with(shallow)
+    check("a thin custom_reason is caught", not report.ok, "validator said it was fine")
+    check("the message asks for the closest technique",
+          any("closest ATLAS technique" in p for p in report.problems), str(report.problems))
+
+
+def test_a_custom_mapping_with_a_real_reason_is_allowed_and_counted():
+    reason = ("The closest is AML.T0051.001 indirect prompt injection, but that covers "
+              "instructions reaching the model, not this attack on the tool registry itself.")
+    def custom(good):
+        out = []
+        for line in good.splitlines():
+            out.append(f'  atlas: []\n  custom_reason: "{reason}"' if "atlas:" in line else line)
+        return "\n".join(out) + "\n"
+    report = validate_with(custom)
+    check("a well argued custom mapping is allowed", report.ok, "; ".join(report.problems[:2]))
+    check("and it is counted so the number stays visible", len(report.custom) == 1,
+          str(report.custom))
+
+
+def test_empty_credits_are_caught():
+    def strip_credits(good):
+        out, skipping = [], False
+        for line in good.splitlines():
+            if line.startswith("credits:"):
+                skipping = True
+                out.append("credits: []")
+                continue
+            if skipping:
+                if line.startswith("  -") or line.startswith("    "):
+                    continue
+                skipping = False
+            out.append(line)
+        return "\n".join(out) + "\n"
+    report = validate_with(strip_credits)
+    check("empty credits are caught", not report.ok, "validator said it was fine")
+    check("the message says how to fix it", any("Name at least one person" in p for p in report.problems),
+          str(report.problems))
+
+
+def test_a_credit_without_a_name_is_caught():
+    report = validate_with(
+        lambda good: good.replace("{name: Frank Albanese, organization: Founding maintainer}",
+                                  "{organization: Founding maintainer}"))
+    check("a credit with no name is caught", not report.ok, "validator said it was fine")
+
+
+def test_the_registry_has_no_custom_mappings_today():
+    report = patterns.validate_dir(PATTERNS)
+    check("every shipped pattern maps to a real ATLAS technique", not report.custom,
+          str(report.custom))
+
+
 # ---------- attack success rate ----------
 
 def test_rate_is_successes_over_runs():

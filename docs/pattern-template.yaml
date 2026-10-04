@@ -18,6 +18,9 @@ surfaces: [mcp_tool_output]           # where it happens; see schema.yaml for ex
 maps_to:
   owasp: ["LLM01:2025 Prompt Injection"]
   atlas: ["AML.T0051.001 LLM Prompt Injection: Indirect"]
+  # Leave atlas empty only if no technique fits, and then say why here: name the closest
+  # one you considered and what it misses, in at least 40 characters.
+  custom_reason: ""
 preconditions:
   - What must be true for the attack to work
 test:

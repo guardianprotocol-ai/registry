@@ -10,11 +10,20 @@ def _bar(rate, width=20):
 def validation_text(report):
     lines = [f"Validated {len(report.patterns)} pattern files."]
     if report.ok:
-        lines.append("All valid: every required field present, canaries well formed, "
-                     "no destination a test could really reach.")
+        lines.append("All valid: every required field present, every mapping real, "
+                     "canaries well formed, no destination a test could really reach.")
     else:
         lines.append(f"{len(report.problems)} problem(s):")
         lines += [f"  - {p}" for p in report.problems]
+    # Printed every run, pass or fail, so custom mappings never quietly become the norm.
+    if report.custom:
+        lines.append("")
+        lines.append(f"{len(report.custom)} pattern(s) map to no ATLAS technique:")
+        lines += [f"  - {pid}: {reason}" for pid, reason in report.custom]
+        lines.append("Check these against each ATLAS release and remap when one fits. "
+                     "See docs/MAINTAINING.md.")
+    else:
+        lines.append("Every pattern maps to a MITRE ATLAS technique.")
     return "\n".join(lines)
 
 
