@@ -21,6 +21,7 @@ TIMEOUT_SECONDS = 300
 CHECKS = [
     ("Pattern files are valid", "scanner", ["-m", "guardian_scanner", "validate"]),
     ("Docs link to things that exist", ".", ["scripts/check_docs.py"]),
+    ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
