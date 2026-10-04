@@ -49,6 +49,21 @@ jobs:
         run: python3 check.py
 
   # Runs once per pull request: proof for rule changes, and what the change does to detection.
+  # CONTRIBUTING, README and GOVERNANCE all require a sign-off. Nothing checked it.
+  signoff:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the pull request and its base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Every commit is signed off
+        run: python3 scripts/check_signoff.py "origin/${{ github.base_ref }}" HEAD
+
   rule-safety:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
