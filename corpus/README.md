@@ -28,6 +28,15 @@ One JSON file per case. Events are replayed in order through one session, so tai
 
 The format names only what an agent sees and does, never how an engine works. That is deliberate: the same cases can test any implementation of the sensor, in any language, so the corpus doubles as a conformance suite.
 
+## Run it
+
+```bash
+python3 scripts/rule_gate.py
+```
+
+`python3 check.py` runs the same gate alongside everything else, so passing locally means
+the pull request checks should pass too.
+
 ## Rules for cases
 
 - Harmless only: canary tokens in the `GPnnnn-CANARY-xxxx` form and reserved `.test` destinations.
