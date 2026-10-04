@@ -15,6 +15,22 @@ import build_contributors as builder  # noqa: E402
 failures = []
 
 
+ISOLATED_GIT = {
+    # A contributor with commit.gpgsign = true globally would otherwise see these tests
+    # fail with no sign of why. The throwaway repositories take no config from the user.
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_SYSTEM": os.devnull,
+    "GIT_AUTHOR_NAME": "Test",
+    "GIT_AUTHOR_EMAIL": "test@example.test",
+    "GIT_COMMITTER_NAME": "Test",
+    "GIT_COMMITTER_EMAIL": "test@example.test",
+}
+
+
+def git_env(extra=None):
+    return {**os.environ, **ISOLATED_GIT, **(extra or {})}
+
+
 def check(name, condition, detail=""):
     print(f"{'ok  ' if condition else 'FAIL'} {name}{'' if condition else '  <- ' + detail}")
     if not condition:
@@ -77,7 +93,7 @@ def test_history_gives_each_signer_their_first_date():
     try:
         def git(*args):
             return subprocess.run(["git"] + list(args), cwd=folder,
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True, env=git_env())
         git("init", "-q", "-b", "main")
         git("config", "user.name", "Dana Reed")
         git("config", "user.email", "dana@example.test")
@@ -118,6 +134,7 @@ def repo_with_history():
     folder = tempfile.mkdtemp()
 
     def git(*args, **kw):
+        kw.setdefault("env", git_env())
         return subprocess.run(["git"] + list(args), cwd=folder, capture_output=True,
                               text=True, **kw)
 
@@ -130,15 +147,15 @@ def repo_with_history():
     subprocess.run(["git", "commit", "-q", "-m",
                     "first\n\nSigned-off-by: Dana Reed <dana@example.test>"],
                    cwd=folder, capture_output=True, text=True,
-                   env={**os.environ, "GIT_COMMITTER_DATE": "2026-01-02T10:00:00",
-                        "GIT_AUTHOR_DATE": "2026-01-02T10:00:00"})
+                   env=git_env({"GIT_COMMITTER_DATE": "2026-01-02T10:00:00",
+                                "GIT_AUTHOR_DATE": "2026-01-02T10:00:00"}))
     write(folder, "patterns/GP-0002.yaml", "id: GP-0002\n")
     git("add", "-A")
     subprocess.run(["git", "commit", "-q", "-m",
                     "second\n\nSigned-off-by: Sam Okafor <sam@example.test>"],
                    cwd=folder, capture_output=True, text=True,
-                   env={**os.environ, "GIT_COMMITTER_DATE": "2026-03-04T10:00:00",
-                        "GIT_AUTHOR_DATE": "2026-03-04T10:00:00"})
+                   env=git_env({"GIT_COMMITTER_DATE": "2026-03-04T10:00:00",
+                                "GIT_AUTHOR_DATE": "2026-03-04T10:00:00"}))
     return folder
 
 

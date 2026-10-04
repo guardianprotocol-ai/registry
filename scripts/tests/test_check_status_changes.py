@@ -40,6 +40,22 @@ version: 1
 """
 
 
+ISOLATED_GIT = {
+    # A contributor with commit.gpgsign = true globally would otherwise see these tests
+    # fail with no sign of why. The throwaway repositories take no config from the user.
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_SYSTEM": os.devnull,
+    "GIT_AUTHOR_NAME": "Test",
+    "GIT_AUTHOR_EMAIL": "test@example.test",
+    "GIT_COMMITTER_NAME": "Test",
+    "GIT_COMMITTER_EMAIL": "test@example.test",
+}
+
+
+def git_env(extra=None):
+    return {**os.environ, **ISOLATED_GIT, **(extra or {})}
+
+
 def check(name, condition, detail=""):
     print(f"{'ok  ' if condition else 'FAIL'} {name}{'' if condition else '  <- ' + detail}")
     if not condition:
@@ -47,7 +63,7 @@ def check(name, condition, detail=""):
 
 
 def git(folder, *args):
-    return subprocess.run(["git"] + list(args), cwd=folder, capture_output=True, text=True)
+    return subprocess.run(["git"] + list(args), cwd=folder, capture_output=True, text=True, env=git_env())
 
 
 def repo_with(first, second=None, path="patterns/GP-0099.yaml"):

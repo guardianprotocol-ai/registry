@@ -15,6 +15,22 @@ import shipped  # noqa: E402
 failures = []
 
 
+ISOLATED_GIT = {
+    # A contributor with commit.gpgsign = true globally would otherwise see these tests
+    # fail with no sign of why. The throwaway repositories take no config from the user.
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_SYSTEM": os.devnull,
+    "GIT_AUTHOR_NAME": "Test",
+    "GIT_AUTHOR_EMAIL": "test@example.test",
+    "GIT_COMMITTER_NAME": "Test",
+    "GIT_COMMITTER_EMAIL": "test@example.test",
+}
+
+
+def git_env(extra=None):
+    return {**os.environ, **ISOLATED_GIT, **(extra or {})}
+
+
 def check(name, condition, detail=""):
     print(f"{'ok  ' if condition else 'FAIL'} {name}{'' if condition else '  <- ' + detail}")
     if not condition:
@@ -36,7 +52,7 @@ def build_repo():
     folder = tempfile.mkdtemp()
 
     def git(*args):
-        return subprocess.run(["git"] + list(args), cwd=folder, capture_output=True, text=True)
+        return subprocess.run(["git"] + list(args), cwd=folder, capture_output=True, text=True, env=git_env())
 
     git("init", "-q", "-b", "main")
     git("config", "user.name", "Dana Reed")
@@ -52,7 +68,7 @@ def build_repo():
         subprocess.run(["git"] + env + ["commit", "-q", f"--date={when}", "-m",
                         f"{message}\n\nSigned-off-by: {signer} <x@example.test>"],
                        cwd=folder, capture_output=True, text=True,
-                       env={**os.environ, "GIT_COMMITTER_DATE": when})
+                       env=git_env({"GIT_COMMITTER_DATE": when}))
 
     commit("patterns/GP-0001.yaml", "id: GP-0001\n", "Add the first pattern",
            "2026-01-01T10:00:00")
