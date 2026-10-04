@@ -6,7 +6,9 @@ An open registry of known attacks on AI agents. Every pattern has a stable ID, l
 - The **detection** powers sensors: block the attack in real time.
 - **Sightings** from the network show which attacks are active right now.
 
-New here? Start with [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.
+**Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
+
+New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.
 
 ## What's in this repository
 
@@ -34,23 +36,30 @@ Coming next: reference agents beyond Claude Code, so an attack success rate can 
 
 ## How contributions are checked
 
-Every pull request runs these checks automatically:
+Run every check with one command:
 
-1. **Format:** the entry validates against `schema.yaml`.
-2. **Test proves itself:** the test succeeds against the vulnerable reference agent and fails against the hardened reference agent.
-3. **Detection proves itself:** the rule fires on the test's attack traffic and stays quiet on the benign traffic corpus. The false-alarm rate is recorded in the entry.
-4. **Payload safety:** payloads are harmless. Destinations use reserved test domains such as `.test` (RFC 2606). No real malware and no real data.
-5. **Duplicates:** checked against existing patterns.
+```bash
+python3 check.py
+```
 
-Then two maintainers review. At least one must be from an organization other than the contributor's, and at least one from outside White Hat Labs.
+Every pull request runs the same script automatically. Today it checks:
+
+1. **Format:** every pattern validates against `schema.yaml`, and its ID matches its filename.
+2. **Payload safety:** canary tokens are well formed, and no test destination could reach a real host. Destinations use reserved test domains such as `.test` (RFC 2606).
+3. **Detections prove themselves:** the sensor's rule tests run an attack that must be caught and ordinary work that must not be, for every rule.
+4. **Tools work:** the scanner, sensor and hook test suites pass.
+
+Coming before patterns can move past `draft`: each test run against the vulnerable reference agent (must be exploited) and the hardened one (must resist), false-alarm rates measured on a benign traffic corpus, and a duplicate check.
+
+Then maintainers review. Patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview, while there are fewer than three maintainers, a reviewer from another organization listed in `.github/CODEOWNERS` can give the second approval.
 
 Every commit is signed off under the Developer Certificate of Origin (`git commit -s`).
 
 ## Contributing a pattern
 
-1. Copy `patterns/GP-0001.yaml` and give it the next free ID.
+1. Copy `docs/pattern-template.yaml` to `patterns/` and give it the next free ID. `patterns/GP-0001.yaml` is a complete example.
 2. Fill in every field, including the test and the detection.
-3. Open a pull request. Credit goes in the `credits` field, with your name and organization.
+3. Run `python3 check.py`, then open a pull request. Credit goes in the `credits` field, with your name and organization.
 
 ## Reporting an incident
 
@@ -58,7 +67,10 @@ Don't open a public issue for an active attack or anything specific to one vendo
 
 ## The project
 
+- [START_HERE.md](START_HERE.md): your first contribution
+- [TRACKS.md](TRACKS.md): the areas of work and who leads each
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to contribute
+- [CONTRIBUTORS.md](CONTRIBUTORS.md): everyone who has contributed
 - [GOVERNANCE.md](GOVERNANCE.md): roles, decisions and neutrality
 - [ROADMAP.md](ROADMAP.md): the next twelve months
 - [docs/DECISIONS.md](docs/DECISIONS.md): design decisions and the security baseline checklist
