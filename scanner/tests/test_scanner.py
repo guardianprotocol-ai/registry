@@ -70,6 +70,39 @@ def test_an_id_that_does_not_match_its_filename_is_caught():
           "validator said it was fine")
 
 
+def test_a_destination_a_test_could_really_reach_is_caught():
+    """The gate used to be a list of real-looking TLDs, so anything unlisted passed.
+
+    attacker.ru, attacker.xyz and a bare public IP all validated clean. The rule is now
+    the other way round: reserved space is allowed and everything else is refused.
+    """
+    for destination in ("exfil@attacker.ru", "http://198.18.0.9:8080/collect",
+                        "evil.example.ru", "attacker.xyz", "https://pastebin.com/raw/abc",
+                        "8.8.8.8", "collector.internal.corp"):
+        report = validate_with(lambda good, d=destination: good.replace("notes.txt", d))
+        check(f"caught a reachable destination: {destination}", not report.ok,
+              "validator said it was fine")
+
+
+def test_reserved_destinations_are_allowed():
+    """RFC 2606 and RFC 6761 names, documentation addresses and loopback all reach nothing."""
+    for destination in ("canary@registry.test", "https://vendor.test/q3", "attacker.invalid",
+                        "http://localhost:8080/x", "https://example.com/doc", "192.0.2.5",
+                        "127.0.0.1"):
+        report = validate_with(lambda good, d=destination: good.replace("notes.txt", d))
+        check(f"allowed a reserved destination: {destination}", report.ok,
+              "; ".join(report.problems[:2]))
+
+
+def test_filenames_are_not_mistaken_for_destinations():
+    """A dotted token is usually a file or an identifier, not a host."""
+    for token in ("schema.yaml", "AML.T0051.001", "fake_server.py", "guardian-report.html",
+                  "sensor/guardian_sensor/rules.py"):
+        report = validate_with(lambda good, t=token: good.replace("notes.txt", t))
+        check(f"not treated as a destination: {token}", report.ok,
+              "; ".join(report.problems[:2]))
+
+
 # ---------- attack success rate ----------
 
 def test_rate_is_successes_over_runs():
