@@ -15,7 +15,7 @@ Three roles, plus the people who hold the keys.
 
 | Role | GitHub permission | Can | How you get there |
 | --- | --- | --- | --- |
-| **Contributor** | Read during the private preview, none needed once public | Fork, open pull requests, comment, review without binding effect | Ask in Slack with your GitHub username |
+| **Contributor** | None needed, the repository is public | Fork, open pull requests, comment, review without binding effect | Nothing to ask for. Open a pull request |
 | **Reviewer** | Write, and listed in `.github/CODEOWNERS` for an area | Binding approval in their area | About five good merged pull requests, nominated by a maintainer, no objection within 7 days |
 | **Maintainer** | Maintain, and listed in `MAINTAINERS.md` | Merge, cut releases, promote patterns. Promoting a pattern to `enforced` needs two maintainers from different organizations | Sustained good reviewing, same nomination process |
 
@@ -25,9 +25,19 @@ Why these three and not more: GitHub only counts an approval as binding when it 
 
 **Technical Steering Committee.** Formed at foundation entry, not now. It will set technical direction, resolve disputes and approve new maintainers.
 
-### While the repository is private
+### How `main` is protected
 
-On a free private repository `main` cannot be protected, so anyone with Write access could push to it directly. Keep the number of reviewers small and trusted until the repository is public. At public launch, protect `main`: require pull requests, two approvals including a code owner, passing checks, and no force pushes.
+The repository is public and `main` is protected. A pull request is required, with one
+approving review and six passing checks: `check` on Python 3.9, 3.12 and 3.13, plus
+`signoff`, `status-guard` and `rule-safety`. History stays linear. Force pushes and branch
+deletion are refused.
+
+Two things are deliberately not on yet, and both switch on when a second maintainer joins:
+requiring a review from a code owner, and applying branch protection to administrators.
+With a single maintainer the required approval cannot come from anyone else, so the
+founding maintainer merges using the administrator override, which GitHub records on every
+pull request for anyone to read. That is the honest description of the current state, not
+a gap we are hiding.
 
 ## Decisions
 

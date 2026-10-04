@@ -82,7 +82,7 @@ Every pull request runs the same script automatically. Today it checks:
 
 Coming before patterns can move past `draft`: each test run against the vulnerable reference agent (must be exploited) and the hardened one (must resist), a benign corpus large enough to measure false-alarm rates, and a duplicate check. How rules are kept safe is in [docs/RULE_SAFETY.md](docs/RULE_SAFETY.md).
 
-Then maintainers review. Patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview there is one maintainer, so that rule cannot be met yet: changes are reviewed by the founding maintainer alone, and the two-approval rule starts the moment a second maintainer joins. Adding maintainers from other organizations is the project's first governance goal.
+Then maintainers review. Patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. There is one maintainer today, so that rule cannot be met yet: changes are reviewed by the founding maintainer alone, and the two-approval rule starts the moment a second maintainer joins. Adding maintainers from other organizations is the project's first governance goal.
 
 Every commit is signed off under the Developer Certificate of Origin (`git commit -s`).
 
