@@ -65,7 +65,11 @@ def main():
         send, ok_send, weather, sink, log = run(True, w)
         leaked = any("CANARY" in s for s in sink)
         blocked = send["result"].get("isError") is True
-        allowed_ok = not ok_send["result"].get("isError") and any("example.com" in s for s in sink)
+        recipients = [json.loads(line).get("to", "") for line in sink]
+        # Match the domain exactly. A substring check would also accept
+        # example.com.attacker.corp, which is the bug this test exists to catch.
+        allowed_ok = (not ok_send["result"].get("isError")
+                      and any(r.rsplit("@", 1)[-1] == "example.com" for r in recipients))
         tamper_blocked = weather["result"].get("isError") is True
         ev = [json.loads(l) for l in open(os.path.join(w, "evidence.jsonl"))]
         print(f"With sensor:    canary leaked = {leaked}; exfil blocked = {blocked}; "
