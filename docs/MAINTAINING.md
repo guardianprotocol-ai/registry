@@ -93,22 +93,22 @@ through the API and have to be clicked.
 | Discussions | Repo, Settings, General | On |
 | Delete branch on merge | Repo, Settings, General | On |
 | Require sign-off on web commits | Repo, Settings, General | On |
-| Require approval for fork pull request workflows | Repo, Settings, Actions, General | Off. Turning it on costs a click per new contributor and protects the Actions minutes on the free plan |
-| Branch protection on `main` | Repo, Settings, Rules | **Not possible yet.** Needs a public repository or a paid plan |
-| Secret scanning | Repo, Settings, Code security | **Not possible yet.** Free on public repositories |
+| Require approval for fork pull request workflows | Repo, Settings, Actions, General | On |
+| Branch protection on `main` | Repo, Settings, Branches | On: a pull request is required, with the `check`, `signoff`, `status-guard` and `rule-safety` checks, linear history, and no force pushes or deletions |
+| Secret scanning and push protection | Repo, Settings, Code security | On |
+| Private vulnerability reporting | Repo, Settings, Code security | On |
+| Dependabot alerts and security updates | Repo, Settings, Code security | On |
 
-### At public launch
+### Still to do
 
-Going public is what unblocks the rest, and closes the remaining
-[Security Baseline](DECISIONS.md) items in one go:
-
-1. Protect `main`: require a pull request, two approvals including a code owner, the
-   `check` status, no force pushes, and confirmation before deleting the branch.
-2. Turn on secret scanning and push protection. This repository's whole premise is planted
-   canary tokens, so it should be scanning for real ones.
-3. Turn on GitHub private vulnerability reporting and update `SECURITY.md`, which currently
-   names a stopgap address because that feature is unavailable on a private repository.
-4. Add the OpenSSF Scorecard workflow.
+1. **Raise required approvals from 0 to 1, and require a code owner**, the moment there is
+   a second maintainer. It is 0 today because GitHub does not let anyone approve their own
+   pull request, so requiring 1 with a single maintainer would lock the project out of its
+   own repository. This is the first thing to change when someone joins.
+2. **Add the OpenSSF Scorecard workflow**, now that the repository is public and it can run.
+3. **Consider `enforce_admins`.** Branch protection currently does not apply to
+   administrators, which is deliberate while there is one maintainer and no second pair of
+   hands in an emergency. Turn it on once there are two.
 
 ## The project board
 
