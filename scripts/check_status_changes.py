@@ -47,8 +47,15 @@ def maintainers(path=None):
     return found
 
 
+class GitFailed(RuntimeError):
+    """git could not answer. The guard fails closed rather than approving on error."""
+
+
 def _git(args):
-    return subprocess.run(["git"] + args, cwd=ROOT, capture_output=True, text=True).stdout
+    result = subprocess.run(["git"] + args, cwd=ROOT, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise GitFailed(f"git {' '.join(args)} failed: {result.stderr.strip()[:200]}")
+    return result.stdout
 
 
 def changed_patterns(base, head):
@@ -88,7 +95,13 @@ def main(argv):
         print(__doc__.strip())
         return 2
     base, head, author = argv[1], argv[2], argv[3].strip().lstrip("@").lower()
-    problems = findings(base, head)
+    try:
+        problems = findings(base, head)
+    except GitFailed as failure:
+        # Refusing is the safe answer: a guard that approves when it cannot see the diff
+        # is one workflow edit away from being bypassed.
+        print(f"Cannot read the change, so this check refuses rather than passes.\n  {failure}")
+        return 1
     if not problems:
         print("No pattern status changes in this pull request.")
         return 0

@@ -18,9 +18,12 @@ TRAILER = re.compile(r"^Signed-off-by:\s*(.+?)\s*<([^>]+)>\s*$", re.I | re.M)
 
 
 def commits(base, head):
-    out = subprocess.run(["git", "rev-list", "--no-merges", f"{base}..{head}"],
-                         capture_output=True, text=True, check=True).stdout
-    return [line for line in out.splitlines() if line]
+    result = subprocess.run(["git", "rev-list", "--no-merges", f"{base}..{head}"],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        raise LookupError(f"cannot compare {base}..{head}: "
+                          f"{result.stderr.strip().splitlines()[0] if result.stderr.strip() else 'unknown ref'}")
+    return [line for line in result.stdout.splitlines() if line]
 
 
 def field(sha, fmt):
@@ -35,7 +38,12 @@ def main(argv):
     base, head = argv[1], argv[2]
     problems = []
     checked = 0
-    for sha in commits(base, head):
+    try:
+        to_check = commits(base, head)
+    except LookupError as failure:
+        print(failure)
+        return 2
+    for sha in to_check:
         checked += 1
         author_email = field(sha, "%ae").lower()
         subject = field(sha, "%s")
