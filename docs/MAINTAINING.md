@@ -126,7 +126,7 @@ A board makes the queue visible, which matters more as contributors grow.
 python3 scripts/shipped.py --since 2026-10-04
 ```
 
-It prints what landed on `main` since that date, grouped by the person who signed off, and
+It prints what landed on `main` since that date, oldest first, grouped by the person who signed off, and
 lists the patterns added and changed. Paste it into Slack. The people it names are the ones
 who demo.
 
