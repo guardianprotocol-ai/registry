@@ -4,7 +4,7 @@ An open registry of known attacks on AI agents. Every pattern has a stable ID, l
 
 - The **test** powers scans: run every pattern against your agent and see which attacks get through.
 - The **detection** powers sensors: block the attack in real time.
-- **Sightings** from the network show which attacks are active right now.
+- **Sightings** will show which attacks are active right now, once the network exists. It is in design, not built: see `ARCHITECTURE.md`.
 
 **Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
 

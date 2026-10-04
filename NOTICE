@@ -1,0 +1,21 @@
+Guardian Protocol
+Copyright 2026 The Guardian Protocol contributors
+
+This product includes software developed by the Guardian Protocol project,
+licensed under the Apache License, Version 2.0. See LICENSE.
+
+----
+
+coverage/atlas-coverage.csv is derived from MITRE ATLAS, release 2026.09.
+
+  MITRE ATLAS
+  Copyright 2021-2026 The MITRE Corporation
+  Licensed under the Apache License, Version 2.0
+  https://github.com/mitre-atlas/atlas-data
+
+MITRE ATLAS and ATLAS are trademarks of The MITRE Corporation. Their use here is
+for identification only and does not imply endorsement by MITRE.
+
+The technique identifiers, names and tactics in that file come from ATLAS. The
+category, sensor, scan and status columns are this project's own triage and are
+not MITRE's assessment.

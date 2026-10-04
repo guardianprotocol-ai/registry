@@ -73,12 +73,12 @@ def test_an_id_that_does_not_match_its_filename_is_caught():
 def test_a_destination_a_test_could_really_reach_is_caught():
     """The gate used to be a list of real-looking TLDs, so anything unlisted passed.
 
-    attacker.ru, attacker.xyz and a bare public IP all validated clean. The rule is now
+    attacker.ru, attacker.example.net and a bare public IP all validated clean. The rule is now
     the other way round: reserved space is allowed and everything else is refused.
     """
-    for destination in ("exfil@attacker.ru", "http://198.18.0.9:8080/collect",
-                        "evil.example.ru", "attacker.xyz", "https://pastebin.com/raw/abc",
-                        "8.8.8.8", "collector.internal.corp"):
+    for destination in ("exfil@attacker.corp", "http://198.18.0.9:8080/collect",
+                        "evil.attacker.corp", "attacker.example.net", "https://paste.attacker.corp/raw/abc",
+                        "198.18.0.9", "collector.internal.corp"):
         report = validate_with(lambda good, d=destination: good.replace("notes.txt", d))
         check(f"caught a reachable destination: {destination}", not report.ok,
               "validator said it was fine")
