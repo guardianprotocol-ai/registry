@@ -17,10 +17,27 @@ Report live attacks and vulnerabilities privately, never in a public issue. See 
 
 1. Open an issue first for anything larger than a small fix, so we can agree on the approach.
 2. Fork the repository and create a branch from the latest `main`. Contributors work in their own forks; only maintainers merge into this repository.
-3. Make your change. Keep each pull request to one idea. Run `python3 check.py` before you push.
+3. Make your change. Keep each pull request to one idea. Run `python3 check.py` before you push. For a new attack pattern, start with `python3 check.py new-pattern "Title of the attack"`, which takes the next free ID and the boilerplate.
 4. Sign off every commit under the Developer Certificate of Origin (below).
 5. Open a pull request with the evidence that it works: `check.py` output, a scanner run, or the corpus cases you added. Automatic checks run, then reviewers from `.github/CODEOWNERS` review it.
 6. A maintainer merges once checks pass and reviews are complete. Nobody merges their own change.
+
+## What the checks enforce
+
+Everything here is checked by a machine before a person reviews it, so a careless change
+fails fast rather than in review.
+
+| Rule | What it means for you |
+| --- | --- |
+| Every commit is signed off | `git commit -s`. A sign-off naming someone other than the author is refused |
+| `check.py` passes | Format, tests, rule lint and the rule gate, on Python 3.9, 3.12 and 3.13 |
+| Rule changes come with evidence | A change to `rules.py` or `signatures.json` needs a test in `sensor/tests/` or a case in `corpus/` |
+| Patterns map to MITRE ATLAS | At least one real technique ID from `coverage/atlas-coverage.csv`, or an argued `maps_to.custom_reason` saying which technique came closest and what it misses |
+| Patterns credit someone | `credits` needs at least one entry with a `name`. `organization` is optional and leaving it out means an individual |
+| New patterns are `draft` | Only a maintainer changes a pattern's status, in a separate pull request |
+
+Roles are in [GOVERNANCE.md](GOVERNANCE.md). Maintainers have a runbook in
+[docs/MAINTAINING.md](docs/MAINTAINING.md).
 
 Registry patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview there is one maintainer, so that rule cannot be met yet: changes are reviewed by the founding maintainer alone, and the two-approval rule starts the moment a second maintainer joins.
 

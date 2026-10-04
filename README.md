@@ -10,6 +10,33 @@ An open registry of known attacks on AI agents. Every pattern has a stable ID, l
 
 New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.
 
+## How it works
+
+Everyone here is a contributor. Fork the repository, pick an issue, open a pull request.
+The machine checks everything first: format, tests, that the rules still catch attacks and
+still leave ordinary work alone, and that every pattern maps to MITRE ATLAS. Then a
+reviewer approves and a maintainer merges. Do good work for a few weeks and you are invited
+to be a reviewer; keep reviewing well and you can become a maintainer. Your name, and your
+organization if you opt in, are credited automatically, in the order people contributed.
+Every week we demo what shipped.
+
+```mermaid
+flowchart LR
+    A[Pick an issue<br/>and claim it] --> B[Fork and branch]
+    B --> C[check.py new-pattern<br/>or edit the files]
+    C --> D[python3 check.py<br/>git commit -s]
+    D --> E[Open a pull request]
+    E --> F{Automatic checks}
+    F -- red --> C
+    F -- green --> G[Reviewer approves<br/>in their area]
+    G --> H[Maintainer merges]
+    H --> I[Credited automatically<br/>and demoed on Friday]
+```
+
+Three roles: **contributor**, **reviewer**, **maintainer**. What each can do and how you
+move between them is in [GOVERNANCE.md](GOVERNANCE.md). Start at
+[START_HERE.md](START_HERE.md), which is a first contribution in about fifteen minutes.
+
 ## What's in this repository
 
 | Folder | What it is |

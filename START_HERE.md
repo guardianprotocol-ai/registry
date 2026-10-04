@@ -41,19 +41,49 @@ Open the [issues labeled `good first issue`](https://github.com/guardianprotocol
 
 ```bash
 git fetch upstream && git checkout -b my-change upstream/main
+
+# Writing a new attack pattern? Let the scaffold take the ID and the boilerplate:
+python3 check.py new-pattern "Hidden instructions in a calendar invite"
+
 # edit, then:
 python3 check.py
 git commit -s -m "Add scanner scenario for GP-0011"
 git push origin my-change
 ```
 
+`check.py new-pattern` picks the next free ID, which is never reused, and fills in the
+status, the version and the date, then tells you which fields are left.
+
 The `-s` adds your sign-off under the [Developer Certificate of Origin](CONTRIBUTING.md#developer-certificate-of-origin). Every commit needs one.
 
-Then open a pull request from your fork to `guardianprotocol-ai/registry`. The automatic checks run on it, and the template walks you through the rest. Paste the output that shows your change works, such as `check.py` results or a scanner run, so reviewers can see the proof.
+Then open a pull request from your fork to `guardianprotocol-ai/registry`. The automatic
+checks run on it, and the template walks you through the rest. Paste the output that shows
+your change works, such as `check.py` results or a scanner run, so reviewers can see the
+proof. A track label is applied for you, based on the files you touched.
+
+### Two things the checks will tell you if you miss them
+
+**Every pattern maps to MITRE ATLAS, or says why not.** Put at least one technique ID in
+`maps_to.atlas`, and it has to be a real one from `coverage/atlas-coverage.csv`. If no
+technique genuinely fits, leave `atlas` empty and write `maps_to.custom_reason`: the
+closest technique you considered and what it misses. That is allowed on purpose, because
+attacks on agents often appear before ATLAS catalogs them, but it has to be argued.
+
+**New patterns are always `draft`.** Only a maintainer moves a pattern to `verified` or
+`enforced`, in a separate pull request, once the scan has measured it. A pull request that
+adds a non-draft pattern, or changes any pattern's status, is refused.
 
 ## How credit works
 
-Everything you contribute is credited to you, publicly and permanently.
+Everything you contribute is credited to you, publicly and permanently, and none of it is
+maintained by hand. The credit list is generated from the `Signed-off-by` lines in the
+history, joined with `CONTRIBUTORS.md` and the `credits` in pattern files, and it is
+ordered by the date of each person's first contribution.
+
+Add yourself to [CONTRIBUTORS.md](CONTRIBUTORS.md) in your first pull request. That is
+where you say how you want to be shown: your display name, your GitHub handle if you want
+one, and your organization if you want it listed. Leave the organization blank and none is
+listed for you. Nothing reads your commit email domain.
 
 - **Patterns:** add yourself to the `credits` field of any pattern you write or substantially improve, with your name and organization.
 - **[CONTRIBUTORS.md](CONTRIBUTORS.md):** add yourself in your first pull request.
