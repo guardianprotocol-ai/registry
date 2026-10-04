@@ -1,72 +1,80 @@
 """Declarative detection rules for the Guardian sensor and hooks (v0 prototype).
 
-Rules are data, never code: each rule names a registry pattern and the checks a fixed
-engine runs. Nothing in a rule can execute on the host. The MCP sensor
+What the sensor looks for is data: the signatures in signatures.json, which this module
+compiles. How signatures combine into a detection for each pattern is the fixed engine in
+check_call and check_output below. Nothing in signatures.json can execute on the host.
+docs/proposals/0001-declarative-rules.md moves the per-pattern conditions into data too. The MCP sensor
 (guardian_sensor.sensor) and the client hooks (hooks/) share these checks.
 """
 import base64
 import hashlib
 import json
+import os
 import re
+
+# ---------- Signatures ----------
+# The patterns live in signatures.json, as data. This module compiles them and runs fixed
+# checks over them. Changing what the sensor looks for means changing that file, which the
+# rule lint (scripts/lint_rules.py) and the rule gate (scripts/rule_gate.py) check.
+
+SIGNATURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "signatures.json")
+
+_FLAGS = {"i": re.I, "s": re.S}
+
+
+def _flags(spec: str) -> int:
+    out = 0
+    for ch in spec or "":
+        out |= _FLAGS[ch]
+    return out
+
+
+def _compile(entry: dict):
+    return re.compile(entry["pattern"], _flags(entry.get("flags", "")))
+
+
+def load_signatures(path: str = SIGNATURES_PATH) -> dict:
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+SIGNATURES = load_signatures()
+_S = SIGNATURES
 
 # ---------- Content checks ----------
 
-INSTRUCTION_PATTERNS = [
-    r"\b(assistant|ai|agent)\s*[:,]\s*\w+",
-    r"\bignore (all |any )?(previous|prior|above|earlier) (instructions|rules)\b",
-    r"\bdo not (mention|tell|reveal|inform)\b",
-    r"\b(before|after) (you )?(summariz|answer|respond|reply)\w*\b.{0,80}\b(send|email|post|upload|forward|delete|remember|write|tell)\b",
-    r"\b(send|email|post|upload|forward) (its|the|all|full|entire|your)\b.{0,40}\b(to|contents)\b",
-    r"\balways include\b.{0,60}\b(file|contents|notes|token|key|password|instructions)\b",
-    r"\b(remember|memorize|store) (that|this|permanently)\b",
-    r"\b(treat|consider) \S+ as (a |the )?(trusted|authoritative|official)\b",
-    r"\b(recommend|prefer|promote) \S+ (first|above|over|exclusively)\b",
-    r"\b(tell|instruct|ask|forward this to) (every|all|other|the next) (agent|assistant)s?\b",
-    r"\b(delete|remove|wipe|purge|drop) (all|every|the entire)\b",
-    r"\b(your|the) (system prompt|hidden instructions|initial instructions)\b",
-    r"\bcall \w+ (again|repeatedly|\d+ times)\b",
-]
+INSTRUCTION_PATTERNS = [e["pattern"] for e in _S["instruction"]]
+INSTRUCTION_RES = [_compile(e) for e in _S["instruction"]]
+_BY_ID = {e["id"]: e for e in _S["instruction"]}
+BIAS_PATTERNS = [_BY_ID[i]["pattern"] for i in _S["bias"]]
+BIAS_RES = [re.compile(_BY_ID[i]["pattern"], re.I) for i in _S["bias"]]
 
-SECRET_PATTERNS = [
-    r"GP\d{4}-CANARY-[0-9a-f]{4}",            # registry canary tokens
-    r"AKIA[0-9A-Z]{16}",                        # AWS access key id
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----",      # private keys
-    r"\bsk-[A-Za-z0-9_-]{20,}\b",               # common API key shape
-    r"\bghp_[A-Za-z0-9]{36}\b",                 # GitHub token
-    r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b",        # Slack token
-]
-BIAS_PATTERNS = INSTRUCTION_PATTERNS[7:9]           # "treat X as trusted", "recommend X first" (GP-0010)
-SYSTEM_PROMPT_CANARY = re.compile(r"GP0012-CANARY-[0-9a-f]{4}")
+SECRET_PATTERNS = [e["pattern"] for e in _S["secret"]]
+SECRET_RES = [_compile(e) for e in _S["secret"]]
+SYSTEM_PROMPT_CANARY = _compile(_S["system_prompt_canary"])
 
 # Hidden or obfuscated content (GP-0006)
-ZERO_WIDTH = re.compile(r"[​-‏⁠-⁤﻿]")
-TAG_CHARS = re.compile(r"[\U000E0000-\U000E007F]")
-HIDDEN_HTML = re.compile(r"(display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0(px)?\b|<!--.*?-->)", re.I | re.S)
-BASE64_BLOB = re.compile(r"[A-Za-z0-9+/]{40,}={0,2}")
+ZERO_WIDTH = _compile(_S["hidden"]["zero_width"])
+TAG_CHARS = _compile(_S["hidden"]["tag_chars"])
+HIDDEN_HTML = _compile(_S["hidden"]["hidden_html"])
+BASE64_BLOB = _compile(_S["hidden"]["base64_blob"])
 
 # ---------- Action classes ----------
 
-DESTINATION_KEYS = {"to", "recipient", "recipients", "email", "url", "endpoint", "webhook", "address",
-                    "host", "cc", "bcc", "agent", "target", "channel"}
-DESTRUCTIVE_TOOL = re.compile(r"(delete|remove|drop|destroy|truncate|wipe|purge|erase|reset|revoke)", re.I)
-MEMORY_TOOL = re.compile(r"(memory|remember|memorize|save_fact|store_fact)", re.I)
-AGENT_TOOL = re.compile(r"(send_to_agent|delegate|handoff|hand_off|a2a|message_agent|spawn_agent)", re.I)
-WRITE_TOOL = re.compile(r"(write|create_file|save_file|update_file|append|put_object|upload_file)", re.I)
+DESTINATION_KEYS = set(_S["destination_keys"])
+PATH_KEYS = set(_S["path_keys"])
+DESTRUCTIVE_TOOL = _compile(_S["tool_classes"]["destructive"])
+MEMORY_TOOL = _compile(_S["tool_classes"]["memory"])
+AGENT_TOOL = _compile(_S["tool_classes"]["agent"])
+WRITE_TOOL = _compile(_S["tool_classes"]["write"])
 
-SENSITIVE_PATHS = re.compile(
-    r"(^|/)(\.env(\.|$)|\.ssh/|id_rsa|id_ed25519|\.aws/credentials|\.netrc|\.npmrc|\.pypirc|"
-    r"\.git-credentials|\.kube/config|credentials\.json|secrets?\.(ya?ml|json|txt)|\.docker/config\.json)", re.I)
-
+SENSITIVE_PATHS = _compile(_S["paths"]["sensitive"])
 # Files that configure agents: writing instructions into them persists an attack (GP-0009)
-AGENT_CONFIG_PATHS = re.compile(
-    r"(^|/)(CLAUDE\.md|AGENTS\.md|GEMINI\.md|\.cursorrules|\.cursor/rules|\.windsurfrules|\.clinerules|"
-    r"\.github/copilot-instructions\.md|\.claude/settings(\.local)?\.json|\.mcp\.json|\.github/workflows/)", re.I)
+AGENT_CONFIG_PATHS = _compile(_S["paths"]["agent_config"])
 
-DESTRUCTIVE_SHELL = re.compile(
-    r"(\brm\s+-[a-z]*[rf][a-z]*\b|\bgit\s+push\b.*--force|\bgit\s+reset\s+--hard\b|\bdrop\s+(table|database)\b|"
-    r"\btruncate\s+table\b|\bmkfs\b|\bdd\s+if=|\bchmod\s+-R\s+777\b|:\(\)\s*\{)", re.I)
-EGRESS_SHELL = re.compile(r"\b(curl|wget|nc|ncat|netcat|scp|rsync|sftp|ftp|telnet|Invoke-WebRequest)\b", re.I)
-URL_RE = re.compile(r"(?:https?|ftp)://[^\s'\"<>]+|[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.I)
+DESTRUCTIVE_SHELL = _compile(_S["shell"]["destructive"])
+EGRESS_SHELL = _compile(_S["shell"]["egress"])
+URL_RE = _compile(_S["url"])
 
 
 def decode_hidden(text: str) -> str:
@@ -78,7 +86,7 @@ def has_instructions(text: str, raw: bool = False) -> bool:
     text = text or ""
     if not raw:
         text = ZERO_WIDTH.sub("", text + " " + decode_hidden(text))
-    return any(re.search(p, text, re.I | re.S) for p in INSTRUCTION_PATTERNS)
+    return any(r.search(text) for r in INSTRUCTION_RES)
 
 
 def hidden_content(text: str) -> list:
@@ -103,7 +111,7 @@ def hidden_content(text: str) -> list:
 
 
 def find_secrets(text: str):
-    return [p for p in SECRET_PATTERNS if re.search(p, text or "")]
+    return [r.pattern for r in SECRET_RES if r.search(text or "")]
 
 
 def destinations(args) -> list:
@@ -137,7 +145,7 @@ def paths_in(args) -> list:
     out = []
     if isinstance(args, dict):
         for k, v in args.items():
-            if k.lower() in {"path", "file", "file_path", "filename", "filepath", "notebook_path"} and isinstance(v, str):
+            if k.lower() in PATH_KEYS and isinstance(v, str):
                 out.append(v)
             elif isinstance(v, (dict, list)):
                 out.extend(paths_in(v))
@@ -220,7 +228,7 @@ def check_output(source: str, text: str, state: dict) -> list:
     hidden = hidden_content(text)
     if hidden:
         hits.append(("GP-0006", {"source": source, "reasons": hidden}))
-    if any(re.search(p, text or "", re.I) for p in BIAS_PATTERNS):
+    if any(r.search(text or "") for r in BIAS_RES):
         hits.append(("GP-0010", {"source": source}))
     if hidden or has_instructions(text):
         state["tainted_by"] = state.get("tainted_by") or source

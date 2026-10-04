@@ -1,0 +1,209 @@
+{
+  "schema_version": "0.1",
+  "about": "Detection signatures for the Guardian sensor and hooks. Data only: the engine in rules.py compiles these and runs fixed checks. Every change here runs the rule lint and the rule gate. See docs/RULE_SAFETY.md.",
+  "instruction": [
+    {
+      "id": "addressed-to-agent",
+      "pattern": "\\b(assistant|ai|agent)\\s*[:,]\\s*\\w+",
+      "flags": "is"
+    },
+    {
+      "id": "ignore-previous",
+      "pattern": "\\bignore (all |any )?(previous|prior|above|earlier) (instructions|rules)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "do-not-tell",
+      "pattern": "\\bdo not (mention|tell|reveal|inform)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "before-answering-do",
+      "pattern": "\\b(before|after) (you )?(summariz|answer|respond|reply)\\w*\\b.{0,80}\\b(send|email|post|upload|forward|delete|remember|write|tell)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "send-the-contents",
+      "pattern": "\\b(send|email|post|upload|forward) (its|the|all|full|entire|your)\\b.{0,40}\\b(to|contents)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "always-include",
+      "pattern": "\\balways include\\b.{0,60}\\b(file|contents|notes|token|key|password|instructions)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "remember-this",
+      "pattern": "\\b(remember|memorize|store) (that|this|permanently)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "treat-as-trusted",
+      "pattern": "\\b(treat|consider) \\S+ as (a |the )?(trusted|authoritative|official)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "recommend-first",
+      "pattern": "\\b(recommend|prefer|promote) \\S+ (first|above|over|exclusively)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "tell-other-agents",
+      "pattern": "\\b(tell|instruct|ask|forward this to) (every|all|other|the next) (agent|assistant)s?\\b",
+      "flags": "is"
+    },
+    {
+      "id": "delete-everything",
+      "pattern": "\\b(delete|remove|wipe|purge|drop) (all|every|the entire)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "system-prompt-reference",
+      "pattern": "\\b(your|the) (system prompt|hidden instructions|initial instructions)\\b",
+      "flags": "is"
+    },
+    {
+      "id": "call-repeatedly",
+      "pattern": "\\bcall \\w+ (again|repeatedly|\\d+ times)\\b",
+      "flags": "is"
+    }
+  ],
+  "bias": [
+    "treat-as-trusted",
+    "recommend-first"
+  ],
+  "secret": [
+    {
+      "id": "registry-canary",
+      "pattern": "GP\\d{4}-CANARY-[0-9a-f]{4}",
+      "flags": ""
+    },
+    {
+      "id": "aws-access-key-id",
+      "pattern": "AKIA[0-9A-Z]{16}",
+      "flags": ""
+    },
+    {
+      "id": "private-key",
+      "pattern": "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+      "flags": ""
+    },
+    {
+      "id": "api-key-sk",
+      "pattern": "\\bsk-[A-Za-z0-9_-]{20,}\\b",
+      "flags": ""
+    },
+    {
+      "id": "github-token",
+      "pattern": "\\bghp_[A-Za-z0-9]{36}\\b",
+      "flags": ""
+    },
+    {
+      "id": "slack-token",
+      "pattern": "\\bxox[baprs]-[A-Za-z0-9-]{10,}\\b",
+      "flags": ""
+    }
+  ],
+  "system_prompt_canary": {
+    "id": "system-prompt-canary",
+    "pattern": "GP0012-CANARY-[0-9a-f]{4}",
+    "flags": ""
+  },
+  "hidden": {
+    "zero_width": {
+      "id": "zero-width",
+      "pattern": "[\u200b-\u200f\u2060-\u2064\ufeff]",
+      "flags": ""
+    },
+    "tag_chars": {
+      "id": "unicode-tag-chars",
+      "pattern": "[\\U000E0000-\\U000E007F]",
+      "flags": ""
+    },
+    "hidden_html": {
+      "id": "hidden-html",
+      "pattern": "(display\\s*:\\s*none|visibility\\s*:\\s*hidden|font-size\\s*:\\s*0(px)?\\b|<!--.*?-->)",
+      "flags": "is"
+    },
+    "base64_blob": {
+      "id": "base64-blob",
+      "pattern": "[A-Za-z0-9+/]{40,}={0,2}",
+      "flags": ""
+    }
+  },
+  "tool_classes": {
+    "destructive": {
+      "id": "destructive-tool",
+      "pattern": "(delete|remove|drop|destroy|truncate|wipe|purge|erase|reset|revoke)",
+      "flags": "i"
+    },
+    "memory": {
+      "id": "memory-tool",
+      "pattern": "(memory|remember|memorize|save_fact|store_fact)",
+      "flags": "i"
+    },
+    "agent": {
+      "id": "agent-tool",
+      "pattern": "(send_to_agent|delegate|handoff|hand_off|a2a|message_agent|spawn_agent)",
+      "flags": "i"
+    },
+    "write": {
+      "id": "write-tool",
+      "pattern": "(write|create_file|save_file|update_file|append|put_object|upload_file)",
+      "flags": "i"
+    }
+  },
+  "paths": {
+    "sensitive": {
+      "id": "sensitive-path",
+      "pattern": "(^|/)(\\.env(\\.|$)|\\.ssh/|id_rsa|id_ed25519|\\.aws/credentials|\\.netrc|\\.npmrc|\\.pypirc|\\.git-credentials|\\.kube/config|credentials\\.json|secrets?\\.(ya?ml|json|txt)|\\.docker/config\\.json)",
+      "flags": "i"
+    },
+    "agent_config": {
+      "id": "agent-config-path",
+      "pattern": "(^|/)(CLAUDE\\.md|AGENTS\\.md|GEMINI\\.md|\\.cursorrules|\\.cursor/rules|\\.windsurfrules|\\.clinerules|\\.github/copilot-instructions\\.md|\\.claude/settings(\\.local)?\\.json|\\.mcp\\.json|\\.github/workflows/)",
+      "flags": "i"
+    }
+  },
+  "shell": {
+    "destructive": {
+      "id": "destructive-shell",
+      "pattern": "(\\brm\\s+-[a-z]*[rf][a-z]*\\b|\\bgit\\s+push\\b.*--force|\\bgit\\s+reset\\s+--hard\\b|\\bdrop\\s+(table|database)\\b|\\btruncate\\s+table\\b|\\bmkfs\\b|\\bdd\\s+if=|\\bchmod\\s+-R\\s+777\\b|:\\(\\)\\s*\\{)",
+      "flags": "i"
+    },
+    "egress": {
+      "id": "egress-shell",
+      "pattern": "\\b(curl|wget|nc|ncat|netcat|scp|rsync|sftp|ftp|telnet|Invoke-WebRequest)\\b",
+      "flags": "i"
+    }
+  },
+  "url": {
+    "id": "url-or-email",
+    "pattern": "(?:https?|ftp)://[^\\s'\\\"<>]+|[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+",
+    "flags": "i"
+  },
+  "destination_keys": [
+    "address",
+    "agent",
+    "bcc",
+    "cc",
+    "channel",
+    "email",
+    "endpoint",
+    "host",
+    "recipient",
+    "recipients",
+    "target",
+    "to",
+    "url",
+    "webhook"
+  ],
+  "path_keys": [
+    "file",
+    "file_path",
+    "filename",
+    "filepath",
+    "notebook_path",
+    "path"
+  ]
+}
