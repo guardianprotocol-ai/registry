@@ -59,6 +59,20 @@ Everything you contribute is credited to you, publicly and permanently.
 - **[CONTRIBUTORS.md](CONTRIBUTORS.md):** add yourself in your first pull request.
 - **Releases:** every release's notes name the people who contributed to it, starting with v0.1.
 
+## Roles
+
+Three of them, and you start in the first one.
+
+| Role | What you can do | How you get there |
+| --- | --- | --- |
+| Contributor | Fork, open pull requests, comment, review without binding effect | Ask in Slack with your GitHub username |
+| Reviewer | Binding approval in your area | About five good merged pull requests, nominated by a maintainer |
+| Maintainer | Merge, cut releases, promote patterns | Sustained good reviewing, same nomination |
+
+The full rules, including who holds the keys and what changes at public launch, are in
+[GOVERNANCE.md](GOVERNANCE.md). Who holds which role today is in
+[MAINTAINERS.md](MAINTAINERS.md).
+
 ## Where to talk
 
 - **Slack** for quick questions and coordination.

@@ -11,14 +11,23 @@ Guardian Protocol is a vendor-neutral open source project. It is being built to 
 
 ## Roles
 
-| Role | Who | Can |
-| --- | --- | --- |
-| Contributor | Anyone who opens an issue or pull request | Propose changes |
-| Reviewer | Contributors with a track record in an area, listed in `.github/CODEOWNERS` | Approve changes in their area |
-| Maintainer | Listed in `MAINTAINERS.md` | Merge changes, cut releases, promote patterns to `enforced` |
-| Technical Steering Committee (TSC) | Formed at foundation entry | Set technical direction, resolve disputes, approve new maintainers |
+Three roles, plus the people who hold the keys.
 
-Reviewers and maintainers are nominated by an existing maintainer, based on sustained, high-quality contributions, and confirmed by lazy consensus of the maintainers (no objection within 7 days).
+| Role | GitHub permission | Can | How you get there |
+| --- | --- | --- | --- |
+| **Contributor** | Read during the private preview, none needed once public | Fork, open pull requests, comment, review without binding effect | Ask in Slack with your GitHub username |
+| **Reviewer** | Write, and listed in `.github/CODEOWNERS` for an area | Binding approval in their area | About five good merged pull requests, nominated by a maintainer, no objection within 7 days |
+| **Maintainer** | Maintain, and listed in `MAINTAINERS.md` | Merge, cut releases, promote patterns. Promoting a pattern to `enforced` needs two maintainers from different organizations | Sustained good reviewing, same nomination process |
+
+Why these three and not more: GitHub only counts an approval as binding when it comes from someone with Write access, and a code owner must have Write. So Reviewer equals Write is the natural line between an opinion and an approval. Triage work, labelling and closing stale issues, is done by reviewers until the volume needs a role of its own.
+
+**Key holders** are not a role. Two or three people are owners of the GitHub organization and hold the keys for settings and emergencies, eventually from different organizations. Holding keys is not the same as deciding direction.
+
+**Technical Steering Committee.** Formed at foundation entry, not now. It will set technical direction, resolve disputes and approve new maintainers.
+
+### While the repository is private
+
+On a free private repository `main` cannot be protected, so anyone with Write access could push to it directly. Keep the number of reviewers small and trusted until the repository is public. At public launch, protect `main`: require pull requests, two approvals including a code owner, passing checks, and no force pushes.
 
 ## Decisions
 
