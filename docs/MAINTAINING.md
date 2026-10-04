@@ -16,9 +16,10 @@ anyone. If something here is wrong or missing, fixing it is a good pull request.
 3. Check the evidence in the pull request body. The template asks for it: `check.py`
    output, a scanner run, or the corpus cases added.
 4. Approve in your area, or ask the right code owner to.
-5. Merge. **Nobody merges their own change.** During the private preview that means the
-   founding maintainer's changes wait for a second pair of eyes once a second maintainer
-   exists; until then, say so in the pull request rather than pretending otherwise.
+5. Merge. **Nobody merges their own change.** With one maintainer that is not yet
+   possible: the founding maintainer merges using the administrator override, which GitHub
+   records on the pull request. Say so in the pull request rather than pretending
+   otherwise. The moment a second maintainer exists, the override stops being used.
 
 Use **Rebase and merge**. History stays linear and every commit keeps its sign-off, which
 `scripts/check_signoff.py` depends on.

@@ -39,7 +39,7 @@ fails fast rather than in review.
 Roles are in [GOVERNANCE.md](GOVERNANCE.md). Maintainers have a runbook in
 [docs/MAINTAINING.md](docs/MAINTAINING.md).
 
-Registry patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview there is one maintainer, so that rule cannot be met yet: changes are reviewed by the founding maintainer alone, and the two-approval rule starts the moment a second maintainer joins.
+Registry patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. There is one maintainer today, so that rule cannot be met yet: changes are reviewed by the founding maintainer alone, and the two-approval rule starts the moment a second maintainer joins.
 
 ## Developer Certificate of Origin
 

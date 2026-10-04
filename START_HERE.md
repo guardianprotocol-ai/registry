@@ -2,7 +2,7 @@
 
 Get set up and oriented in about 15 minutes, then pick your first task. No dependencies beyond Python 3.9+.
 
-> **Private preview.** The repository is private while the project prepares its first public release. To get access, send your GitHub username to Frank Albanese in the working group Slack. You'll get read access, and you contribute through your own fork.
+> **The repository is public and you need nothing from anyone to start.** Fork it, open a pull request, and the automatic checks run on your first one. The project is early: twelve patterns, a reference sensor and a scanner that measures three of them end to end. Plenty is unfinished, and that is where the work is.
 
 ## 1. Get it running (3 minutes)
 
@@ -57,7 +57,10 @@ status, the version and the date, then tells you which fields are left.
 The `-s` adds your sign-off under the [Developer Certificate of Origin](CONTRIBUTING.md#developer-certificate-of-origin). Every commit needs one.
 
 Then open a pull request from your fork to `guardianprotocol-ai/registry`. The automatic
-checks run on it, and the template walks you through the rest. Paste the output that shows
+checks run on it, and the template walks you through the rest. On your **first** pull
+request a maintainer has to approve the workflow run before the checks start, which is
+GitHub's protection against untrusted code from forks. It is not a judgment on your
+change, and it only happens once. Paste the output that shows
 your change works, such as `check.py` results or a scanner run, so reviewers can see the
 proof. A track label is applied for you, based on the files you touched.
 
@@ -95,7 +98,7 @@ Three of them, and you start in the first one.
 
 | Role | What you can do | How you get there |
 | --- | --- | --- |
-| Contributor | Fork, open pull requests, comment, review without binding effect | Ask in Slack with your GitHub username |
+| Contributor | Fork, open pull requests, comment, review without binding effect | Nothing to ask for. Open a pull request |
 | Reviewer | Binding approval in your area | About five good merged pull requests, nominated by a maintainer |
 | Maintainer | Merge, cut releases, promote patterns | Sustained good reviewing, same nomination |
 
@@ -105,8 +108,9 @@ The full rules, including who holds the keys and what changes at public launch, 
 
 ## Where to talk
 
-- **Slack** for quick questions and coordination.
+- **[GitHub Discussions](https://github.com/guardianprotocol-ai/registry/discussions)** for questions. Anyone can post, and the answer stays where the next person will find it.
 - **GitHub issues** for anything that decides something: a design choice, a new pattern, a change of scope. Decisions made in issues leave a public record that new contributors can read later.
+- **Slack** for working group coordination, if you are in it. Nothing needed to contribute depends on being there.
 - **Never in public:** live attacks, real vulnerabilities, or anything specific to one vendor's product. Use [SECURITY.md](SECURITY.md).
 
 ## The safety rules, in short
