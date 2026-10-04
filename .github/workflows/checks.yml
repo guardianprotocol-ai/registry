@@ -64,6 +64,29 @@ jobs:
       - name: Every commit is signed off
         run: python3 scripts/check_signoff.py "origin/${{ github.base_ref }}" HEAD
 
+  # The credit list is generated, never committed by a bot. Pushing to main publishes it
+  # as a build artifact for the website to read.
+  contributors:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Build the credit data
+        run: python3 scripts/build_contributors.py --out contributors.json
+
+      - name: Publish it for the website
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: contributors
+          path: contributors.json
+          if-no-files-found: error
+
   # Contributors add patterns as draft. Promotion is a maintainer's decision, in its own
   # pull request. The author comes from the event, never from the files being checked.
   status-guard:
