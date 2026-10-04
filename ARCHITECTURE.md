@@ -26,7 +26,7 @@ One YAML file per attack pattern (`patterns/`), validated against `schema.yaml`.
 
 - **ID and mappings:** stable `GP-` IDs, linked to OWASP and MITRE ATLAS entries.
 - **Test:** a harmless, repeatable attack. Payloads use canary tokens and reserved `.test` domains.
-- **Detection:** a declarative rule the sensor enforces. Rules are data, never code.
+- **Detection:** a rule the sensor enforces. Signatures are data (`sensor/guardian_sensor/signatures.json`) compiled by a fixed engine; proposal 0001 moves the per-pattern conditions into data too, so rules can never execute code.
 - **Lifecycle:** `draft` → `verified` (checks pass, two reviewers approve) → `enforced` (approved to block traffic).
 
 `coverage/atlas-coverage.csv` triages every MITRE ATLAS technique by where the protocol can act on it. Of 208 techniques in release 2026.09, 63 happen at agent runtime; those are the registry's first targets.
