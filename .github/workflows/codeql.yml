@@ -1,0 +1,56 @@
+name: codeql
+
+# Static analysis. The OpenSSF Scorecard scores SAST at 0 without it, but the reason to
+# have it is not the score: this repository ships a sensor and a scanner that other people
+# will run against their own agents, and a parser that reads files written by strangers.
+#
+# Two languages are analysed. `python` covers the sensor, scanner, hooks and scripts.
+# `actions` covers the workflows themselves, which is where a supply chain mistake would
+# do the most damage and where a human reviewer is least likely to spot one.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 7 * * 1"
+
+permissions: read-all
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyse:
+    name: Analyse ${{ matrix.language }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@416ff0dea110f80f0f56f0046500dbf7420e4bb0 # codeql-bundle-v2.27.1
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended adds the checks that matter for code that parses untrusted
+          # input, which is most of this repository.
+          queries: security-extended
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@416ff0dea110f80f0f56f0046500dbf7420e4bb0 # codeql-bundle-v2.27.1
+        with:
+          category: /language:${{ matrix.language }}
