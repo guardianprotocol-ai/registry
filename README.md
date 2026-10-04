@@ -45,7 +45,7 @@ python3 check.py
 Every pull request runs the same script automatically. Today it checks:
 
 1. **Format:** every pattern validates against `schema.yaml`, and its ID matches its filename.
-2. **Payload safety:** canary tokens are well formed, and no test destination could reach a real host. Destinations use reserved test domains such as `.test` (RFC 2606).
+2. **Payload safety:** canary tokens are well formed, and every destination is inside reserved, unroutable space: `.test`, `.example`, `.invalid` and `.localhost` (RFC 2606 and RFC 6761), the `example.com` family, the RFC 5737 documentation addresses, or loopback. Anything else is refused, including bare public IP addresses.
 3. **Detections prove themselves:** the sensor's rule tests run an attack that must be caught and ordinary work that must not be, for every rule.
 4. **Tools work:** the scanner, sensor and hook test suites pass.
 

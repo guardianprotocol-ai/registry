@@ -24,8 +24,54 @@ SEVERITIES = ("low", "medium", "high", "critical")
 ID = re.compile(r"^GP-\d{4}$")
 CANARY_ANY = re.compile(r"GP\d{4}-CANARY-[^\s,.)\"']*")
 CANARY_GOOD = re.compile(r"^GP\d{4}-CANARY-[0-9a-f]{4}$")
-# A destination a test could actually reach. RFC 2606 reserves .test, which reaches nothing.
-DOMAIN = re.compile(r"\b(?:[a-z0-9-]+\.)+(?:test|com|org|net|io|ai|dev|co|uk|edu|gov)\b", re.I)
+# Finding destinations a test could really reach.
+#
+# This was once a list of real-looking TLDs to catch. That is the wrong way round: a list
+# of what is forbidden lets everything unlisted through, and attacker.ru, attacker.xyz and
+# a bare IP address all validated clean. The rule now is the other way: a destination has
+# to be inside reserved, unroutable space, and anything else is refused.
+HOST_IN_URL = re.compile(r"\b[a-z][a-z0-9+.-]*://([^/\s'\"<>]+)", re.I)
+EMAIL = re.compile(r"\b[\w.+-]+@([a-z0-9-]+(?:\.[a-z0-9-]+)+)\b", re.I)
+BARE_HOST = re.compile(r"\b(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}\b", re.I)
+IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+# Reserved by RFC 2606 and RFC 6761. None of these resolve on the public internet.
+RESERVED_SUFFIXES = (".test", ".example", ".invalid", ".localhost")
+RESERVED_NAMES = {"localhost", "example.com", "example.net", "example.org"}
+# RFC 5737 documentation ranges and loopback, the only literal addresses a test may name.
+RESERVED_IP_PREFIXES = ("192.0.2.", "198.51.100.", "203.0.113.", "127.")
+# A dotted token whose last part is one of these is a filename or an identifier, not a host.
+NOT_A_HOST_SUFFIX = {
+    "yaml", "yml", "py", "md", "txt", "html", "htm", "json", "jsonl", "csv", "sh", "svg",
+    "png", "ico", "js", "css", "toml", "cfg", "ini", "lock", "log", "pyc", "zip", "gz",
+    "env", "sample", "tmpl", "example",
+}
+
+
+def _is_reserved_host(host):
+    host = host.split("@")[-1].split(":")[0].strip().strip(".").lower()
+    if not host:
+        return True
+    if IPV4.fullmatch(host):
+        return host.startswith(RESERVED_IP_PREFIXES)
+    return host in RESERVED_NAMES or host.endswith(RESERVED_SUFFIXES)
+
+
+def reachable_destinations(text):
+    """Hosts in the text that are not in reserved space, so a test could really reach them."""
+    found = set()
+    for host in HOST_IN_URL.findall(text) + EMAIL.findall(text):
+        if not _is_reserved_host(host):
+            found.add(host.split("@")[-1].split(":")[0].lower())
+    for token in BARE_HOST.findall(text):
+        if token.rsplit(".", 1)[-1].lower() in NOT_A_HOST_SUFFIX:
+            continue
+        if not _is_reserved_host(token):
+            found.add(token.lower())
+    for address in IPV4.findall(text):
+        if not address.startswith(RESERVED_IP_PREFIXES):
+            found.add(address)
+    return sorted(found)
 
 
 class Report:
@@ -90,9 +136,9 @@ def validate_one(name, doc, report):
     for token in CANARY_ANY.findall(text):
         if not CANARY_GOOD.match(token):
             report.fail(name, f"canary is not in GPnnnn-CANARY-xxxx form: {token}")
-    for domain in sorted(set(DOMAIN.findall(text))):
-        if not domain.lower().endswith(".test"):
-            report.fail(name, f"a destination outside .test, which a test could really reach: {domain}")
+    for destination in reachable_destinations(text):
+        report.fail(name, "a destination outside reserved space, which a test could really "
+                          f"reach: {destination}")
 
 
 def validate_dir(path):
