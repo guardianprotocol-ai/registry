@@ -54,5 +54,5 @@ references:
   - https://genai.owasp.org/llm-top-10/
   - https://arxiv.org/abs/2406.13352
 credits:
-  - {name: Frank Albanese, organization: White Hat Labs}
+  - {name: Frank Albanese, organization: Founding maintainer}
 created: 2026-09-29

@@ -44,5 +44,5 @@ mitigations:
 references:
   - https://genai.owasp.org/llmrisk/llm032025-supply-chain/
 credits:
-  - {name: Frank Albanese, organization: White Hat Labs}
+  - {name: Frank Albanese, organization: Founding maintainer}
 created: 2026-09-30

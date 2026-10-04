@@ -45,5 +45,5 @@ references:
   - https://genai.owasp.org/llmrisk/llm01-prompt-injection/
   - https://arxiv.org/abs/2406.00799
 credits:
-  - {name: Frank Albanese, organization: White Hat Labs}
+  - {name: Frank Albanese, organization: Founding maintainer}
 created: 2026-09-30
