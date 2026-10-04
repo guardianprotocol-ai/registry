@@ -22,7 +22,7 @@ Report live attacks and vulnerabilities privately, never in a public issue. See 
 5. Open a pull request with the evidence that it works: `check.py` output, a scanner run, or the corpus cases you added. Automatic checks run, then reviewers from `.github/CODEOWNERS` review it.
 6. A maintainer merges once checks pass and reviews are complete. Nobody merges their own change.
 
-Registry patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview, while there are fewer than three maintainers, a reviewer from another organization listed in `.github/CODEOWNERS` can give the second approval.
+Registry patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview there is one maintainer, so that rule cannot be met yet: changes are reviewed by the founding maintainer alone, and the two-approval rule starts the moment a second maintainer joins.
 
 ## Developer Certificate of Origin
 
