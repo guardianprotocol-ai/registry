@@ -13,9 +13,13 @@ Please don't open a public issue or pull request for any of these.
 
 ## How to report
 
-Use GitHub's private vulnerability reporting: open the **Security** tab of this repository and choose **Report a vulnerability**. Only maintainers can see the report.
+**During the private preview**, email the founding maintainer at security@whitehatlabs.ai. That is a company address, used here only because the project has no mailbox of its own yet. It is a stopgap, and it is the one route that works today.
 
-Include what you saw, how to reproduce it with harmless data, and who is affected if you know.
+**When this repository becomes public**, GitHub's private vulnerability reporting turns on and becomes the channel: the **Security** tab, then **Report a vulnerability**. Only maintainers can see those reports, and they carry an audit trail and can issue a CVE. This section will change on that day, and the project will move to an address on its own domain.
+
+Either way, include what you saw, how to reproduce it with harmless data, and who is affected if you know.
+
+Please don't report a vulnerability in a public issue, a pull request or a discussion.
 
 ## What happens next
 
