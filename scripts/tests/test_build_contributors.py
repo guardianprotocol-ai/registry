@@ -108,42 +108,111 @@ def test_history_gives_each_signer_their_first_date():
 
 # ---------- the whole thing, against the real repository ----------
 
-def test_the_real_repository_builds():
-    data = builder.build("HEAD")
-    check("there is at least one person", len(data["people"]) >= 1, str(data["people"])[:120])
-    names = [p["name"] for p in data["people"]]
-    check("the founding maintainer is listed", "Frank Albanese" in names, str(names))
-    first = data["people"][0]
-    check("people carry a first contribution date", bool(first["first_contribution"]), str(first))
-    check("pattern credits are attached", len(first["patterns"]) >= 12, str(first["patterns"]))
-    check("ordered by first contribution",
-          [p["first_contribution"] or "9999" for p in data["people"]]
-          == sorted(p["first_contribution"] or "9999" for p in data["people"]),
-          str([p["first_contribution"] for p in data["people"]]))
-    check("no organization is listed without an opt-in", data["organizations"] == [],
-          str(data["organizations"]))
-    check("the note says contributing organizations, not partners",
-          "not partners" in data["note"] or "never \"partners\"" in data["note"], data["note"])
+def repo_with_history():
+    """A repository with two signers, so the test owns its own history.
 
-
-def test_an_opted_in_organization_appears():
+    The real repository's history is not available in CI: the checks job checks out a
+    shallow merge commit, so `git log --no-merges` is empty there. A test that reads it
+    passes on a developer's machine and fails on the runner.
+    """
     folder = tempfile.mkdtemp()
+
+    def git(*args, **kw):
+        return subprocess.run(["git"] + list(args), cwd=folder, capture_output=True,
+                              text=True, **kw)
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.name", "Dana Reed")
+    git("config", "user.email", "dana@example.test")
+    os.makedirs(os.path.join(folder, "patterns"))
+    write(folder, "patterns/GP-0001.yaml", "id: GP-0001\n")
+    git("add", "-A")
+    subprocess.run(["git", "commit", "-q", "-m",
+                    "first\n\nSigned-off-by: Dana Reed <dana@example.test>"],
+                   cwd=folder, capture_output=True, text=True,
+                   env={**os.environ, "GIT_COMMITTER_DATE": "2026-01-02T10:00:00",
+                        "GIT_AUTHOR_DATE": "2026-01-02T10:00:00"})
+    write(folder, "patterns/GP-0002.yaml", "id: GP-0002\n")
+    git("add", "-A")
+    subprocess.run(["git", "commit", "-q", "-m",
+                    "second\n\nSigned-off-by: Sam Okafor <sam@example.test>"],
+                   cwd=folder, capture_output=True, text=True,
+                   env={**os.environ, "GIT_COMMITTER_DATE": "2026-03-04T10:00:00",
+                        "GIT_AUTHOR_DATE": "2026-03-04T10:00:00"})
+    return folder
+
+
+def build_in(folder, contributors_md=None):
+    """Run the builder against a throwaway repository."""
+    if contributors_md is not None:
+        write(folder, "CONTRIBUTORS.md", contributors_md)
+    old_root, old_file = builder.ROOT, builder.from_contributors_file
+    builder.ROOT = folder
+    builder.from_contributors_file = lambda p=None: old_file(
+        os.path.join(folder, "CONTRIBUTORS.md"))
+    old_patterns = builder.from_patterns
+    builder.from_patterns = lambda f=None: {}
     try:
-        path = write(folder, "CONTRIBUTORS.md", """| Name | GitHub | Organization | Contributions |
+        return builder.build("HEAD")
+    finally:
+        builder.ROOT = old_root
+        builder.from_contributors_file = old_file
+        builder.from_patterns = old_patterns
+
+
+def test_people_carry_the_date_of_their_first_contribution():
+    folder = repo_with_history()
+    try:
+        data = build_in(folder, """| Name | GitHub | Organization | Contributions |
 | --- | --- | --- | --- |
-| Frank Albanese | [@faalbane](https://github.com/faalbane) | Example Corp | All |
+| Dana Reed | [@danareed](https://github.com/danareed) | Example Corp | Patterns |
 """)
-        original = builder.from_contributors_file
-        builder.from_contributors_file = lambda p=None: original(path)
-        try:
-            data = builder.build("HEAD")
-        finally:
-            builder.from_contributors_file = original
-        check("an opted in organization is listed",
-              any(o["name"] == "Example Corp" for o in data["organizations"]),
+        names = [p["name"] for p in data["people"]]
+        check("both signers are listed", names == ["Dana Reed", "Sam Okafor"], str(names))
+        check("each carries a first contribution date",
+              all(p["first_contribution"] for p in data["people"]),
+              str([p["first_contribution"] for p in data["people"]]))
+        check("ordered by first contribution",
+              data["people"][0]["first_contribution"] < data["people"][1]["first_contribution"],
+              str([p["first_contribution"] for p in data["people"]]))
+        check("the opted in handle is attached", data["people"][0]["github"] == "danareed",
+              str(data["people"][0]))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_an_opted_in_organization_appears_and_an_absent_one_does_not():
+    folder = repo_with_history()
+    try:
+        data = build_in(folder, """| Name | GitHub | Organization | Contributions |
+| --- | --- | --- | --- |
+| Dana Reed | [@danareed](https://github.com/danareed) | Example Corp | Patterns |
+| Sam Okafor | | | Docs |
+""")
+        organizations = [o["name"] for o in data["organizations"]]
+        check("an opted in organization is listed", organizations == ["Example Corp"],
+              str(organizations))
+        check("someone who opted out brings no organization",
+              all(p["organization"] is None for p in data["people"] if p["name"] == "Sam Okafor"),
+              str(data["people"]))
+        check("the organization carries the date of its first contribution",
+              data["organizations"][0]["first_contribution"] == "2026-01-02",
               str(data["organizations"]))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_the_real_repository_builds():
+    """A smoke test that does not depend on how deeply the repository was cloned."""
+    data = builder.build("HEAD")
+    check("it produces a people list", isinstance(data["people"], list), str(type(data["people"])))
+    check("the founding maintainer is there through the pattern credits",
+          any(p["name"] == "Frank Albanese" for p in data["people"]),
+          str([p["name"] for p in data["people"]]))
+    check("no organization is listed without an opt-in", data["organizations"] == [],
+          str(data["organizations"]))
+    check("the note says contributing organizations, not partners",
+          "not partners" in data["note"], data["note"])
 
 
 def main():
