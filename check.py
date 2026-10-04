@@ -12,6 +12,9 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+# The whole suite takes a few seconds. A check still running after five minutes
+# is stuck, not slow.
+TIMEOUT_SECONDS = 300
 
 # (label, working directory, command)
 CHECKS = [
@@ -28,18 +31,29 @@ def main():
     verbose = "-v" in sys.argv or "--verbose" in sys.argv
     failed = []
     for label, folder, args in CHECKS:
-        result = subprocess.run(
-            [sys.executable] + args,
-            cwd=os.path.join(ROOT, folder),
-            capture_output=True,
-            text=True,
-        )
-        ok = result.returncode == 0
-        print(f"{'pass' if ok else 'FAIL'}  {label}")
-        if verbose or not ok:
+        # Output is captured, so a check that hangs would print nothing and stall until
+        # the CI job's own timeout. Bound it here, where the partial output still exists.
+        try:
+            result = subprocess.run(
+                [sys.executable] + args,
+                cwd=os.path.join(ROOT, folder),
+                capture_output=True,
+                text=True,
+                timeout=TIMEOUT_SECONDS,
+            )
+            ok = result.returncode == 0
             output = (result.stdout + result.stderr).strip()
-            if output:
-                print("      " + output.replace("\n", "\n      "))
+        except subprocess.TimeoutExpired as expired:
+            ok = False
+            parts = [part for part in (expired.stdout, expired.stderr) if part]
+            output = "".join(
+                part.decode(errors="replace") if isinstance(part, bytes) else part
+                for part in parts
+            ).strip()
+            output = f"timed out after {TIMEOUT_SECONDS} seconds\n{output}".strip()
+        print(f"{'pass' if ok else 'FAIL'}  {label}")
+        if (verbose or not ok) and output:
+            print("      " + output.replace("\n", "\n      "))
         if not ok:
             failed.append(label)
     print()
