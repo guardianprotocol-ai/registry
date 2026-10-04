@@ -122,7 +122,7 @@
     },
     "hidden_html": {
       "id": "hidden-html",
-      "pattern": "(display\\s*:\\s*none|visibility\\s*:\\s*hidden|font-size\\s*:\\s*0(px)?\\b|<!--.*?-->)",
+      "pattern": "(display\\s*:\\s*none|visibility\\s*:\\s*hidden|font-size\\s*:\\s*0(px)?\\b|<!--)",
       "flags": "is"
     },
     "base64_blob": {
@@ -179,7 +179,7 @@
   },
   "url": {
     "id": "url-or-email",
-    "pattern": "(?:https?|ftp)://[^\\s'\\\"<>]+|[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+",
+    "pattern": "(?:https?|ftp)://[^\\s'\\\"<>]+|(?<![\\w.+-])[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+",
     "flags": "i"
   },
   "destination_keys": [
