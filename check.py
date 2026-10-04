@@ -26,6 +26,7 @@ CHECKS = [
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
     ("Claude Code hook tests", ".", ["hooks/claude_code/tests/test_hook.py"]),
     ("Pattern scaffold tests", ".", ["scripts/tests/test_new_pattern.py"]),
+    ("Status guard tests", ".", ["scripts/tests/test_check_status_changes.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]

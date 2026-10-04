@@ -64,6 +64,24 @@ jobs:
       - name: Every commit is signed off
         run: python3 scripts/check_signoff.py "origin/${{ github.base_ref }}" HEAD
 
+  # Contributors add patterns as draft. Promotion is a maintainer's decision, in its own
+  # pull request. The author comes from the event, never from the files being checked.
+  status-guard:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the pull request and its base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Only maintainers change a pattern's status
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: python3 scripts/check_status_changes.py "origin/${{ github.base_ref }}" HEAD "$PR_AUTHOR"
+
   rule-safety:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
