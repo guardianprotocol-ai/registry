@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run every check a pull request must pass, in one command.
 
-    python3 check.py
+    python3 check.py                      run every check
+    python3 check.py new-pattern "Title"  scaffold the next pattern file
 
 This validates every pattern file and runs every test suite. The same script runs on
 every pull request, so if it passes on your machine, the automatic checks should pass too.
@@ -24,12 +25,22 @@ CHECKS = [
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
     ("Claude Code hook tests", ".", ["hooks/claude_code/tests/test_hook.py"]),
+    ("Pattern scaffold tests", ".", ["scripts/tests/test_new_pattern.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]
 
 
+def new_pattern(argv):
+    """python3 check.py new-pattern "Title" scaffolds the next pattern file."""
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import new_pattern as scaffold
+    return scaffold.main(["new-pattern"] + argv)
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "new-pattern":
+        return new_pattern(sys.argv[2:])
     verbose = "-v" in sys.argv or "--verbose" in sys.argv
     failed = []
     for label, folder, args in CHECKS:
@@ -61,9 +72,10 @@ def main():
     print()
     if failed:
         print(f"{len(failed)} of {len(CHECKS)} checks failed: {', '.join(failed)}")
-        sys.exit(1)
+        return 1
     print(f"All {len(CHECKS)} checks passed.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
