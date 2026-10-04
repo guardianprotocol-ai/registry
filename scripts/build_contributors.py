@@ -29,7 +29,10 @@ sys.path.insert(0, os.path.join(ROOT, "scanner"))
 SIGNOFF = re.compile(r"^Signed-off-by:\s*(.+?)\s*<([^>]+)>\s*$", re.I | re.M)
 HANDLE = re.compile(r"\[@([A-Za-z0-9-]+)\]")
 # Affiliations that name no real organization. "Founding maintainer" is a role.
-NOT_AN_ORGANIZATION = {"founding maintainer", "individual", "none", "independent", "-", ""}
+NOT_AN_ORGANIZATION = {"founding maintainer", "individual", "none", "independent", "-", "",
+                       "your organization"}
+# Template text someone forgot to replace. Not a person, so not a contributor.
+PLACEHOLDER_NAMES = {"your name"}
 
 
 def _git(args):
@@ -88,7 +91,7 @@ def from_patterns(folder=None):
             if not isinstance(entry, dict):
                 continue
             name = str(entry.get("name") or "").strip()
-            if not name:
+            if not name or name.lower() in PLACEHOLDER_NAMES:
                 continue
             row = out.setdefault(name.lower(), {"name": name, "organization": None, "patterns": []})
             row["patterns"].append(pattern_id)

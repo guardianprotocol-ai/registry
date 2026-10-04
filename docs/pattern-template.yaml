@@ -46,5 +46,5 @@ mitigations:
 references:
   - https://example.com/paper-or-advisory
 credits:
-  - {name: Your Name, organization: Your Organization}
+  - {name: Your Name, organization: ""}   # organization is optional; leave it empty if you are contributing as an individual
 created: YYYY-MM-DD
