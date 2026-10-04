@@ -23,11 +23,11 @@ requests, and confirmed if nobody objects within 7 days. See `GOVERNANCE.md`.
 
 | For | Where |
 | --- | --- |
-| A vulnerability or a live attack | security@whitehatlabs.ai, see `SECURITY.md` |
-| Code of conduct concerns | security@whitehatlabs.ai, which reaches the founding maintainer |
+| A vulnerability or a live attack | GitHub private vulnerability reporting, see `SECURITY.md` |
+| Code of conduct concerns | A private report through the Security tab, which only maintainers can see |
 | Anything else | A GitHub issue or discussion |
 
-Both addresses are a company mailbox used as a stopgap while the project has none of its own. They move to the project's own domain at public launch.
+The project has no mailbox of its own yet. Everything private goes through GitHub, where only maintainers can read it and there is an audit trail.
 
 New maintainers join through the process in `GOVERNANCE.md`. The project's goal is maintainers from several organizations before foundation entry.
 

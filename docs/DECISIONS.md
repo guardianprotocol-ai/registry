@@ -23,8 +23,8 @@ The choices that shape the project, why we made them, and how each stays compati
 | --- | --- | --- |
 | OSPS-AC-01.01 | Multi-factor authentication for everyone with write access | Done: required for the org, Oct 4 2026 |
 | OSPS-AC-02.01 | New collaborators get the lowest permissions by default | Done: the org's base permission is Read |
-| OSPS-AC-03.01 | No direct commits to the main branch | Blocked: branch rules need a public repository or a paid plan. Enforced by convention until then |
-| OSPS-AC-03.02 | Deleting the main branch needs explicit confirmation | Blocked: same branch rule |
+| OSPS-AC-03.01 | No direct commits to the main branch | Done: branch protection on `main` requires a pull request and the `check`, `signoff`, `status-guard` and `rule-safety` checks |
+| OSPS-AC-03.02 | Deleting the main branch needs explicit confirmation | Done: deletions and force pushes are both refused on `main` |
 | OSPS-BR-01.01 | CI inputs are validated | Done: `.github/workflows/checks.yml` runs `check.py` on every push and pull request, with a read-only token, actions pinned to commit SHAs and no secrets exposed to forks |
 | OSPS-BR-03.01 | Official links use HTTPS | Done |
 | OSPS-DO-01.01 | User guide for basic use | Done: `README.md`, `demo/README.md`, `sensor/README.md` |
@@ -32,10 +32,10 @@ The choices that shape the project, why we made them, and how each stays compati
 | OSPS-GV-02.01 | Public place to discuss changes | Done: GitHub Discussions, plus `docs/proposals/` for designs under decision |
 | OSPS-GV-03.01 | Contribution process documented | Done: `CONTRIBUTING.md` |
 | OSPS-LE-02.01, 02.02, 03.01, 03.02 | OSI-approved license in a LICENSE file | Done: Apache 2.0 |
-| OSPS-QA-01.01, 01.02 | Public repository with readable history | At public launch |
+| OSPS-QA-01.01, 01.02 | Public repository with readable history | Done: public since October 4 2026, with linear history required |
 | OSPS-QA-02.01 | List of direct dependencies | Done: none beyond the Python 3.9+ standard library |
 | OSPS-QA-04.01 | List of subprojects | Done: folder table in `README.md` |
 | OSPS-QA-05.01 | No generated executables in the repository | Done: `.gitignore` |
-| OSPS-VM-02.01 | Security contacts documented | Done: `SECURITY.md` and the contact table in `MAINTAINERS.md`. Both use a company address as a stopgap and move to the project's own domain at public launch, when GitHub private vulnerability reporting also becomes available |
+| OSPS-VM-02.01 | Security contacts documented | Done: `SECURITY.md` and the contact table in `MAINTAINERS.md`, both pointing at GitHub private vulnerability reporting, which only maintainers can read |
 
 Source: [Open Source Project Security Baseline](https://baseline.openssf.org/versions/2025-02-25).
