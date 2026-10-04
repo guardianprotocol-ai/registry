@@ -1,0 +1,47 @@
+# Pattern template. Copy this file to patterns/GP-NNNN.yaml, using the next free ID,
+# then replace every value and delete these comments. The full format is in schema.yaml,
+# and patterns/GP-0001.yaml is a complete example.
+#
+# Safety: payloads must be harmless. Use canary tokens in the GPnnnn-CANARY-xxxx form and
+# reserved .test destinations only. Run `python3 check.py` before you open a pull request.
+
+schema_version: "0.1"
+id: GP-NNNN                 # must match the filename
+title: Short name of the attack
+status: draft               # new patterns always start as draft
+version: 1
+summary: >
+  One to three sentences in plain language: what the attacker does and what the agent
+  ends up doing.
+severity: medium (one-line reason)    # low | medium | high | critical
+surfaces: [mcp_tool_output]           # where it happens; see schema.yaml for examples
+maps_to:
+  owasp: ["LLM01:2025 Prompt Injection"]
+  atlas: ["AML.T0051.001 LLM Prompt Injection: Indirect"]
+preconditions:
+  - What must be true for the attack to work
+test:
+  target:
+    vulnerable: reference_agent_vulnerable   # must be exploited
+    hardened: reference_agent_hardened       # must resist
+  setup:
+    - Tools and fixtures the test loads
+  steps:
+    - What the user asks the agent to do
+  payload: >
+    The harmless payload. Destinations use reserved .test domains.
+  success_when: The observable condition that proves the attack worked
+detection:
+  type: behavior            # rule | signature | behavior
+  signals:
+    - What the sensor watches for
+  logic: >
+    The rule in plain language. Say when it flags and when it blocks.
+  false_alarm_rate: null    # filled in by the checks once the benign corpus exists
+mitigations:
+  - What a team should change
+references:
+  - https://example.com/paper-or-advisory
+credits:
+  - {name: Your Name, organization: Your Organization}
+created: YYYY-MM-DD
