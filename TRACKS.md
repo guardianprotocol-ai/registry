@@ -1,16 +1,18 @@
 # Tracks
 
-The work is organized into tracks. Each track has a lead who reviews pull requests in that area and keeps its issues moving. Pick the one closest to what you know, or move between them.
+The work is organized into tracks. Everyone is a contributor: pick the track closest to what you know, move between them, and contribute as much as you like.
+
+Reviewers are invited from among the most active contributors in each area, as described in `GOVERNANCE.md`. Reviewing is a responsibility, not a rank: it's how the project keeps every change checked by someone other than its author.
 
 **Next milestone: Protocol v0.1**, the first public release. Target: November 20, 2026.
 
-| Track | Folder | What it covers | Lead |
-| --- | --- | --- | --- |
-| Patterns | `patterns/`, `schema.yaml` | New attack patterns and better existing ones | [chosen by the working group] |
-| Scanner and reference agents | `scanner/` | Runnable scenarios, reference agents, attack success rates | [chosen by the working group] |
-| Sensor and hooks | `sensor/`, `hooks/` | Real-time detection, client hooks, rule quality | [chosen by the working group] |
-| Coverage and evidence | `coverage/` | MITRE ATLAS and OWASP mapping, real incidents behind each pattern | [chosen by the working group] |
-| Deception and model behavior | `docs/research/` | Research on agents that mislead or hide what they did | [chosen by the working group] |
+| Track | Folder | What it covers |
+| --- | --- | --- |
+| Patterns | `patterns/`, `schema.yaml` | New attack patterns and better existing ones |
+| Scanner and reference agents | `scanner/` | Runnable scenarios, reference agents, attack success rates |
+| Sensor and hooks | `sensor/`, `hooks/` | Real-time detection, client hooks, rule quality |
+| Coverage and evidence | `coverage/` | MITRE ATLAS and OWASP mapping, real incidents behind each pattern |
+| Deception and model behavior | `docs/research/` | Research on agents that mislead or hide what they did |
 
 ## Patterns
 

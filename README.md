@@ -46,10 +46,11 @@ Every pull request runs the same script automatically. Today it checks:
 
 1. **Format:** every pattern validates against `schema.yaml`, and its ID matches its filename.
 2. **Payload safety:** canary tokens are well formed, and every destination is inside reserved, unroutable space: `.test`, `.example`, `.invalid` and `.localhost` (RFC 2606 and RFC 6761), the `example.com` family, the RFC 5737 documentation addresses, or loopback. Anything else is refused, including bare public IP addresses.
-3. **Detections prove themselves:** the sensor's rule tests run an attack that must be caught and ordinary work that must not be, for every rule.
-4. **Tools work:** the scanner, sensor and hook test suites pass.
+3. **Detections prove themselves:** every attack case in `corpus/attacks/` must still be caught, and the ordinary work in `corpus/benign/` must raise nothing. On pull requests, the run summary shows what the change catches and flags compared with the base branch.
+4. **Rules are safe to run:** the rule lint rejects signatures that match plain prose, could hang the sensor on crafted input, or hide characters from reviewers. A change to the rules must add a test or corpus case.
+5. **Tools work:** the scanner, sensor and hook test suites pass.
 
-Coming before patterns can move past `draft`: each test run against the vulnerable reference agent (must be exploited) and the hardened one (must resist), false-alarm rates measured on a benign traffic corpus, and a duplicate check.
+Coming before patterns can move past `draft`: each test run against the vulnerable reference agent (must be exploited) and the hardened one (must resist), a benign corpus large enough to measure false-alarm rates, and a duplicate check. How rules are kept safe is in [docs/RULE_SAFETY.md](docs/RULE_SAFETY.md).
 
 Then maintainers review. Patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview, while there are fewer than three maintainers, a reviewer from another organization listed in `.github/CODEOWNERS` can give the second approval.
 
@@ -68,9 +69,12 @@ Don't open a public issue for an active attack or anything specific to one vendo
 ## The project
 
 - [START_HERE.md](START_HERE.md): your first contribution
-- [TRACKS.md](TRACKS.md): the areas of work and who leads each
+- [TRACKS.md](TRACKS.md): the areas of work
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to contribute
 - [CONTRIBUTORS.md](CONTRIBUTORS.md): everyone who has contributed
+- [THREAT_MODEL.md](THREAT_MODEL.md): how the protocol itself is protected
+- [docs/RULE_SAFETY.md](docs/RULE_SAFETY.md): how a bad rule is kept out
+- [docs/proposals/](docs/proposals/): designs under discussion
 - [GOVERNANCE.md](GOVERNANCE.md): roles, decisions and neutrality
 - [ROADMAP.md](ROADMAP.md): the next twelve months
 - [docs/DECISIONS.md](docs/DECISIONS.md): design decisions and the security baseline checklist

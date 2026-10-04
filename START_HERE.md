@@ -2,13 +2,16 @@
 
 Get set up and oriented in about 15 minutes, then pick your first task. No dependencies beyond Python 3.9+.
 
-> **Private preview.** The repository is private while the project prepares its first public release. To get access, send your GitHub username to Frank Albanese in the working group Slack.
+> **Private preview.** The repository is private while the project prepares its first public release. To get access, send your GitHub username to Frank Albanese in the working group Slack. You'll get read access, and you contribute through your own fork.
 
 ## 1. Get it running (3 minutes)
 
+First, fork the repository: open it on GitHub and click **Fork**. Then:
+
 ```bash
-git clone https://github.com/guardianprotocol-ai/registry.git
+git clone https://github.com/YOUR-USERNAME/registry.git
 cd registry
+git remote add upstream https://github.com/guardianprotocol-ai/registry.git
 python3 check.py
 ```
 
@@ -28,7 +31,7 @@ A test agent is asked to summarize a page that hides an instruction. You'll see 
 1. [README.md](README.md): what the registry is and how a pattern moves from `draft` to `enforced`
 2. [ARCHITECTURE.md](ARCHITECTURE.md): the registry, scan, sensor and network, and how they fit
 3. [patterns/GP-0001.yaml](patterns/GP-0001.yaml): one complete pattern, start to finish
-4. [TRACKS.md](TRACKS.md): the areas of work and who leads each
+4. [TRACKS.md](TRACKS.md): the areas of work
 
 ## 4. Pick a task
 
@@ -37,7 +40,7 @@ Open the [issues labeled `good first issue`](https://github.com/guardianprotocol
 ## 5. Make the change
 
 ```bash
-git checkout -b my-change
+git fetch upstream && git checkout -b my-change upstream/main
 # edit, then:
 python3 check.py
 git commit -s -m "Add scanner scenario for GP-0011"
@@ -46,7 +49,7 @@ git push origin my-change
 
 The `-s` adds your sign-off under the [Developer Certificate of Origin](CONTRIBUTING.md#developer-certificate-of-origin). Every commit needs one.
 
-Then open a pull request. The template walks you through the rest.
+Then open a pull request from your fork to `guardianprotocol-ai/registry`. The automatic checks run on it, and the template walks you through the rest. Paste the output that shows your change works, such as `check.py` results or a scanner run, so reviewers can see the proof.
 
 ## How credit works
 

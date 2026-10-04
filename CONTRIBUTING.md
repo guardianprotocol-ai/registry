@@ -16,10 +16,10 @@ Report live attacks and vulnerabilities privately, never in a public issue. See 
 ## How a change gets in
 
 1. Open an issue first for anything larger than a small fix, so we can agree on the approach.
-2. Fork the repository and create a branch.
+2. Fork the repository and create a branch from the latest `main`. Contributors work in their own forks; only maintainers merge into this repository.
 3. Make your change. Keep each pull request to one idea. Run `python3 check.py` before you push.
 4. Sign off every commit under the Developer Certificate of Origin (below).
-5. Open a pull request. Automatic checks run, then reviewers from `.github/CODEOWNERS` review it.
+5. Open a pull request with the evidence that it works: `check.py` output, a scanner run, or the corpus cases you added. Automatic checks run, then reviewers from `.github/CODEOWNERS` review it.
 6. A maintainer merges once checks pass and reviews are complete. Nobody merges their own change.
 
 Registry patterns need two approvals: at least one from an organization other than the contributor's, and never all from the same company. During the private preview, while there are fewer than three maintainers, a reviewer from another organization listed in `.github/CODEOWNERS` can give the second approval.
