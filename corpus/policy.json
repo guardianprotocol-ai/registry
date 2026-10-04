@@ -1,0 +1,17 @@
+{
+  "about": "Limits the rule gate enforces on every pull request. Proposed defaults, to be ratified by the working group. See docs/RULE_SAFETY.md.",
+  "default_config": {
+    "allowlist": [
+      "example.com"
+    ],
+    "max_repeat": 10
+  },
+  "max_new_false_alarms": 0,
+  "require_attack_case_for": [
+    "verified",
+    "enforced"
+  ],
+  "covered_elsewhere": {
+    "GP-0003": "sensor/tests/test_sensor.py: tool definitions are checked by the sensor itself, not the shared rule engine"
+  }
+}

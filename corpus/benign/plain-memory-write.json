@@ -1,0 +1,20 @@
+{
+  "id": "plain-memory-write",
+  "description": "The agent saves an ordinary fact to memory after reading a plain page.",
+  "events": [
+    {
+      "output": {
+        "source": "fetch_page",
+        "text": "The vendor review is due in November."
+      }
+    },
+    {
+      "call": {
+        "name": "save_memory",
+        "args": {
+          "text": "The vendor review is due in November."
+        }
+      }
+    }
+  ]
+}

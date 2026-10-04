@@ -1,0 +1,38 @@
+{
+  "id": "normal-research-and-report",
+  "description": "Read a page of prose, read notes, write a summary, send it to the team.",
+  "events": [
+    {
+      "output": {
+        "source": "fetch_page",
+        "text": "Shipping times improved 12% this quarter. The portal launches in November."
+      }
+    },
+    {
+      "call": {
+        "name": "read_file",
+        "args": {
+          "path": "notes.txt"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "summary.md",
+          "content": "Shipping improved 12%."
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "send_message",
+        "args": {
+          "to": "team@example.com",
+          "body": "Shipping improved 12%."
+        }
+      }
+    }
+  ]
+}

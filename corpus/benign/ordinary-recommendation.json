@@ -1,0 +1,12 @@
+{
+  "id": "ordinary-recommendation",
+  "description": "A page recommends reading the guide.",
+  "events": [
+    {
+      "output": {
+        "source": "fetch_page",
+        "text": "We recommend reading the installation guide before you start."
+      }
+    }
+  ]
+}

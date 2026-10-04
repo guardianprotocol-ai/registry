@@ -1,0 +1,15 @@
+{
+  "id": "email-with-a-link",
+  "description": "Send a teammate a link to the team wiki.",
+  "events": [
+    {
+      "call": {
+        "name": "send_message",
+        "args": {
+          "to": "sam@example.com",
+          "body": "The notes are at https://wiki.example.com/q3"
+        }
+      }
+    }
+  ]
+}

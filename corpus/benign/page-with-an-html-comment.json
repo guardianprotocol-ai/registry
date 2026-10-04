@@ -1,0 +1,12 @@
+{
+  "id": "page-with-an-html-comment",
+  "description": "An ordinary page with a layout comment.",
+  "events": [
+    {
+      "output": {
+        "source": "fetch_page",
+        "text": "<p>Shipping improved 12%.</p><!-- layout note, nothing to see -->"
+      }
+    }
+  ]
+}

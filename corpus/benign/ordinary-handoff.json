@@ -1,0 +1,15 @@
+{
+  "id": "ordinary-handoff",
+  "description": "The agent hands a plain task to a research agent.",
+  "events": [
+    {
+      "call": {
+        "name": "send_to_agent",
+        "args": {
+          "agent": "researcher",
+          "task": "Summarise the Q3 shipping numbers."
+        }
+      }
+    }
+  ]
+}

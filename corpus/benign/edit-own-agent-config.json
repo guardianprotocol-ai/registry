@@ -1,0 +1,15 @@
+{
+  "id": "edit-own-agent-config",
+  "description": "A developer asks the agent to update CLAUDE.md with a new convention.",
+  "events": [
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "/repo/CLAUDE.md",
+          "content": "Run the tests before committing."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "admin-deletes-records",
+  "description": "An admin asks the agent to delete test records. Nothing untrusted was read first.",
+  "events": [
+    {
+      "call": {
+        "name": "delete_records",
+        "args": {
+          "table": "test_invoices"
+        }
+      }
+    }
+  ]
+}

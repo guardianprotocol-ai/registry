@@ -1,0 +1,15 @@
+{
+  "id": "code-with-security-words",
+  "description": "Write code that mentions passwords and tokens, as security code does.",
+  "events": [
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "src/auth.py",
+          "content": "def check_password(user, password):\n    token = make_token(user)\n    return verify(password, user.hash)\n"
+        }
+      }
+    }
+  ]
+}

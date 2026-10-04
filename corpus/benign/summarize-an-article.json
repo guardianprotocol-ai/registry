@@ -1,0 +1,21 @@
+{
+  "id": "summarize-an-article",
+  "description": "Summarize a news article with quotes and numbers.",
+  "events": [
+    {
+      "output": {
+        "source": "fetch_page",
+        "text": "The city council voted 7 to 2 on Tuesday to expand the bike lane network by 40 miles over three years."
+      }
+    },
+    {
+      "call": {
+        "name": "write_file",
+        "args": {
+          "path": "summary.md",
+          "content": "Council approved 40 more miles of bike lanes."
+        }
+      }
+    }
+  ]
+}

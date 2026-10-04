@@ -24,6 +24,8 @@ CHECKS = [
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
     ("Claude Code hook tests", ".", ["hooks/claude_code/tests/test_hook.py"]),
+    ("Rule lint", ".", ["scripts/lint_rules.py"]),
+    ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]
 
 

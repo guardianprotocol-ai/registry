@@ -1,0 +1,16 @@
+{
+  "id": "GP-0011-same-call-past-the-budget",
+  "expect": "GP-0011",
+  "description": "The same call repeats past the session budget.",
+  "events": [
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Boston"
+        },
+        "times": 11
+      }
+    }
+  ]
+}

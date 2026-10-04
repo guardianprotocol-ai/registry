@@ -1,0 +1,102 @@
+{
+  "id": "many-different-weather-calls",
+  "description": "Twelve calls to the same tool with different arguments.",
+  "events": [
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Boston"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Dublin"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Lisbon"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Oslo"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Porto"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Quito"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Riga"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Sofia"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Turin"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Vienna"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Warsaw"
+        }
+      }
+    },
+    {
+      "call": {
+        "name": "weather",
+        "args": {
+          "city": "Zurich"
+        }
+      }
+    }
+  ]
+}

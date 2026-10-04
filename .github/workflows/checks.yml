@@ -47,3 +47,31 @@ jobs:
 
       - name: Run every check
         run: python3 check.py
+
+  # Runs once per pull request: proof for rule changes, and what the change does to detection.
+  rule-safety:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the pull request and its base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Rule changes must come with evidence
+        run: python3 scripts/require_rule_tests.py HEAD^1 HEAD
+
+      # The base branch's engine runs against this change's corpus, then this change's engine
+      # runs the same corpus. The difference is what the change does, posted to the run summary.
+      - name: Compare detection before and after this change
+        run: |
+          git worktree add ../base HEAD^1
+          python3 scripts/rule_gate.py --sensor-dir ../base/sensor --json > ../base.json || true
+          python3 scripts/rule_gate.py --compare ../base.json --summary "$GITHUB_STEP_SUMMARY"
