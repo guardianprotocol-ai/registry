@@ -1,5 +1,8 @@
 # Guardian Protocol Registry
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/guardianprotocol-ai/registry/badge)](https://scorecard.dev/viewer/?uri=github.com/guardianprotocol-ai/registry)
+[![checks](https://github.com/guardianprotocol-ai/registry/actions/workflows/checks.yml/badge.svg)](https://github.com/guardianprotocol-ai/registry/actions/workflows/checks.yml)
+
 An open registry of known attacks on AI agents. Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test with a harmless payload, and a detection rule.
 
 - The **test** powers scans: run every pattern against your agent and see which attacks get through.

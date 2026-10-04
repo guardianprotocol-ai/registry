@@ -101,12 +101,12 @@ through the API and have to be clicked.
 
 ### Still to do
 
-1. **Raise required approvals from 0 to 1, and require a code owner**, the moment there is
-   a second maintainer. It is 0 today because GitHub does not let anyone approve their own
-   pull request, so requiring 1 with a single maintainer would lock the project out of its
-   own repository. This is the first thing to change when someone joins.
-2. **Add the OpenSSF Scorecard workflow**, now that the repository is public and it can run.
-3. **Consider `enforce_admins`.** Branch protection currently does not apply to
+1. **Require a code owner review**, the moment there is a second maintainer. One approval
+   is already required. With a single maintainer that approval cannot come from anyone, so
+   the founding maintainer merges using the administrator override, which GitHub records on
+   the pull request for anyone to see. The moment a second person can approve, that override
+   stops being used and `enforce_admins` below should go on.
+2. **Consider `enforce_admins`.** Branch protection currently does not apply to
    administrators, which is deliberate while there is one maintainer and no second pair of
    hands in an emergency. Turn it on once there are two.
 
