@@ -1,0 +1,51 @@
+name: Propose a pattern
+description: Suggest a known attack on AI agents for the registry
+labels: ["track:patterns", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a pattern. Keep it at the level a defender needs.
+        **Live attacks, real vulnerabilities or anything specific to one vendor's product go through SECURITY.md, not a public issue.**
+  - type: input
+    id: title
+    attributes:
+      label: Attack name
+      placeholder: Hidden instructions in a tool's output
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happens
+      description: One to three sentences. What does the attacker do, and what does the agent end up doing?
+    validations:
+      required: true
+  - type: input
+    id: mapping
+    attributes:
+      label: OWASP and MITRE ATLAS mapping, if known
+      placeholder: LLM01:2025, AML.T0051.001
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: Papers, advisories, incident write-ups or benchmarks where this attack is documented.
+    validations:
+      required: true
+  - type: textarea
+    id: test
+    attributes:
+      label: How could we test it harmlessly?
+      description: Canary tokens and .test destinations only.
+  - type: textarea
+    id: detection
+    attributes:
+      label: How could a sensor detect it?
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: This is a publicly documented technique, not a live attack or an unreported vulnerability in a specific product.
+          required: true

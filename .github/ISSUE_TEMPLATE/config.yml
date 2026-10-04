@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a vulnerability or a live attack privately
+    url: https://github.com/guardianprotocol-ai/registry/blob/main/SECURITY.md
+    about: Never in a public issue. Follow the private reporting process.
+  - name: New here?
+    url: https://github.com/guardianprotocol-ai/registry/blob/main/START_HERE.md
+    about: Set up in about 15 minutes and find your first task.
