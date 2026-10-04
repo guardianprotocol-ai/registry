@@ -4,6 +4,7 @@ Run from the scanner folder:  python3 tests/test_scanner.py
 """
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from guardian_scanner import patterns, runner, scenarios, targets  # noqa: E402
@@ -22,45 +23,49 @@ def check(name, condition, detail=""):
 
 # ---------- validation ----------
 
+def validate_with(change):
+    """Validate a copy of GP-0004 with one thing broken, in a directory of its own.
+
+    A fixed path under /tmp would collide between concurrent runs and, because /tmp is
+    world writable and sticky, could be left behind owned by another user.
+    """
+    with tempfile.TemporaryDirectory() as folder:
+        with open(os.path.join(PATTERNS, "GP-0004.yaml"), encoding="utf-8") as f:
+            good = f.read()
+        with open(os.path.join(folder, "GP-0004.yaml"), "w", encoding="utf-8") as f:
+            f.write(change(good))
+        return patterns.validate_dir(folder)
+
+
 def test_the_registry_validates():
     report = patterns.validate_dir(PATTERNS)
     check("every pattern file in the registry is valid", report.ok, "; ".join(report.problems[:4]))
-    check("all twelve patterns were checked", len(report.patterns) == 12, str(len(report.patterns)))
+    on_disk = len([f for f in os.listdir(PATTERNS) if f.endswith(".yaml")])
+    check("every pattern file on disk was checked", len(report.patterns) == on_disk,
+          f"{len(report.patterns)} checked, {on_disk} on disk")
 
 
-def test_a_missing_field_is_caught(tmp="/tmp/gp-validate-missing"):
-    os.makedirs(tmp, exist_ok=True)
-    good = open(os.path.join(PATTERNS, "GP-0004.yaml")).read()
-    broken = "\n".join(l for l in good.splitlines() if not l.startswith("severity:"))
-    open(os.path.join(tmp, "GP-0004.yaml"), "w").write(broken + "\n")
-    report = patterns.validate_dir(tmp)
+def test_a_missing_field_is_caught():
+    report = validate_with(
+        lambda good: "\n".join(l for l in good.splitlines() if not l.startswith("severity:")) + "\n")
     check("a missing required field is caught", not report.ok, "validator said it was fine")
     check("the problem names the field", any("severity" in p for p in report.problems),
           str(report.problems))
 
 
-def test_a_live_destination_is_caught(tmp="/tmp/gp-validate-destination"):
-    os.makedirs(tmp, exist_ok=True)
-    good = open(os.path.join(PATTERNS, "GP-0004.yaml")).read()
-    open(os.path.join(tmp, "GP-0004.yaml"), "w").write(good.replace("notes.txt", "evil.example.org"))
-    report = patterns.validate_dir(tmp)
+def test_a_live_destination_is_caught():
+    report = validate_with(lambda good: good.replace("notes.txt", "evil.example.org"))
     check("a destination outside .test is caught", not report.ok, "validator said it was fine")
 
 
-def test_a_malformed_canary_is_caught(tmp="/tmp/gp-validate-canary"):
-    os.makedirs(tmp, exist_ok=True)
-    good = open(os.path.join(PATTERNS, "GP-0004.yaml")).read()
-    open(os.path.join(tmp, "GP-0004.yaml"), "w").write(good.replace("GP0004-CANARY-1d4e", "GP0004-CANARY-ZZZZ"))
-    report = patterns.validate_dir(tmp)
+def test_a_malformed_canary_is_caught():
+    report = validate_with(lambda good: good.replace("GP0004-CANARY-1d4e", "GP0004-CANARY-ZZZZ"))
     check("a canary outside the GPnnnn-CANARY-xxxx form is caught", not report.ok,
           "validator said it was fine")
 
 
-def test_an_id_that_does_not_match_its_filename_is_caught(tmp="/tmp/gp-validate-id"):
-    os.makedirs(tmp, exist_ok=True)
-    good = open(os.path.join(PATTERNS, "GP-0004.yaml")).read()
-    open(os.path.join(tmp, "GP-0004.yaml"), "w").write(good.replace("id: GP-0004", "id: GP-9999"))
-    report = patterns.validate_dir(tmp)
+def test_an_id_that_does_not_match_its_filename_is_caught():
+    report = validate_with(lambda good: good.replace("id: GP-0004", "id: GP-9999"))
     check("an id that does not match its filename is caught", not report.ok,
           "validator said it was fine")
 
