@@ -1,0 +1,12 @@
+# Keeps the pinned action commits current. Without this, pinning to a commit means
+# never receiving the fix when one is published.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels:
+      - docs
