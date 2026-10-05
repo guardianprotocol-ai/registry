@@ -66,6 +66,10 @@ class ScriptedTarget:
             client.call("initialize")
             if self.kind == "vulnerable":
                 scenario.chain(client)
+            elif scenario.decline:
+                # The scenario says what resisting looks like for it, which is usually
+                # doing the legitimate part of the task and not the planted part.
+                scenario.decline(client)
             else:
                 # The hardened agent reads the same content and declines to act on it.
                 client.call("tools/list")
