@@ -1,10 +1,33 @@
 # Guardian Protocol architecture
 
-Guardian Protocol is an open, shared defense network for AI agents. An attack caught at one organization becomes protection for every organization. This document is the starting point for the design; contributors are invited to challenge and improve every part of it.
+MITRE ATLAS names the attacks on AI systems. Guardian Protocol is the open, executable layer for AI agents: runnable tests, working detections and measured results, each mapped to ATLAS. Built in the open by YC founders, headed for a neutral home. An attack caught at one organization becomes protection for every organization. This document is the starting point for the design; contributors are invited to challenge and improve every part of it.
 
 ## The idea in one paragraph
 
 Every known attack on AI agents gets an entry in an open **registry**: a stable ID mapped to OWASP and MITRE ATLAS, a **test** that proves the attack works, and a **detection** that stops it. The **scan** runs the tests against an agent before it ships. The **sensor** enforces the detections while it runs. The **network** shares anonymized signatures, so a catch anywhere protects everyone. Everything here is open source under Apache 2.0.
+
+## Relationship to MITRE ATLAS
+
+ATLAS is the shared vocabulary for attacks on AI systems, and this project depends on it.
+The two do different jobs, and the registry is built so the boundary stays clean.
+
+| MITRE ATLAS | Guardian Protocol |
+| --- | --- |
+| Names and classifies techniques | Makes them runnable, catchable and measured |
+| A taxonomy, maintained by MITRE | Tests, detections and results, maintained in the open |
+| Tells you the attack exists | Tells you whether it works against your agent, how often, and what stops it |
+
+Every pattern maps to one or more ATLAS techniques. A pattern may map to none, but only if
+it argues why in `maps_to.custom_reason`, naming the closest technique considered and what
+it misses. Attacks on agents often appear before any taxonomy catalogs them, so the registry
+should be able to lead; a custom mapping is a claim that has to be made out loud, and
+`check.py` prints the count on every run so it never quietly becomes the norm.
+
+Custom patterns with good evidence behind them are meant to go **back** to ATLAS as proposed
+techniques. The registry leading ATLAS is the point. The registry permanently diverging from
+it is not. `docs/MAINTAINING.md` makes that a monthly step.
+
+This project is not a replacement for ATLAS, an improved ATLAS, or a competing taxonomy.
 
 ## Three domains of defense
 

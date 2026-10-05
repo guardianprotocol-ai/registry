@@ -4,10 +4,11 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
 
 ## Q4 2026: foundation
 
-- Registry v0.1: pattern format, contribution checks, first verified patterns mapped to OWASP and MITRE ATLAS
+- Registry v0.1 (November 20): pattern format, contribution checks, first verified patterns mapped to OWASP and MITRE ATLAS, and the first public set of measured results in the attack matrix
 - Full MITRE ATLAS coverage map, reviewed by the community
 - Reference sensor for MCP, with tests
 - Scanner v0: runs each pattern's test many times and reports an attack success rate
+- The attack matrix: a published place for measured results by model, harness and version, generated into `docs/MATRIX.md` from validated result files
 - Client hooks for agents' built-in tools, starting with Claude Code
 - Free public scan
 - OpenSSF Security Baseline Level 1 and an OpenSSF Scorecard check

@@ -3,11 +3,18 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/guardianprotocol-ai/registry/badge)](https://scorecard.dev/viewer/?uri=github.com/guardianprotocol-ai/registry)
 [![checks](https://github.com/guardianprotocol-ai/registry/actions/workflows/checks.yml/badge.svg)](https://github.com/guardianprotocol-ai/registry/actions/workflows/checks.yml)
 
-An open registry of known attacks on AI agents. Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test with a harmless payload, and a detection rule.
+MITRE ATLAS names the attacks on AI systems. Guardian Protocol is the open, executable layer for AI agents: runnable tests, working detections and measured results, each mapped to ATLAS. Built in the open by YC founders, headed for a neutral home.
+
+If you know security tooling: **Atomic Red Team and Sigma for AI agents, mapped to ATLAS.** [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) publishes runnable tests mapped to MITRE ATT&CK; [Sigma](https://github.com/SigmaHQ/sigma) publishes open detection rules mapped to it. Nobody had built either one for agents.
+
+Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test with a harmless payload, and a detection rule.
 
 - The **test** powers scans: run every pattern against your agent and see which attacks get through.
 - The **detection** powers sensors: block the attack in real time.
+- The **result** is what the scan measured: an attack success rate for one pattern against one named model and harness, with the run count and a 95% interval.
 - **Sightings** will show which attacks are active right now, once the network exists. It is in design, not built: see `ARCHITECTURE.md`.
+
+The words above are used precisely. [docs/GLOSSARY.md](docs/GLOSSARY.md) says what each one means.
 
 **Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
 
