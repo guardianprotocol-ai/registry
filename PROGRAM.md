@@ -51,7 +51,9 @@ adding ordinary work that must never be flagged helps all of them at once.
 Run the runnable patterns against popular models and agent tools and record the results in
 the attack matrix, **at least 20 runs per result, sensor off and on**. See
 [results/README.md](results/README.md). The scanner writes the files for you with
-`--record`; you fill in what it could not know.
+`--record`; you fill in what it could not know. If you have never run it, start with
+[TEST_YOUR_AGENT.md](TEST_YOUR_AGENT.md), which goes from a fresh clone to a recorded
+result in about twenty minutes.
 
 **Done when** the matrix has rows from more than one harness and more than one model family.
 
