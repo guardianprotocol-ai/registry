@@ -86,13 +86,25 @@ Agents also use built-in tools (shell, file editing, web fetch) that never pass 
 | Canary tokens | Fake secrets planted in files, repos and environments | Any leak, through any tool |
 | Host monitoring | Process and network monitoring for agent processes | Unexpected programs, secret reads, new connections |
 
-### Network (in design)
+### Network
 
 1. An agent reports through its own organization's sensor, never directly to the network. Agent reports are hints; only evidence the sensor observed counts.
-2. With sharing turned on, the sensor sends an anonymized signature: fixed fields, no free text, redacted locally, previewed by the customer.
+2. With sharing turned on, the sensor sends an anonymized sighting: a fixed set of fields, no free text, previewed by the member before anything leaves.
 3. The network correlates across organizations and shares a signature only once several independent organizations have seen it.
 4. Findings go to whoever can fix them, under coordinated disclosure: model weaknesses to the model's maker, tampered tools to the tool's maintainer, then a public advisory with a registry ID.
 5. Verified protections ship to every sensor as signed updates, rolled out gradually with automatic rollback.
+
+#### The hub v0: built
+
+Steps 2 and 5 exist in their smallest honest form, enough to run the trial.
+
+- `python3 -m guardian_sensor report --since <date> --preview` shows exactly what would be shared; add `--out` to write it. A sighting carries only `org`, `sensor_version`, `rules_version`, `pattern`, `action`, `hour` and `count`.
+- `python3 -m guardian_sensor update --base <release url>` fetches the published rule set, checks every file against a SHA-256 manifest, refuses the whole update on any mismatch, and records the version in `.guardian/updates.jsonl`.
+- `scripts/build_release_manifest.py` makes the manifest. `scripts/aggregate_sightings.py` merges members' files and withholds any total that fewer than three organizations contributed to.
+
+**Privacy is by construction, not by redaction.** The output is built from an allow-list of fields, and the values are checked against a fixed shape before use: a pattern id must look like `GP-0000`, an action must be `flagged` or `blocked`, a timestamp is reduced to the hour. The parts of an evidence record that hold content, `detail` and `reasons`, are never read. A redactor is a filter someone can get past; an allow-list leaves nothing for content to be written into.
+
+**What v0 does not do.** No STIX or TAXII. No signing: integrity rests on the GitHub release plus the hash manifest, which catches a corrupted download or a file swapped after the manifest was made, but not someone who can publish the release itself. No correlation service: step 3 is a script run over files members commit. No gradual rollout or automatic rollback.
 
 Planned building blocks: STIX 2.1 for the alert format, TAXII 2.1 for sharing, TUF for signed updates, Sigstore for signed releases, and a public append-only log. The network is operated by a neutral body; no company, including its founders' companies, gets privileged access to its data.
 

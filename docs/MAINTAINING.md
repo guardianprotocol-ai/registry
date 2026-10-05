@@ -169,6 +169,39 @@ Nothing is committed by a bot, and nothing is maintained by hand. If someone is 
 the fix is in `CONTRIBUTORS.md`, which is the opt-in for a display name, a GitHub handle
 and whether to list an organization.
 
+## Cutting a rule release
+
+Sensors update from a published release, and check every file against a manifest of
+SHA-256 hashes before they use any of it. Making the release is three commands.
+
+```bash
+python3 check.py
+python3 scripts/build_release_manifest.py --out dist --rules-version r2026.10.29
+gh release create v0.1 dist/* --title "Protocol v0.1" --notes-file RELEASE_NOTES.md
+```
+
+`build_release_manifest.py` copies `signatures.json`, writes `pattern-status.json` from the
+pattern files, and writes `manifest.json` covering both with their hashes. Upload all three.
+A member then runs:
+
+```bash
+python3 -m guardian_sensor update --base https://github.com/guardianprotocol-ai/registry/releases/download/v0.1
+```
+
+which fetches `manifest.json` first and refuses the whole update if any file does not match.
+
+Two things to get right:
+
+- **Rebuild the manifest last.** It hashes whatever is in the folder at the time. If you
+  edit a file afterwards, every sensor will refuse the release, which is the correct
+  behaviour and an embarrassing way to discover it.
+- **The version string goes in the manifest**, and that is what members record in their
+  `updates.jsonl` and report in their sightings. Use the same string in the git tag so a
+  sighting can be traced to a commit.
+
+This is integrity, not authenticity: it proves the files are the ones the manifest
+describes, not that the release came from us. See `THREAT_MODEL.md`. Signing is v0.2.
+
 ## Releases
 
 Not yet. The first is v0.1, targeted for October 29, 2026, per

@@ -9,7 +9,7 @@ handle as a link whose text is `@handle`.
 
 | Name | GitHub | Affiliation | Areas |
 | --- | --- | --- | --- |
-| Frank Albanese | [@faalbane](https://github.com/faalbane) | Founder of a company building on the protocol (name to be announced) | All (founding maintainer) |
+| Frank Albanese | [@faalbane](https://github.com/faalbane) | Founder of a company building on the protocol (name to be announced) | All (founding maintainer; organizer of the research group) |
 
 ## Reviewers
 
