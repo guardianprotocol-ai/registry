@@ -28,6 +28,31 @@ Please don't report a vulnerability in a public issue, a pull request or a discu
 
 Evasion techniques that would help attackers more than defenders stay private, shared only with sensor maintainers.
 
+## Publishing measured results
+
+The registry publishes attack success rates against named models and harnesses, in
+[results/](results/) and the generated [docs/MATRIX.md](docs/MATRIX.md). Numbers about
+someone else's product carry an obligation, so there are three rules.
+
+**Publish freely when the technique is already public.** A result for a publicly documented
+attack technique may be published as soon as it passes the checks in
+[results/README.md](results/README.md). Measuring a known attack against a shipping product
+is ordinary security research and we do not sit on it.
+
+**Report first when it is not.** A new technique, or a severe result that is not already
+public for that model or harness, goes to the model maker or the tool maintainer through the
+process above before it is published. It is published after a fix, or when the disclosure
+window ends, whichever comes first. If you are unsure which case you are in, report it
+privately and ask; nobody has ever regretted that order.
+
+**Say what you measured, never what you concluded about a vendor.** A row is a statement
+about one version on one date, with its run count and interval attached. It is not a
+statement that a product is insecure, and the matrix is written so that no row can imply
+one. A result with no interval and no run count is not evidence, and the checks refuse it.
+
+A measurement carries the name of whoever took it. That is the point: it is a claim someone
+is willing to put their name on, not an anonymous score.
+
 ## Scope of this code
 
 The sensor, scanner and hooks are prototypes. Don't rely on them for production data yet.
