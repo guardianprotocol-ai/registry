@@ -1,6 +1,6 @@
 # Tracks
 
-The work is organized into tracks. Everyone is a contributor: pick the track closest to what you know, move between them, and contribute as much as you like.
+Open tests, detections and measurements for attacks on AI agents, mapped to MITRE ATLAS. The work is organized into tracks. Everyone is a contributor: pick the track closest to what you know, move between them, and contribute as much as you like.
 
 Reviewers are invited from among the most active contributors in each area, as described in `GOVERNANCE.md`. Reviewing is a responsibility, not a rank: it's how the project keeps every change checked by someone other than its author.
 
@@ -9,7 +9,7 @@ Reviewers are invited from among the most active contributors in each area, as d
 | Track | Folder | What it covers |
 | --- | --- | --- |
 | Patterns | `patterns/`, `schema.yaml` | New attack patterns and better existing ones |
-| Scanner and reference agents | `scanner/` | Runnable scenarios, reference agents, attack success rates |
+| Scanner and reference agents | `scanner/` | Runnable scenarios, reference agents, and measuring models and harnesses |
 | Sensor and hooks | `sensor/`, `hooks/` | Real-time detection, client hooks, rule quality |
 | Coverage and evidence | `coverage/` | MITRE ATLAS and OWASP mapping, real incidents behind each pattern |
 | Deception and model behavior | `docs/research/` | Research on agents that mislead or hide what they did |
@@ -22,9 +22,11 @@ Good first tasks: propose a pattern from a published source; tighten the mitigat
 
 ## Scanner and reference agents
 
+**Measuring models and harnesses is the headline task on this track.** The same attack lands differently depending on the model, the agent software around it and the versions of both, and almost nobody has published those numbers. Running a pattern against a target and recording the result is the most useful thing a new contributor can do here. See `results/README.md` and the generated matrix in `docs/MATRIX.md`.
+
 Nine of the twelve patterns validate but can't run yet, because the scan has no scenario for them. Each missing scenario is its own issue. Beyond that: reference agents on open-weight models, so attack success rates can be compared across models, and a benign traffic corpus so every detection's false-alarm rate can be measured.
 
-Good first tasks: write a scenario for one pattern.
+Good first tasks: measure one target with `--record` and open a pull request with the result files; write a scenario for one pattern.
 
 ## Sensor and hooks
 

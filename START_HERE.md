@@ -1,5 +1,7 @@
 # Start here
 
+Open tests, detections and measurements for attacks on AI agents, mapped to MITRE ATLAS.
+
 Get set up and oriented in about 15 minutes, then pick your first task. No dependencies beyond Python 3.9+.
 
 > **The repository is public and you need nothing from anyone to start.** Fork it, open a pull request, and the automatic checks run on your first one. The project is early: twelve patterns, a reference sensor and a scanner that measures three of them end to end. Plenty is unfinished, and that is where the work is.
