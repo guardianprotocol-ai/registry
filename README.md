@@ -5,6 +5,8 @@
 
 MITRE ATLAS names the attacks on AI systems. Guardian Protocol is the open, executable layer for AI agents: runnable tests, working detections and measured results, each mapped to ATLAS, and an anonymized way to share what each organization sees, so one detection protects everyone. Built in the open by YC founders, headed for a neutral home.
 
+**Want to test your own agent?** [TEST_YOUR_AGENT.md](TEST_YOUR_AGENT.md) takes about twenty minutes, runs on your machine, and sends nothing anywhere.
+
 If you know security tooling: **Atomic Red Team and Sigma for AI agents, mapped to ATLAS.** [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) publishes runnable tests mapped to MITRE ATT&CK; [Sigma](https://github.com/SigmaHQ/sigma) publishes open detection rules mapped to it. Nobody had built either one for agents.
 
 Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test with a harmless payload, and a detection rule.
