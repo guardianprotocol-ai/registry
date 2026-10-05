@@ -15,14 +15,17 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
 - Free public scan
 - OpenSSF Security Baseline Level 1 and an OpenSSF Scorecard check
 - First publication, alongside v0.1 on October 29: the full co-authored paper as preprint
-  v1, covering the protocol, its security model and the multi-organization trial, built on
-  the attack matrix and under the authorship policy in `docs/RESEARCH.md`. Results from
-  short measurement windows are labelled preliminary; v2 with longer-window data follows in
-  Season 2
+  v1, scoped to measurement: which attacks land, against which models, inside which
+  harnesses, with the sensor off and on. Built on the attack matrix and under the authorship
+  policy in `docs/RESEARCH.md`. Results from short measurement windows are labelled
+  preliminary; v2 with longer-window data follows in Season 2
 - Application to the OpenSSF Sandbox
 
 ## Early 2027: the second paper
 
+- The distributed work, on the open reference hub, if three or more companies opt in: fire
+  drills measuring time to protection across organizations, and the immune response
+  exercise, a simulated adversarial campaign using existing registry scenarios only
 - Multi-agent attacks: the six draft patterns GP-0013 to GP-0018 made runnable and measured
 - Coverage of traffic between agents, subject to what the group decides on
   `docs/proposals/0003`: an A2A transport for the sensor, framework hooks, or message signing

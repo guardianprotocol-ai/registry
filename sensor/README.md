@@ -32,6 +32,14 @@ claude mcp add files-guarded -- python3 /path/to/sensor/run.py --config /path/to
 
 Copy `guardian.example.json` to `guardian.json` and list the domains your agents may send data to. Set `"mode": "monitor"` to log without blocking.
 
+## Sharing hub, reference implementation
+
+`python3 -m guardian_sensor report --preview` and `python3 -m guardian_sensor update` are the
+reference implementation of the sharing hub, used in the Season 2 distributed experiments.
+Nothing in Season 1 depends on them: a sightings file is built from an allow-list of seven
+fields and leaves your machine only if you share it. See `ARCHITECTURE.md` for what v0 does
+and does not do.
+
 ## Test it
 
 ```bash
