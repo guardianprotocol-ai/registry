@@ -123,6 +123,28 @@ A board makes the queue visible, which matters more as contributors grow.
    move to Merged. GitHub's built-in project workflows do both.
 4. Keep it honest: an item in Approved that nobody merges is a queue, not progress.
 
+## The Season 1 board
+
+A second, separate board for the Map phase, so 63 technique issues do not bury the normal
+pull request queue.
+
+1. Create the issues first, once: `bash scripts/create_season_one_issues.sh`. It is safe to
+   run again; it reads every existing title and skips anything already there.
+2. Repo, Projects, New project, Board. Name it **Season 1**.
+3. Columns: **Open**, **Claimed**, **In review**, **Done**.
+4. Set the board's filter to `label:season-1`, so it only ever shows Season 1 work.
+5. Add a workflow: new issues with that label land in **Open**, closed issues move to
+   **Done**.
+6. Move an issue to **Claimed** when someone comments to claim it, and assign them. Nobody
+   is assigned work they did not ask for.
+
+The board is for people. The number that matters is generated instead: `docs/STATUS.md` is
+built from the repository by `python3 scripts/build_status.py`, and `check.py` fails if it
+is stale, so progress cannot drift from what the board claims.
+
+**An issue claimed and quiet for 7 days** gets one friendly comment on the issue. After 14
+days it is unassigned and returned to **Open**. Never chase in direct messages.
+
 ## Before the weekly meeting
 
 ```bash

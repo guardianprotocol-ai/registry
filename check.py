@@ -39,6 +39,7 @@ CHECKS = [
     ("Custom mapping detector tests", ".", ["scripts/tests/test_detect_custom_mapping.py"]),
     ("Attack matrix tests", ".", ["scripts/tests/test_build_matrix.py"]),
     ("Season 1 status tests", ".", ["scripts/tests/test_build_status.py"]),
+    ("Season 1 issue tests", ".", ["scripts/tests/test_season_one_issues.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]
