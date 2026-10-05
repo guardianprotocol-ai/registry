@@ -51,6 +51,10 @@ you are in it.
 
 The name is proposed and the group decides it, like any other decision below.
 
+**Organizer, Guardian Protocol Research Group** is the only role the group has so far, and it is an organizing job rather than a scientific one: keep the work visible, keep the rhythm, review quickly, give credit. It carries no extra vote and no authority over findings. Frank Albanese holds it. Further roles, if the group creates any, are recorded here.
+
+Papers name a **corresponding author** for that paper, which is a job on one publication rather than a standing title. See [docs/RESEARCH.md](docs/RESEARCH.md).
+
 ## Decisions
 
 - **Everyday changes:** lazy consensus through pull request review.

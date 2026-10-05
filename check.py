@@ -28,6 +28,7 @@ CHECKS = [
     ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
+    ("Sharing hub tests", "sensor", ["tests/test_hub.py"]),
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
     ("Result file tests", "scanner", ["tests/test_results.py"]),
@@ -40,6 +41,7 @@ CHECKS = [
     ("Attack matrix tests", ".", ["scripts/tests/test_build_matrix.py"]),
     ("Season 1 status tests", ".", ["scripts/tests/test_build_status.py"]),
     ("Season 1 issue tests", ".", ["scripts/tests/test_season_one_issues.py"]),
+    ("Sightings aggregation tests", ".", ["scripts/tests/test_aggregate_sightings.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]

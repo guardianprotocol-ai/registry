@@ -144,11 +144,21 @@ def pump(src, dst, handler, sensor, reply_to=None):
         dst.flush()
 
 
+# The sharing hub commands. Anything else is the proxy, so the way the sensor has always
+# been started keeps working unchanged.
+HUB_COMMANDS = ("report", "update")
+
+
 def main(argv=None):
+    args = sys.argv[1:] if argv is None else list(argv)
+    if args[:1] and args[0] in HUB_COMMANDS:
+        from . import hub_cli
+        return hub_cli.main(args)
+
     ap = argparse.ArgumentParser(prog="guardian_sensor")
     ap.add_argument("--config", default=None)
     ap.add_argument("server", nargs=argparse.REMAINDER)
-    a = ap.parse_args(argv)
+    a = ap.parse_args(args)
     server_cmd = a.server[1:] if a.server[:1] == ["--"] else a.server
     if not server_cmd:
         ap.error("give the real MCP server command after --")
@@ -162,6 +172,7 @@ def main(argv=None):
     proc.stdin.close()
     t.join(timeout=5)
     proc.wait(timeout=5)
+    return 0
 
 
 if __name__ == "__main__":

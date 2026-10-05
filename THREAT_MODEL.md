@@ -36,6 +36,23 @@ Sensors, hooks and the scanner run on the user's own machines with a local copy 
 | Fake sightings poison the network | Signatures shared only after several independent organizations see them; reporter reputation; rate limits | Planned for the network |
 | Crashing the sensor to get past it | Fail open by default so agents keep working; fail closed is a configuration choice for high-security users | Configurable |
 
+## Rule updates in v0
+
+`python3 -m guardian_sensor update` fetches the published rule set and checks every file
+against a SHA-256 manifest published with it, refusing the whole update if anything does
+not match.
+
+**That is integrity, not authenticity.** It defends against a corrupted or truncated
+download, a cache serving stale files, and a file swapped after the manifest was made. It
+does not defend against anyone who can publish a release in this repository, because they
+could publish a matching manifest alongside it. The protections that close that gap are
+signed releases with Sigstore and signed rule updates with TUF, both on the roadmap for
+v0.2.
+
+Until then: the release is only as trustworthy as the repository's own access controls,
+which is why `main` is protected, two-factor authentication is required, and every release
+is built from a commit anyone can read.
+
 ## Out of scope
 
 Attacks on the model itself during training, and compromise of the user's own machine below the sensor, are outside what the sensor can see. The coverage map in `coverage/` says which MITRE ATLAS techniques fall where.

@@ -53,6 +53,29 @@ one. A result with no interval and no run count is not evidence, and the checks 
 A measurement carries the name of whoever took it. That is the point: it is a claim someone
 is willing to put their name on, not an anonymous score.
 
+## What is public and what is not
+
+Two repositories, and the line between them is about whose data it is.
+
+**Public, `guardianprotocol-ai/registry`:** code, patterns, detections, documents,
+proposals, and results that have been approved for publication. Everything in this
+repository is readable by anyone, forever, and should be written on that assumption.
+
+**Private, `guardianprotocol-ai/research`, members only:** raw experiment data from
+members' own companies, anything naming a participating company, findings waiting on
+coordinated disclosure, and paper drafts. On publication, the anonymized data, the results
+and the paper move to the public repository.
+
+**Never in the public repository**, even in an issue or a pull request comment: a member
+company's name alongside its results, raw evidence logs, or a finding that has not been
+through the disclosure process above. If something has already been posted by mistake,
+report it the private way described at the top of this page rather than deleting it
+quietly, because the history stays.
+
+Anonymized sightings are built from an allow-list of fields and contain no tool names,
+arguments, URLs, paths or message text. That is checked by tests, not by review. See
+`ARCHITECTURE.md`.
+
 ## Scope of this code
 
 The sensor, scanner and hooks are prototypes. Don't rely on them for production data yet.
