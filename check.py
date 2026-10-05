@@ -21,7 +21,9 @@ TIMEOUT_SECONDS = 300
 CHECKS = [
     ("Pattern files are valid", "scanner", ["-m", "guardian_scanner", "validate"]),
     ("Recorded results are valid", "scanner", ["-m", "guardian_scanner", "validate-results"]),
+    ("Coverage triage is valid", ".", ["scripts/check_coverage.py"]),
     ("The attack matrix is up to date", ".", ["scripts/build_matrix.py", "--check"]),
+    ("The status page is up to date", ".", ["scripts/build_status.py", "--check"]),
     ("Docs link to things that exist", ".", ["scripts/check_docs.py"]),
     ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
@@ -36,6 +38,7 @@ CHECKS = [
     ("Meeting summary tests", ".", ["scripts/tests/test_shipped.py"]),
     ("Custom mapping detector tests", ".", ["scripts/tests/test_detect_custom_mapping.py"]),
     ("Attack matrix tests", ".", ["scripts/tests/test_build_matrix.py"]),
+    ("Season 1 status tests", ".", ["scripts/tests/test_build_status.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]

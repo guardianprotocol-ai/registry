@@ -16,6 +16,8 @@ Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test w
 
 The words above are used precisely. [docs/GLOSSARY.md](docs/GLOSSARY.md) says what each one means.
 
+**Season 1 runs October 5 to October 29, 2026.** [PROGRAM.md](PROGRAM.md) is the one page that says what we are doing, what you can pick up without asking, and when it ships. Live progress is in [docs/STATUS.md](docs/STATUS.md), generated from this repository.
+
 **Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
 
 New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.
