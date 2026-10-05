@@ -80,7 +80,7 @@ Sensors can report, with the member's consent and no content, how often each rul
 
 ## Recommended order
 
-1. **Before v0.1 (Nov 20):** accept 0001 and the directory layout, and migrate while there are few patterns. Each month of waiting makes the move larger.
+1. **Before v0.1 (Oct 29):** accept 0001 and the directory layout, and migrate while there are few patterns. Each month of waiting makes the move larger.
 2. **v0.2:** bundles, signing, channels, staged rollout.
 3. **v0.3:** field feedback and the shared benign corpus, with the network.
 

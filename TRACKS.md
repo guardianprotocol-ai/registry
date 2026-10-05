@@ -4,7 +4,7 @@ Open tests, detections and measurements for attacks on AI agents, mapped to MITR
 
 Reviewers are invited from among the most active contributors in each area, as described in `GOVERNANCE.md`. Reviewing is a responsibility, not a rank: it's how the project keeps every change checked by someone other than its author.
 
-**Next milestone: Protocol v0.1**, the first public release. Target: November 20, 2026.
+**Next milestone: Protocol v0.1**, the first public release, together with the group's first paper as preprint v1. Target: October 29, 2026. See [PROGRAM.md](PROGRAM.md).
 
 | Track | Folder | What it covers |
 | --- | --- | --- |

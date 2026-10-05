@@ -12,8 +12,9 @@ approval, and the rule that only numbers passing the matrix checks may be publis
 
 ## Publications
 
-None yet. The first is planned alongside v0.1 on November 20, 2026: a measurement study of
-attacks on AI agents across models and harnesses, built on [the attack
-matrix](../MATRIX.md).
+None yet. The first is planned alongside v0.1 on October 29, 2026: the full co-authored
+paper as preprint v1, covering the protocol, its security model and the multi-organization
+trial, built on [the attack matrix](../MATRIX.md). Short-window results are labelled
+preliminary, and v2 with longer-window data follows in Season 2.
 
 The safety rules in [CONTRIBUTING.md](../../CONTRIBUTING.md) apply here too.
