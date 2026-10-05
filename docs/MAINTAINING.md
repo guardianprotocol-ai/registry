@@ -171,6 +171,6 @@ and whether to list an organization.
 
 ## Releases
 
-Not yet. The first is v0.1, targeted for November 20, 2026, per
+Not yet. The first is v0.1, targeted for October 29, 2026, per
 [ROADMAP.md](../ROADMAP.md). When it happens the release notes name everyone who
 contributed to it, taken from `contributors.json` rather than written by hand.
