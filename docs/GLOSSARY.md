@@ -12,6 +12,7 @@ is a bug worth a pull request.
 | **Target** | What a test runs against: a model, inside an agent harness, at specific versions. |
 | **Harness** | The agent software around a model, such as Claude Code, Cursor or a custom framework. |
 | **Result** | A measured attack success rate for one pattern against one target, with run count, interval and date. |
+| **Topology** | How many agents an attack needs and how they are wired: `single`, `orchestrator_worker`, `peer`, `swarm` or `any`. A pattern that does not say is `single`. |
 
 ## Why the distinction between technique and pattern matters
 
@@ -22,6 +23,16 @@ number saying how often it works against the agent you actually deployed.
 A pattern is the executable form. One technique can have many patterns under it, because
 the same idea shows up differently in a tool's output, a retrieved document and an agent's
 own memory.
+
+## Why topology is a field and not a new taxonomy
+
+Attacks that need more than one agent are patterns like any other: they have a stable ID, a
+harmless test and a detection. The only thing they need that a single-agent pattern does not
+is a note about the setup they require, so a reader knows what to build before running the
+test.
+
+That is one optional field, not a second registry and not a parallel set of IDs. A pattern
+is never duplicated per topology for the same reason it is never duplicated per model.
 
 ## Why the distinction between pattern and result matters
 

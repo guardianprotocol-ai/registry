@@ -37,6 +37,32 @@ def validate_with(change):
         return patterns.validate_dir(folder)
 
 
+def test_topology_is_optional_and_defaults_to_single():
+    """Every pattern written before the field existed meant single agent."""
+    report = patterns.validate_dir(PATTERNS)
+    gp0004 = report.patterns["GP-0004"]
+    check("a pattern without topology is valid", "GP-0004" not in str(report.problems))
+    check("a pattern without topology reads as single",
+          patterns.topology_of(gp0004) == "single", patterns.topology_of(gp0004))
+    gp0008 = report.patterns["GP-0008"]
+    check("GP-0008 is orchestrator and worker",
+          patterns.topology_of(gp0008) == "orchestrator_worker", patterns.topology_of(gp0008))
+
+
+def test_every_topology_value_is_accepted():
+    for value in patterns.TOPOLOGIES:
+        report = validate_with(lambda t, v=value: t.replace("surfaces:", f"topology: {v}\nsurfaces:", 1))
+        check(f"topology {value} is accepted", report.ok, "; ".join(report.problems))
+
+
+def test_an_unknown_topology_is_refused():
+    for bad in ["mesh", "Single", "orchestrator-worker", "two"]:
+        report = validate_with(lambda t, v=bad: t.replace("surfaces:", f"topology: {v}\nsurfaces:", 1))
+        check(f"topology {bad!r} is refused",
+              not report.ok and any("topology is not one of" in p for p in report.problems),
+              "; ".join(report.problems))
+
+
 def test_the_registry_validates():
     report = patterns.validate_dir(PATTERNS)
     check("every pattern file in the registry is valid", report.ok, "; ".join(report.problems[:4]))

@@ -107,15 +107,19 @@ def collect(results_dir=None):
     return grouped
 
 
-def render(grouped, titles):
+def render(grouped, titles, meta=None):
     lines = [HEADER]
     if not grouped:
         lines.append("\nNo measurements recorded yet.\n")
         lines.append(FOOTER)
         return "\n".join(lines)
+    meta = meta or {}
     for pattern in sorted(grouped):
         title = titles.get(pattern, "")
         lines.append(f"\n## {pattern}{': ' + title if title else ''}\n")
+        topology = (meta.get(pattern) or {}).get("topology", "single")
+        if topology != "single":
+            lines.append(f"Needs more than one agent: topology `{topology}`.\n")
         lines.append("| Target | Date | Unprotected | With the sensor |")
         lines.append("| --- | --- | --- | --- |")
         for key in sorted(grouped[pattern]):
@@ -147,13 +151,21 @@ def as_json(grouped):
     return {"schema_version": result_files.SCHEMA_VERSION, "measurements": out}
 
 
-def titles_of():
+def meta_of():
+    """pattern id -> its title and topology, for the headings."""
     report = pattern_files.validate_dir(pattern_files.registry_dir())
-    return {pid: doc.get("title", "") for pid, doc in report.patterns.items()}
+    return {pid: {"title": doc.get("title", ""),
+                  "topology": pattern_files.topology_of(doc)}
+            for pid, doc in report.patterns.items()}
+
+
+def titles_of():
+    return {pid: meta["title"] for pid, meta in meta_of().items()}
 
 
 def build(results_dir=None):
-    return render(collect(results_dir), titles_of())
+    meta = meta_of()
+    return render(collect(results_dir), {k: v["title"] for k, v in meta.items()}, meta)
 
 
 def main(argv=None):

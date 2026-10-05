@@ -11,6 +11,10 @@ version:       # 1, 2, 3 ... bumped on any change to test or detection
 summary:       # 1 to 3 sentences in plain language
 severity:      # low | medium | high | critical, with a one-line reason
 surfaces:      # where it happens, e.g. mcp_tool_output, mcp_tool_definition, agent_to_agent, retrieved_document
+topology:      # optional. How many agents the attack needs and how they are wired:
+               # single | orchestrator_worker | peer | swarm | any. Omitted means single.
+               # Multi-agent attacks are patterns like any other; this is the only field
+               # they add, and it is additive, so every earlier pattern stays valid.
 maps_to:
   owasp:       # list of OWASP IDs, e.g. LLM01:2025
   atlas:       # list of MITRE ATLAS technique IDs, e.g. AML.T0051.001, each one in coverage/atlas-coverage.csv

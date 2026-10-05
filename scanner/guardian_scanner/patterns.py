@@ -38,6 +38,11 @@ BARE_HOST = re.compile(r"\b(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}\b",
 IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
 # Reserved by RFC 2606 and RFC 6761. None of these resolve on the public internet.
+# How many agents the attack needs, and how they are wired. Optional and additive: a
+# pattern that says nothing is about a single agent, which is what every pattern written
+# before this field existed meant.
+TOPOLOGIES = ("single", "orchestrator_worker", "peer", "swarm", "any")
+
 RESERVED_SUFFIXES = (".test", ".example", ".invalid", ".localhost")
 RESERVED_NAMES = {"localhost", "example.com", "example.net", "example.org"}
 # RFC 5737 documentation ranges and loopback, the only literal addresses a test may name.
@@ -158,6 +163,7 @@ def validate_one(name, doc, report, known_atlas=None):
     if not any(str(severity).startswith(s) for s in SEVERITIES):
         report.fail(name, f"severity does not start with one of {SEVERITIES}")
 
+    _check_topology(name, doc, report)
     _check_mapping(name, doc, report, known_atlas)
     _check_credits(name, doc, report)
 
@@ -168,6 +174,20 @@ def validate_one(name, doc, report, known_atlas=None):
     for destination in reachable_destinations(text):
         report.fail(name, "a destination outside reserved space, which a test could really "
                           f"reach: {destination}")
+
+
+def _check_topology(name, doc, report):
+    """Optional. Omitted means `single`, so older patterns stay valid."""
+    if "topology" not in doc:
+        return
+    value = doc.get("topology")
+    if value not in TOPOLOGIES:
+        report.fail(name, f"topology is not one of {TOPOLOGIES}: {value!r}. Leave it out "
+                          "for a single-agent pattern.")
+
+
+def topology_of(doc):
+    return doc.get("topology") or "single"
 
 
 def _check_mapping(name, doc, report, known_atlas):
