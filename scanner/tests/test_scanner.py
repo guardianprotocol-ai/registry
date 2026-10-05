@@ -206,10 +206,33 @@ def test_a_credit_without_a_name_is_caught():
     check("a credit with no name is caught", not report.ok, "validator said it was fine")
 
 
-def test_the_registry_has_no_custom_mappings_today():
+def test_custom_mappings_are_argued_and_stay_visible():
+    """A pattern may map to no ATLAS technique, but only out loud.
+
+    This used to assert there were none. There is one now, GP-0018, because attacks on
+    agreement between agents are not in ATLAS yet. The invariant worth protecting is not
+    that the count is zero; it is that every custom mapping names the closest technique it
+    considered and that the count is reported on every run, so it cannot drift upward
+    unnoticed.
+    """
     report = patterns.validate_dir(PATTERNS)
-    check("every shipped pattern maps to a real ATLAS technique", not report.custom,
-          str(report.custom))
+    for pid, reason in report.custom:
+        check(f"{pid} names the closest ATLAS technique it considered",
+              "AML.T" in reason, reason[:120])
+        check(f"{pid} argues the case at length rather than waving at it",
+              len(reason) >= 120, str(len(reason)))
+    printed = report_text_for(report)
+    if report.custom:
+        check("the custom count is printed on every validate run",
+              "map to no ATLAS technique" in printed, printed[-200:])
+    else:
+        check("a registry with no custom mappings says so",
+              "Every pattern maps to a MITRE ATLAS technique" in printed, printed[-200:])
+
+
+def report_text_for(report):
+    from guardian_scanner import report as report_module
+    return report_module.validation_text(report)
 
 
 # ---------- attack success rate ----------
