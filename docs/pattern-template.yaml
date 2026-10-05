@@ -15,6 +15,7 @@ summary: >
   ends up doing.
 severity: medium (one-line reason)    # low | medium | high | critical
 surfaces: [mcp_tool_output]           # where it happens; see schema.yaml for examples
+# topology: single                    # optional: single | orchestrator_worker | peer | swarm | any
 maps_to:
   owasp: ["LLM01:2025 Prompt Injection"]
   atlas: ["AML.T0051.001 LLM Prompt Injection: Indirect"]

@@ -9,6 +9,7 @@ summary: >
   tools and permissions the first one does not.
 severity: high (it launders an injection into an instruction that looks internal and trusted)
 surfaces: [agent_to_agent, mcp_tool_output, retrieved_document]
+topology: orchestrator_worker
 maps_to:
   owasp: ["LLM01:2025 Prompt Injection", "LLM06:2025 Excessive Agency"]
   atlas: ["AML.T0118.001 Autonomous AI Agent Communication: Direct Agent Communication", "AML.T0118 Autonomous AI Agent Communication"]
