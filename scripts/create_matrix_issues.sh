@@ -92,3 +92,40 @@ The publishing rules already in [SECURITY.md](../blob/main/SECURITY.md) are the 
 
 Open for at least 7 days, then decided by a majority of maintainers (GOVERNANCE.md).
 EOF
+
+# ---------------------------------------------------------------------------
+# The research group. Two decisions for the kickoff.
+# ---------------------------------------------------------------------------
+
+issue "Name the research group" "proposal,track:governance" <<'EOF'
+The group needs a name before the first publication, because the byline depends on it.
+
+**Proposed:** Guardian Protocol Research Group. Chosen because the group's identity is research led: it sets the research agenda and approves publications.
+
+**Alternative:** Guardian Protocol Working Group.
+
+Until this is decided, every document says the name is proposed. See [docs/RESEARCH.md](../blob/main/docs/RESEARCH.md) and the research group section of [GOVERNANCE.md](../blob/main/GOVERNANCE.md).
+
+**One constraint, not up for a vote.** Y Combinator's name does not go in the group's name, or in any public byline, without Y Combinator's written permission. The same applies to any member company's name. We can describe ourselves accurately as a working group of YC founders and researchers; we cannot imply an endorsement nobody has given us.
+
+Open for at least 7 days, then decided by a majority of maintainers (GOVERNANCE.md).
+EOF
+
+issue "Adopt the research and authorship policy" "proposal,track:governance" <<'EOF'
+[docs/RESEARCH.md](../blob/main/docs/RESEARCH.md) is written and in the repository, but it has not been agreed by anyone except its author. This issue is where the group adopts it or changes it.
+
+What it currently says:
+
+- **Byline:** by the Guardian Protocol Research Group, then the full author list with affiliations.
+- **Author:** made a substantive contribution, approved the final draft, and is accountable for it. Contributing a measurement a study relies on counts. Everyone else is acknowledged by name.
+- **Order:** alphabetical by last name unless the authors agree otherwise in writing.
+- **Conflicts:** every author discloses affiliations, including companies building on the protocol. Measuring an author's employer's product is stated next to the result.
+- **Approval:** every author approves the final version and checks with their own employer first.
+- **Results:** only numbers that pass the matrix checks, with run counts and intervals. The disclosure rules in SECURITY.md come first.
+- **Where:** the project site and arXiv first, venues after. Every publication names the registry commit its data came from.
+- **Licensing:** text CC BY 4.0, code and data Apache 2.0.
+
+Worth arguing about before the first paper rather than during it: whether alphabetical order is right for a measurement study where contributions are very uneven, and whether a measurement contributor should be an author by default or by invitation.
+
+Open for at least 7 days, then decided by a majority of maintainers (GOVERNANCE.md).
+EOF

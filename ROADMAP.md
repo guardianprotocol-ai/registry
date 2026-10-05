@@ -12,6 +12,9 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
 - Client hooks for agents' built-in tools, starting with Claude Code
 - Free public scan
 - OpenSSF Security Baseline Level 1 and an OpenSSF Scorecard check
+- First publication, alongside v0.1 on November 20: a measurement study of attacks on AI
+  agents across models and harnesses, built on the attack matrix, under the authorship
+  policy in `docs/RESEARCH.md`
 - Application to the OpenSSF Sandbox
 
 ## Q1 2027: trust
