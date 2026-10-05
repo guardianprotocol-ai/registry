@@ -39,6 +39,18 @@ founding maintainer merges using the administrator override, which GitHub record
 pull request for anyone to read. That is the honest description of the current state, not
 a gap we are hiding.
 
+## The research group
+
+**Guardian Protocol Research Group** is the contributors who take part in the regular
+meetings. It sets the research agenda and approves publications under
+[docs/RESEARCH.md](docs/RESEARCH.md), which also says who counts as an author.
+
+It is not a separate authority. It does not merge code, promote patterns or decide anything
+this document assigns to maintainers. Taking part needs no title: show up, contribute, and
+you are in it.
+
+The name is proposed and the group decides it, like any other decision below.
+
 ## Decisions
 
 - **Everyday changes:** lazy consensus through pull request review.
