@@ -13,7 +13,7 @@ Reviewers are invited from among the most active contributors in each area, as d
 | Sensor and hooks | `sensor/`, `hooks/` | Real-time detection, client hooks, rule quality |
 | Coverage and evidence | `coverage/` | MITRE ATLAS and OWASP mapping, real incidents behind each pattern |
 | Deception and model behavior | `docs/research/` | Research on agents that mislead or hide what they did |
-| Trial | `sensor/`, `scripts/` | Running the sharing hub: take part, operate it, analyze what comes back |
+| Trial | `sensor/`, `scripts/` | The sharing hub, the open reference implementation for Season 2's distributed experiments |
 | Multi-agent | `patterns/`, the scanner lab, `docs/proposals/0003` | Attacks that need more than one agent, and seeing the traffic between them |
 
 ## Patterns
@@ -38,9 +38,10 @@ Good first tasks: add attack and benign test cases for an existing rule.
 
 ## Trial
 
-The distributed trial is the group's first experiment: real sensors on members' own
-development agents, a real exchange of anonymized sightings, and a measured time to
-protection across organizations. Three ways to help, in increasing order of commitment.
+The distributed experiments, fire drills and the immune response exercise, are Season 2 and
+the second paper. The hub they will run on is in the repository now, as open reference code,
+so it can be read, tested and attacked before anything depends on it. Three ways to help, in
+increasing order of commitment.
 
 **Operate it.** The hub is built and small: `python3 -m guardian_sensor report --preview`,
 `python3 -m guardian_sensor update`, `scripts/aggregate_sightings.py`. It needs more tests,
@@ -49,10 +50,11 @@ better failure messages, and a second pair of eyes on the privacy argument.
 **Attack it.** The promise is that a sightings file contains no content. Try to break that.
 `sensor/tests/test_hub.py` is where a successful attempt becomes a permanent test.
 
-**Take part.** Your company runs the sensor in monitor mode on a development agent and
-shares sightings. Opt-in, with your company's own written approval, and you can withdraw at
-any time and have your data removed before publication. The protocol and the participation
-guide live in the private research repository, because they involve named companies.
+**Take part, in Season 2.** Your company runs the sensor in monitor mode on a development
+agent and shares sightings, if three or more companies opt in. Opt-in, with your company's
+own written approval, and you can withdraw at any time and have your data removed before
+publication. The protocol and the participation guide live in the private research
+repository, because they involve named companies.
 
 Good first tasks: review the allow-list in `sensor/guardian_sensor/hub.py` and try to find
 a way through it.

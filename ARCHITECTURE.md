@@ -96,7 +96,8 @@ Agents also use built-in tools (shell, file editing, web fetch) that never pass 
 
 #### The hub v0: built
 
-Steps 2 and 5 exist in their smallest honest form, enough to run the trial.
+Steps 2 and 5 exist in their smallest honest form, as the open reference implementation for
+the Season 2 distributed experiments.
 
 - `python3 -m guardian_sensor report --since <date> --preview` shows exactly what would be shared; add `--out` to write it. A sighting carries only `org`, `sensor_version`, `rules_version`, `pattern`, `action`, `hour` and `count`.
 - `python3 -m guardian_sensor update --base <release url>` fetches the published rule set, checks every file against a SHA-256 manifest, refuses the whole update on any mismatch, and records the version in `.guardian/updates.jsonl`.

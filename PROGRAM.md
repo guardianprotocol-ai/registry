@@ -4,7 +4,11 @@ One page: what the group is doing, what you can pick up without asking anyone, a
 see how far along we are.
 
 **The goal.** By October 29 we publish protocol v0.1 and the full co-authored paper as
-preprint v1, with sensors running across member companies and numbers to show for it.
+preprint v1, with members' own agents measured and numbers to show for it.
+
+**The paper's scope is measurement:** which attacks land, against which models, inside which
+harnesses, with the sensor off and on. The distributed work, fire drills and the immune
+response exercise, is Season 2 and the second paper.
 
 **The rule on scope.** Whatever is done by **October 25** goes in the paper. Results from
 short measurement windows are labelled preliminary in the limitations section. We cut scope,
@@ -17,12 +21,12 @@ The paper is written in parallel from week 1. It is not written at the end.
 
 | Week | Dates | What is happening |
 | --- | --- | --- |
-| 1 | Oct 5 to 11 | Kickoff. **Map** the 63 techniques. Companies start seeking approval for the trial |
-| 2 | Oct 12 to 18 | **Prove** and **Measure**. **Deploy** sensors in monitor mode |
-| 3 | Oct 19 to 25 | **Drill**, around Oct 21. **Immune response exercise**, around Oct 23, if at least three companies are ready; otherwise it opens Season 2 |
+| 1 | Oct 5 to 11 | Kickoff. **Map** the 63 techniques |
+| 2 | Oct 12 to 18 | **Prove** and **Measure**. **Deploy** is optional: the sensor in monitor mode on your own machine |
+| 3 | Oct 19 to 25 | **Measure** continues: more harnesses, more model families, 20 runs per cell, sensor off and on. Results in by Oct 25 |
 | 4 | Oct 26 to 29 | Finish the paper and every author approves it. **Publish** v0.1 and preprint v1 on Oct 29 |
 
-## The six phases
+## The four phases, and one optional
 
 ### 1. Map
 
@@ -55,42 +59,29 @@ the attack matrix, **at least 20 runs per result, sensor off and on**. See
 [TEST_YOUR_AGENT.md](TEST_YOUR_AGENT.md), which goes from a fresh clone to a recorded
 result in about twenty minutes.
 
+Members test their own agents and share what they choose. A result is yours until you open
+the pull request, and nothing in it names your company unless you put it there.
+
 **Done when** the matrix has rows from more than one harness and more than one model family.
 
-### 4. Deploy
+### 4. Publish, October 29
 
-Participating companies install the sensor in **monitor mode** on development agents and
-send anonymized sightings through the hub. Opt-in per company, with that company's own
-written approval.
-
-### 5. Drill
-
-Coordinated fire drills: a new harmless pattern is released, and we measure **time to
-protection** across every participating sensor. That number is the headline result of the
-trial.
-
-### 6. Immune response exercise
-
-A **simulated adversarial campaign**. A scripted attacker agent runs existing registry
-attacks against participating companies' development agents, inside a scheduled window, with
-each company's written consent and a kill switch any participant can pull.
-
-Harmless by construction: it reuses scenarios already in the registry, canary tokens and
-reserved `.test` destinations only. No new attack techniques are written for it, no evasion
-and no self-propagation. We measure what each sensor detects, how fast sightings reach the
-hub, and how fast protection spreads to everyone else.
-
-This is the closing experiment of the paper. If fewer than three companies are ready by
-October 23, it opens Season 2 instead.
-
-## Publishing, October 29
-
-Protocol v0.1 and the full co-authored paper as **preprint v1**. Authorship follows
+Protocol v0.1 and the full co-authored paper as **preprint v1**, scoped to measurement. Authorship follows
 [docs/RESEARCH.md](docs/RESEARCH.md): a substantive contribution, approval of the final
 draft, and accountability for it. Contributing a measurement the paper relies on counts.
 
 Short-window results are labelled preliminary. **v2**, with longer-window data, follows in
 Season 2, and the paper can then go to a workshop or a conference.
+
+### Deploy, optional
+
+Run the sensor in **monitor mode** on a development agent on your own machine. It flags and
+records, blocks nothing, and uses no network and no hub: nothing leaves your machine unless
+you choose to share numbers. What it earns is a local false-alarm observation on real work,
+which a corpus cannot give, and every false alarm you report becomes a benign corpus case so
+it stops happening to everyone else.
+
+Opt-in, per person, on development or staging agents, never on customer production systems.
 
 ## How to take part
 
@@ -107,11 +98,18 @@ are resolved, runnable, backed by corpus cases and measured.
 that most need an owner. A Thursday call: demos first from whoever shipped, then the week's
 one decision, then claims for the following week.
 
-**Phases 4, 5 and 6 are opt-in per company**, each with its own written approval, monitor
-mode only, on development or staging agents. A company can withdraw at any time and have its
-data removed before publication.
+**Deploy is optional and local.** Monitor mode only, on development or staging agents, on
+your own machine. Nothing leaves it unless you share numbers, and anything you have shared
+can be withdrawn before publication.
 
 ## What stays private
 
-Members' raw trial data, anything specific to a named company, and findings awaiting
-coordinated disclosure never go in this repository. See [SECURITY.md](SECURITY.md).
+Members' raw evidence logs, results they have not chosen to share, anything specific to a
+named company, and findings awaiting coordinated disclosure never go in this repository. See
+[SECURITY.md](SECURITY.md).
+
+## Season 2: the distributed work
+
+Fire drills and the immune response exercise on the open reference hub, if three or more
+companies opt in, and the second paper. The hub is already in this repository as the reference
+implementation those experiments will run on; see `sensor/README.md`.
