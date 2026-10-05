@@ -14,6 +14,7 @@ Reviewers are invited from among the most active contributors in each area, as d
 | Coverage and evidence | `coverage/` | MITRE ATLAS and OWASP mapping, real incidents behind each pattern |
 | Deception and model behavior | `docs/research/` | Research on agents that mislead or hide what they did |
 | Trial | `sensor/`, `scripts/` | Running the sharing hub: take part, operate it, analyze what comes back |
+| Multi-agent | `patterns/`, the scanner lab, `docs/proposals/0003` | Attacks that need more than one agent, and seeing the traffic between them |
 
 ## Patterns
 
@@ -55,6 +56,25 @@ guide live in the private research repository, because they involve named compan
 
 Good first tasks: review the allow-list in `sensor/guardian_sensor/hub.py` and try to find
 a way through it.
+
+## Multi-agent
+
+Teams chain agents together: an orchestrator hands work to workers, peers message each other,
+swarms vote. That creates attacks that cannot exist with one agent, and the registry has six
+draft patterns for them, GP-0013 to GP-0018, with a `topology` field saying what setup each
+one needs.
+
+**Where it stands.** GP-0008 runs end to end against a scripted pair of agents in the lab:
+100 percent unprotected, 0 percent with the sensor in front. The other six validate but do
+not run, and most of their detections are written down as ideas rather than shipped as rules,
+because the rule engine cannot yet express them and the corpus format cannot describe a
+multi-agent session.
+
+**The honest blocker** is in `docs/proposals/0003`: the sensor only sees agent-to-agent
+traffic that happens to pass through MCP. Everything else is invisible to it.
+
+Good first tasks: give one of GP-0013 to GP-0018 a scenario in the lab, the way GP-0008 has
+one; or argue with proposal 0003, which needs disagreement more than it needs agreement.
 
 ## Coverage and evidence
 

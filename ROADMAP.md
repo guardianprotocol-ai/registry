@@ -8,6 +8,8 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
 - Full MITRE ATLAS coverage map, reviewed by the community
 - Reference sensor for MCP, with tests
 - Scanner v0: runs each pattern's test many times and reports an attack success rate
+- GP-0008, instructions passed between agents, runnable against a scripted pair and measured
+  in the first paper on October 29, 2026
 - The attack matrix: a published place for measured results by model, harness and version, generated into `docs/MATRIX.md` from validated result files
 - Client hooks for agents' built-in tools, starting with Claude Code
 - Free public scan
@@ -18,6 +20,13 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
   short measurement windows are labelled preliminary; v2 with longer-window data follows in
   Season 2
 - Application to the OpenSSF Sandbox
+
+## Early 2027: the second paper
+
+- Multi-agent attacks: the six draft patterns GP-0013 to GP-0018 made runnable and measured
+- Coverage of traffic between agents, subject to what the group decides on
+  `docs/proposals/0003`: an A2A transport for the sensor, framework hooks, or message signing
+- The corpus format extended to describe multi-agent sessions, which blocks most of the above
 
 ## Q1 2027: trust
 
