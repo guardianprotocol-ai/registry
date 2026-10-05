@@ -27,6 +27,26 @@ def validation_text(report):
     return "\n".join(lines)
 
 
+def results_validation_text(report):
+    """What check.py prints for results/."""
+    count = len(report.results)
+    if count == 0:
+        return ("No recorded results yet. Measure a target and record one: see "
+                "results/README.md.")
+    lines = [f"Validated {count} recorded result(s)."]
+    if report.ok:
+        targets = sorted({
+            "%s %s" % (d.get("target", {}).get("harness", "?"),
+                       d.get("target", {}).get("harness_version", "?"))
+            for d in report.results.values()})
+        lines.append("Every rate and interval recomputes from its own counts.")
+        lines.append("Targets measured so far: " + ", ".join(targets) + ".")
+    else:
+        lines.append(f"{len(report.problems)} problem(s):")
+        lines += [f"  - {p}" for p in report.problems]
+    return "\n".join(lines)
+
+
 def results_text(results, repeat, skipped=()):
     head = (f"{'Pattern':<9} {'Target':<20} {'Runs':>4} {'ASR':>7} {'95% interval':>16}  "
             f"{'':<20} Errors")

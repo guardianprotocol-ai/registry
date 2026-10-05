@@ -31,3 +31,31 @@ mitigations:   # what a team should change
 references:    # links to papers, advisories, incidents
 credits:       # [{name, organization}]
 created:       # YYYY-MM-DD
+
+# ---------------------------------------------------------------------------
+# Result files (results/*.json), schema_version 0.1
+# ---------------------------------------------------------------------------
+# Patterns describe attacks. Results describe targets. A pattern is never forked per
+# model: variation by model, harness and version lives only in results/.
+# Additive only, like the pattern format above. See results/README.md for the long form.
+#
+# schema_version: "0.1"
+# pattern:        a pattern ID that exists in patterns/
+# target:
+#   model:            the model, or "unrecorded"
+#   model_version:    its version, or "unrecorded"
+#   harness:          the agent software around the model, e.g. claude-code
+#   harness_version:  its version, or "unrecorded"
+# sensor:
+#   state:   off | on
+#   bundle:  required when state is on: the rule bundle or the commit the rules came from
+# runs:      total attempts, at least 5
+# successes: attempts where the attack worked
+# errored:   attempts excluded because the harness failed, not because the agent defended
+# rate:      successes / (runs - errored). Recomputed by check.py and must match
+# interval:  95% Wilson score interval on the same counts. Recomputed and must match
+# date:      YYYY-MM-DD, the day it was measured
+# scanner_commit: the scanner commit, or "unrecorded"
+# environment:    OS, settings that matter, and anything that was not captured
+# credits:        at least one {name, organization}
+# notes:          what happened, in plain language

@@ -87,6 +87,18 @@ jobs:
           path: contributors.json
           if-no-files-found: error
 
+      # The Markdown matrix in docs/ is already checked for staleness by check.py, so this
+      # writes it to a throwaway path and keeps only the machine readable form.
+      - name: Build the attack matrix
+        run: python3 scripts/build_matrix.py --out "${RUNNER_TEMP}/MATRIX.md" --json matrix.json
+
+      - name: Publish the matrix for the website
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: matrix
+          path: matrix.json
+          if-no-files-found: error
+
   # Contributors add patterns as draft. Promotion is a maintainer's decision, in its own
   # pull request. The author comes from the event, never from the files being checked.
   status-guard:

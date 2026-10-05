@@ -20,18 +20,22 @@ TIMEOUT_SECONDS = 300
 # (label, working directory, command)
 CHECKS = [
     ("Pattern files are valid", "scanner", ["-m", "guardian_scanner", "validate"]),
+    ("Recorded results are valid", "scanner", ["-m", "guardian_scanner", "validate-results"]),
+    ("The attack matrix is up to date", ".", ["scripts/build_matrix.py", "--check"]),
     ("Docs link to things that exist", ".", ["scripts/check_docs.py"]),
     ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
+    ("Result file tests", "scanner", ["tests/test_results.py"]),
     ("Claude Code hook tests", ".", ["hooks/claude_code/tests/test_hook.py"]),
     ("Pattern scaffold tests", ".", ["scripts/tests/test_new_pattern.py"]),
     ("Status guard tests", ".", ["scripts/tests/test_check_status_changes.py"]),
     ("Contributor data tests", ".", ["scripts/tests/test_build_contributors.py"]),
     ("Meeting summary tests", ".", ["scripts/tests/test_shipped.py"]),
     ("Custom mapping detector tests", ".", ["scripts/tests/test_detect_custom_mapping.py"]),
+    ("Attack matrix tests", ".", ["scripts/tests/test_build_matrix.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]

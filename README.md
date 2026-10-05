@@ -11,7 +11,7 @@ Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test w
 
 - The **test** powers scans: run every pattern against your agent and see which attacks get through.
 - The **detection** powers sensors: block the attack in real time.
-- The **result** is what the scan measured: an attack success rate for one pattern against one named model and harness, with the run count and a 95% interval.
+- The **result** is what the scan measured: an attack success rate for one pattern against one named model and harness, with the run count and a 95% interval. They collect in the [attack matrix](docs/MATRIX.md).
 - **Sightings** will show which attacks are active right now, once the network exists. It is in design, not built: see `ARCHITECTURE.md`.
 
 The words above are used precisely. [docs/GLOSSARY.md](docs/GLOSSARY.md) says what each one means.
