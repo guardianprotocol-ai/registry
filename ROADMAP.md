@@ -50,4 +50,9 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
 
 - Words-domain detectors: reasoning monitors and checks on what agents say against what they do
 - Research track on thoughts-domain probes for self-hosted models, published openly
+- Research direction: honeypot environments, deliberately exposed agent setups that attract
+  and record real attack attempts in the wild, feeding new sightings into the registry
+- Research direction: sandboxed observation environments, isolated agent sandboxes where
+  verified attacks run while every action is recorded, to study attack behavior beyond a
+  pass or fail measurement
 - Model gateway and network egress integrations
