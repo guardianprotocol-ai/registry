@@ -17,8 +17,10 @@ def _target(name):
         return targets.scripted(name.split(":", 1)[1])
     if name == "claude-code":
         return targets.claude_code()
-    raise SystemExit(f"unknown target {name!r}. Use scripted:vulnerable, scripted:hardened "
-                     "or claude-code.")
+    if name == "gemini-cli":
+        return targets.gemini_cli()
+    raise SystemExit(f"unknown target {name!r}. Use scripted:vulnerable, scripted:hardened, "
+                     "claude-code or gemini-cli.")
 
 
 def main(argv=None):
