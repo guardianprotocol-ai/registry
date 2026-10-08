@@ -13,9 +13,19 @@ command -v gh >/dev/null || { echo "Install the GitHub CLI first: https://cli.gi
 command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "Sign in first: gh auth login"; exit 1; }
 
+# Every label this script uses, created up front so the script does not depend on any
+# other having run first. `--force` makes this safe to repeat.
+ensure_labels() {
+  for spec in "$@"; do
+    name="${spec%%|*}"; rest="${spec#*|}"; color="${rest%%|*}"; desc="${rest#*|}"
+    gh label create "$name" --color "$color" --description "$desc" --repo "$REPO" --force >/dev/null
+  done
+}
+
+ensure_labels "season-1|0e8a16|Season 1: Oct 5 to Oct 29, 2026" "track:patterns|1d76db|Attack patterns" "track:coverage|1d76db|MITRE ATLAS and OWASP coverage" "good first issue|7057ff|Good for newcomers"
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-gh label create "season-1" --color "0e8a16" --description "Season 1: Oct 5 to Oct 29, 2026" --repo "$REPO" --force >/dev/null
 
 # Every title already in the repository, open or closed, so re-running creates nothing twice.
 echo "Reading existing issues..."
