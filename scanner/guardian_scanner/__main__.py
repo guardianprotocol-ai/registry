@@ -8,6 +8,7 @@
   python3 -m guardian_scanner run --target claude-code --repeat 10 --record ../results
 """
 import argparse
+import os
 import sys
 
 from . import patterns, report, results, runner, scenarios, targets
@@ -88,11 +89,39 @@ def main(argv=None):
         print("\nRefusing to run: fix the pattern files first.")
         return 1
 
+    # Checked before a single run, because every run after this costs real model calls and a
+    # late failure throws all of them away.
+    if a.command == "run":
+        if a.repeat < 1:
+            raise SystemExit(f"--repeat {a.repeat} runs nothing. Use 1 or more.")
+        # The floor belongs on recording, not on exploring. A single run is how anyone checks
+        # that a new target works at all, and banning it would make writing a target harder.
+        if a.record and a.repeat < results.MIN_RUNS:
+            raise SystemExit(
+                f"--repeat {a.repeat} is below {results.MIN_RUNS}, and --record would write a "
+                f"result file that validate-results refuses. A measurement needs at least "
+                f"{results.MIN_RUNS} runs to carry any information, and 20 is the figure Season 1 "
+                "asks for. Drop --record to try a smaller run without recording it.")
+        if a.record and not os.path.isdir(a.record):
+            raise SystemExit(
+                f"--record {a.record!r} is not a folder that exists. Create it first, or point at "
+                "the registry's results folder with --record ../results. Checked now rather than "
+                "after the runs, so a typo does not cost you the whole measurement.")
+
     runnable = scenarios.available()
     only = a.only or runnable
     unknown = [p for p in only if p not in runnable]
     if unknown:
-        raise SystemExit(f"no scenario in scanner v0 for {', '.join(unknown)}")
+        # A typo and a genuinely unimplemented pattern deserve different messages. Compare
+        # case insensitively so 'gp-0001' is named as the typo it is.
+        folded = {p.upper(): p for p in runnable}
+        hints = []
+        for p in unknown:
+            match = folded.get(p.strip().upper())
+            hints.append(f"{p!r} (did you mean {match!r}?)" if match else repr(p))
+        raise SystemExit(
+            f"no scenario in scanner v0 for {', '.join(hints)}. Run "
+            "'python3 -m guardian_scanner list' to see which patterns the scan can run.")
     # Two different reasons a pattern was not run, and saying the wrong one misleads anyone
     # measuring a single pattern: no scenario exists, or --pattern left it out.
     skipped = [p for p in sorted(validation.patterns) if p not in only]

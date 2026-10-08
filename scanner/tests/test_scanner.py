@@ -7,7 +7,8 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from guardian_scanner import patterns, report, runner, scenarios, targets  # noqa: E402
+from guardian_scanner import patterns, report, results, runner, scenarios, targets  # noqa: E402
+from guardian_scanner import __main__ as cli  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PATTERNS = os.path.join(REPO, "patterns")
@@ -388,6 +389,70 @@ def test_the_reasons_are_computed_from_what_the_scan_can_run():
           not (set(no_scenario) & runnable), str(sorted(set(no_scenario) & runnable)))
     check("every skipped runnable pattern is accounted for",
           set(left_out) == (runnable - set(only)), str(sorted(set(left_out))))
+
+
+# ---------- the command line fails before it spends runs, not after ----------
+
+def refusal(argv):
+    """Return the message the CLI exits with, or None if it did not refuse."""
+    try:
+        cli.main(argv)
+    except SystemExit as e:
+        return str(e.code) if not isinstance(e.code, int) else None
+    return None
+
+
+def test_a_run_of_nothing_is_refused():
+    """--repeat 0 used to print a row and record a file the validator then rejected."""
+    for bad in ("0", "-5"):
+        msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "GP-0001",
+                       "--repeat", bad])
+        check(f"--repeat {bad} is refused", msg is not None and "runs nothing" in msg, str(msg))
+
+
+def test_a_small_run_is_allowed_until_you_try_to_record_it():
+    """One run is how anyone smoke tests a new target, so exploring must stay cheap."""
+    msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "GP-0001",
+                   "--repeat", "1"])
+    check("a single run without --record is allowed", msg is None, str(msg))
+    msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "GP-0001",
+                   "--repeat", "1", "--record", REPO])
+    check("a single run with --record is refused",
+          msg is not None and f"below {results.MIN_RUNS}" in msg, str(msg))
+    check("the refusal says how to explore instead",
+          msg is not None and "Drop --record" in msg, str(msg))
+
+
+def test_the_recording_floor_matches_what_the_validator_enforces():
+    """If these drift, the CLI records runs that validate-results later throws away."""
+    msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "GP-0001",
+                   "--repeat", str(results.MIN_RUNS - 1), "--record", REPO])
+    check("one below the validator floor is refused when recording", msg is not None, str(msg))
+
+
+def test_a_missing_record_folder_is_caught_before_the_runs():
+    """The runs complete first, so a typo here used to throw away every model call."""
+    msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "GP-0001",
+                   "--repeat", "5", "--record", "/nope/does/not/exist"])
+    check("a missing --record folder is refused up front",
+          msg is not None and "not a folder that exists" in msg, str(msg))
+    check("the refusal names the folder", msg is not None and "/nope/does/not/exist" in msg,
+          str(msg))
+
+
+def test_a_case_typo_is_named_as_a_typo_not_a_missing_scenario():
+    msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "gp-0001",
+                   "--repeat", "5"])
+    check("a lowercase pattern id suggests the real one",
+          msg is not None and "did you mean 'GP-0001'" in msg, str(msg))
+
+
+def test_a_genuinely_unknown_pattern_gets_no_false_suggestion():
+    msg = refusal(["run", "--target", "scripted:hardened", "--pattern", "GP-9999",
+                   "--repeat", "5"])
+    check("an unknown pattern is refused", msg is not None, str(msg))
+    check("no suggestion is invented for it",
+          msg is not None and "did you mean" not in msg, str(msg))
 
 
 def main():
