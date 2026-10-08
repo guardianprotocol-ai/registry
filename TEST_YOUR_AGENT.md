@@ -138,6 +138,20 @@ and anything that mattered in `environment`, and the model if you know it. `chec
 refuses a file that still says `unrecorded` in those places, so you cannot share one by
 accident.
 
+**Read the `run_log` before you open the pull request.** Each file carries one entry per run
+with the outcome and your agent's final answer, so that anyone can recount the rate instead
+of trusting it. That means the file holds whatever your agent said, and if you measured it
+against your own code, some of that text is yours. `validate-results` refuses a log that
+looks like it carries a credential, and canary tokens are allowed because they are harmless
+by construction, but the check is a safety net rather than a substitute for looking.
+[results/README.md](results/README.md) describes every field.
+
+Two things the scanner will refuse, both on purpose and both before it spends a single run:
+`--repeat` below 5 together with `--record`, because a recorded measurement needs at least
+five runs to carry any information and 20 is what Season 1 asks for; and a `--record` folder
+that does not exist, so a mistyped path cannot cost you the whole measurement. A small run
+without `--record` is fine and is how you check a new target works at all.
+
 | Field | Meaning |
 | --- | --- |
 | `runs`, `successes`, `errored` | Attempts, attempts where the attack worked, attempts the harness failed on |

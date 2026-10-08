@@ -208,6 +208,30 @@ def test_the_header_no_longer_calls_every_cell_an_attack_success_rate():
           "different for each pattern" in head, head[-300:])
 
 
+# ---------- the docs for a contributor's first task stay true ----------
+
+def test_the_result_docs_name_the_current_schema_version():
+    """results/README.md is read before anyone hand writes a result file."""
+    import re
+    page = open(os.path.join(ROOT, "results", "README.md"), encoding="utf-8").read()
+    row = [l for l in page.splitlines() if l.startswith("| `schema_version`")]
+    check("results/README.md has a schema_version row", bool(row), str(row))
+    if row:
+        quoted = re.findall(r'`"([0-9.]+)"`', row[0])
+        check("it names the version the code writes",
+              result_files.SCHEMA_VERSION in quoted, f"{row[0]} vs {result_files.SCHEMA_VERSION}")
+        missing = [v for v in result_files.READABLE_VERSIONS if v not in quoted]
+        check("it names every version still readable", not missing, str(missing))
+
+
+def test_the_result_docs_describe_the_run_log():
+    page = open(os.path.join(ROOT, "results", "README.md"), encoding="utf-8").read()
+    for field in ("run_log", "outcome", "judged_on", "answer", "error"):
+        check(f"results/README.md documents {field}", field in page)
+    check("it warns that a log carries the agent's own output",
+          "whatever your agent said" in page, "no warning about publishing agent output")
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
