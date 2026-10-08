@@ -99,11 +99,17 @@ def cell(doc):
 
 
 def collect(results_dir=None):
-    """{pattern: {target_key: {sensor_state: doc}}}, plus the newest date per pattern."""
+    """{pattern: {(target_key, date): {sensor_state: doc}}}.
+
+    The date is part of the key on purpose. Measuring the same harness again later is not
+    a correction, it is a second data point, and a key without the date would let the
+    newer run quietly overwrite the older one. Re-measurement over time is evidence.
+    """
     grouped = {}
     for _, doc in result_files.load_dir(results_dir):
         state = (doc.get("sensor") or {}).get("state", "off")
-        grouped.setdefault(doc["pattern"], {}).setdefault(target_key(doc), {})[state] = doc
+        key = (target_key(doc), doc.get("date", ""))
+        grouped.setdefault(doc["pattern"], {}).setdefault(key, {})[state] = doc
     return grouped
 
 
@@ -122,10 +128,11 @@ def render(grouped, titles, meta=None):
             lines.append(f"Needs more than one agent: topology `{topology}`.\n")
         lines.append("| Target | Date | Unprotected | With the sensor |")
         lines.append("| --- | --- | --- | --- |")
-        for key in sorted(grouped[pattern]):
+        # Newest measurement first, so the current figure is the one read first.
+        for key in sorted(grouped[pattern], key=lambda k: (k[1], k[0]), reverse=True):
             by_state = grouped[pattern][key]
             any_doc = by_state.get("off") or by_state.get("on")
-            lines.append(f"| {target_label(key)} | {any_doc['date']} | "
+            lines.append(f"| {target_label(key[0])} | {any_doc['date']} | "
                          f"{cell(by_state.get('off'))} | {cell(by_state.get('on'))} |")
     lines.append(FOOTER)
     return "\n".join(lines) + "\n"
