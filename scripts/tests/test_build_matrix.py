@@ -102,6 +102,32 @@ def test_targets_are_separate_rows():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_measuring_the_same_target_again_adds_a_row_rather_than_replacing_one():
+    """A re-measurement is a second data point, not a correction.
+
+    This caught a real defect: the matrix keyed on target alone, so measuring the same
+    harness a second time silently erased the first result from the published table.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        for date, successes, runs in (("2026-09-29", 5, 5), ("2026-10-08", 20, 20)):
+            doc = result("GP-0003", "off", successes, runs=runs, date=date)
+            with open(os.path.join(folder, result_files.filename_for(doc)), "w",
+                      encoding="utf-8") as f:
+                json.dump(doc, f)
+        grouped = build_matrix.collect(folder)
+        check("both measurements survive", len(grouped["GP-0003"]) == 2,
+              str(list(grouped["GP-0003"])))
+        text = build_matrix.render(grouped, {})
+        check("the older date is still in the table", "2026-09-29" in text, text)
+        check("the newer date is too", "2026-10-08" in text, text)
+        check("the newest is listed first",
+              text.index("2026-10-08") < text.index("2026-09-29"), text)
+        check("both run counts appear", "5 runs" in text and "20 runs" in text, text)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def test_an_empty_results_folder_is_honest():
     folder = tempfile.mkdtemp()
     try:

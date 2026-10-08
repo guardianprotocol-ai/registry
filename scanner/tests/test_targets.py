@@ -199,9 +199,9 @@ def test_the_harness_inherits_the_shell_rather_than_a_built_environment():
             continue
         checked += 1
         kwargs = {k.arg for k in node.keywords}
-        check("the harness subprocess inherits the environment", "env" not in kwargs,
+        check(f"subprocess call {checked} inherits the environment", "env" not in kwargs,
               str(sorted(kwargs)))
-    check("a subprocess.run call was actually found to check", checked == 1, str(checked))
+    check("subprocess.run calls were actually found to check", checked >= 1, str(checked))
 
 
 # ---------- the judgment belongs to the scenario ----------
@@ -286,6 +286,75 @@ def test_adding_a_target_is_two_short_methods():
               str(seen["argv"]))
         check("and is judged by the scenario like any other",
               calls[0]["accepted"] is True, str(calls))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_harness_reports_its_own_version():
+    """A result whose harness version is unknown cannot be compared with next month's."""
+    class Fake(targets.CliAgentTarget):
+        name, executable = "fake", "fake-bin"
+
+    def fake_run(argv, **kwargs):
+        return FakeProc(stdout="fake-bin 2.1.274 (Fake Harness)\n")
+
+    real = targets.subprocess.run
+    targets.subprocess.run = fake_run
+    try:
+        check("a version is pulled out of the harness output", Fake().version() == "2.1.274",
+              Fake().version())
+    finally:
+        targets.subprocess.run = real
+
+
+def test_a_version_check_never_blocks_a_measurement():
+    """Any failure gives 'unrecorded'. Measuring matters more than labelling."""
+    class Fake(targets.CliAgentTarget):
+        name, executable = "fake", "fake-bin"
+
+    real = targets.subprocess.run
+    try:
+        targets.subprocess.run = lambda argv, **kw: FakeProc(stdout="", returncode=1)
+        check("a non-zero exit gives unrecorded", Fake().version() == "unrecorded")
+        targets.subprocess.run = lambda argv, **kw: FakeProc(stdout="no digits here")
+        check("output with no version gives unrecorded", Fake().version() == "unrecorded")
+
+        def boom(argv, **kw):
+            raise OSError("not installed")
+        targets.subprocess.run = boom
+        check("a missing binary gives unrecorded", Fake().version() == "unrecorded")
+    finally:
+        targets.subprocess.run = real
+
+    class NoFlag(targets.CliAgentTarget):
+        name, executable, version_flag = "noflag", "x", None
+    check("a harness with no version flag gives unrecorded",
+          NoFlag().version() == "unrecorded")
+
+
+def test_the_recorded_result_carries_the_harness_version():
+    from guardian_scanner import results
+
+    class FakeResult:
+        pattern_id, target_name = "GP-0003", "claude-code"
+        runs, successes, errors = 20, 20, 0
+
+    class Fake:
+        def version(self):
+            return "9.9.9"
+
+    folder = tempfile.mkdtemp()
+    try:
+        written = results.record([FakeResult()], folder, sensor_on=False,
+                                 date="2026-10-08", commit="abc1234", target=Fake())
+        doc = json.load(open(written[0]))
+        check("the version reaches the result file",
+              doc["target"]["harness_version"] == "9.9.9", str(doc["target"]))
+        plain = results.record([FakeResult()], folder, sensor_on=False,
+                               date="2026-10-08", commit="abc1234")
+        doc = json.load(open(plain[0]))
+        check("with no target it stays unrecorded rather than guessing",
+              doc["target"]["harness_version"] == "unrecorded", str(doc["target"]))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
 

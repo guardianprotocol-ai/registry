@@ -94,12 +94,13 @@ def main(argv=None):
 
     # Named 'measured', not 'results': the module of that name is imported above, and a
     # local would shadow it for the whole function, including the branch that uses it.
-    measured = runner.run_all(_target(a.target), repeat=a.repeat, sensor=a.sensor, only=only)
+    target = _target(a.target)
+    measured = runner.run_all(target, repeat=a.repeat, sensor=a.sensor, only=only)
     print(report.results_json(measured) if a.json
           else report.results_text(measured, a.repeat, skipped))
 
     if a.record:
-        written = results.record(measured, a.record, sensor_on=a.sensor)
+        written = results.record(measured, a.record, sensor_on=a.sensor, target=target)
         print("")
         for path in written:
             print(f"recorded {path}")

@@ -277,7 +277,7 @@ def scanner_commit():
     return value if out.returncode == 0 and value else PLACEHOLDER
 
 
-def target_of(target_name):
+def target_of(target_name, harness_version=None):
     """What the scan can honestly say about what it ran against.
 
     A closed harness does not tell us which model served the session, so that stays
@@ -286,12 +286,13 @@ def target_of(target_name):
     if target_name.startswith("scripted:"):
         kind = target_name.split(":", 1)[1]
         return {"model": "none", "model_version": "none",
-                "harness": "scripted-" + slug(kind), "harness_version": SCHEMA_VERSION}
+                "harness": "scripted-" + slug(kind),
+                "harness_version": harness_version or SCHEMA_VERSION}
     return {"model": PLACEHOLDER, "model_version": PLACEHOLDER,
-            "harness": slug(target_name), "harness_version": PLACEHOLDER}
+            "harness": slug(target_name), "harness_version": harness_version or PLACEHOLDER}
 
 
-def document_for(result, sensor_on, date=None, commit=None):
+def document_for(result, sensor_on, date=None, commit=None, harness_version=None):
     """Turn a scan Result into a result document, with placeholders where it cannot know."""
     scored = result.runs
     total = scored + result.errors
@@ -299,7 +300,7 @@ def document_for(result, sensor_on, date=None, commit=None):
     return {
         "schema_version": SCHEMA_VERSION,
         "pattern": result.pattern_id,
-        "target": target_of(result.target_name),
+        "target": target_of(result.target_name, harness_version),
         "sensor": {"state": "on", "bundle": commit or scanner_commit()} if sensor_on
                   else {"state": "off"},
         "runs": total,
@@ -316,12 +317,15 @@ def document_for(result, sensor_on, date=None, commit=None):
     }
 
 
-def record(scan_results, directory, sensor_on, date=None, commit=None):
+def record(scan_results, directory, sensor_on, date=None, commit=None, target=None):
     """Write one file per measured pattern. Returns the paths written."""
     os.makedirs(directory, exist_ok=True)
+    # Asked once, not per result: a version check costs a process start.
+    harness_version = target.version() if target is not None and hasattr(target, "version") else None
     written = []
     for result in scan_results:
-        doc = document_for(result, sensor_on, date=date, commit=commit)
+        doc = document_for(result, sensor_on, date=date, commit=commit,
+                           harness_version=harness_version)
         path = os.path.join(directory, filename_for(doc))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(doc, f, indent=2)

@@ -9,6 +9,7 @@ a real attack success rate comes from, and it costs tokens, so nothing runs it b
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -54,6 +55,10 @@ class Client:
 
 class ScriptedTarget:
     """A reference agent whose behaviour is fixed, so the scan has a known control."""
+
+    def version(self):
+        """The scripted agents are part of this repository, so the scanner commit is it."""
+        return "in-repo"
 
     note = "control, not a finding. No model, costs nothing, runs in CI"
 
@@ -141,6 +146,31 @@ class CliAgentTarget:
 
     def installed(self):
         return bool(self.executable) and shutil.which(self.executable) is not None
+
+    #: Flag that makes the harness print its version. Set to None if it has none.
+    version_flag = "--version"
+
+    def version(self):
+        """What the harness calls itself, for the result file.
+
+        A result whose harness version is unknown cannot be compared with next month's, so
+        this is asked once per run rather than left to the contributor to remember. Any
+        failure gives 'unrecorded', which is honest and never blocks a measurement.
+        """
+        if not self.executable or not self.version_flag:
+            return "unrecorded"
+        try:
+            proc = subprocess.run([self.executable, self.version_flag],
+                                  capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return "unrecorded"
+        if proc.returncode != 0:
+            return "unrecorded"
+        for line in (proc.stdout or "").splitlines():
+            found = re.search(r"\d+\.\d+[\w.+-]*", line)
+            if found:
+                return found.group(0)
+        return "unrecorded"
 
     def credentials(self):
         """True, False, or None when this target cannot cheaply tell.
