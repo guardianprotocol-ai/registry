@@ -149,6 +149,14 @@ class CliAgentTarget:
     note = ""
     #: Whether this harness lets the operator pin a model.
     supports_model = False
+    #: Set when the harness cannot be trusted to choose a model for itself, so the scan
+    #: refuses to run without `--model` rather than carrying a default of its own. A default
+    #: here would be a measurement decision dressed as a convenience: it fills the matrix
+    #: with a model nobody chose, and rots the day the vendor retires it.
+    requires_model = False
+    #: A dated example for the refusal message, never a maintained list of blessed models.
+    model_example = ""
+    model_verified_on = ""
 
     def installed(self):
         return bool(self.executable) and shutil.which(self.executable) is not None
@@ -267,17 +275,23 @@ class GeminiCliTarget(CliAgentTarget):
 
     Costs tokens. Asked for by name only.
 
-    **Not yet verified against the live API.** The contract is tested in
-    `tests/test_targets.py`, and the flags come from `gemini --help`, but no run has
-    completed end to end from this repository because the machine it was written on has no
-    Gemini credentials. Running it with `GEMINI_API_KEY` set, and recording what happens,
-    is a good first contribution; see TEST_YOUR_AGENT.md.
+    Verified end to end against the live API on 2026-10-08, with gemini-cli 0.26.0 and
+    `-m gemini-3.5-flash`.
+
+    **A model has to be named.** Gemini CLI's own built-in default is retired for newly
+    issued API keys and fails inside Gemini's routing before the scenario starts: a 404
+    `ModelNotFoundError`, buried under a Node deprecation warning and a stack trace. So this
+    target refuses to run without `--model` rather than carrying a default of its own, which
+    would only rot the same way.
     """
 
     name = "gemini-cli"
     executable = "gemini"
     supports_model = True
-    note = "costs tokens. Wired and contract tested, not yet verified against the live API"
+    requires_model = True
+    model_example = "gemini-3.5-flash"
+    model_verified_on = "2026-10-08"
+    note = "costs tokens. Verified against the live API on 2026-10-08. Needs --model"
 
     def credentials(self):
         """Gemini CLI reads GEMINI_API_KEY, or an auth method in ~/.gemini/settings.json."""
@@ -343,6 +357,17 @@ REGISTRY = {
     "claude-code": claude_code,
     "gemini-cli": gemini_cli,
 }
+
+#: The class behind each registry entry, so a caller can ask what a target requires without
+#: building one. Kept beside REGISTRY on purpose: a test fails if the two ever disagree,
+#: because a silent gap here reads as "this target requires nothing".
+CLASSES = {
+    "scripted:vulnerable": ScriptedTarget,
+    "scripted:hardened": ScriptedTarget,
+    "claude-code": ClaudeCodeTarget,
+    "gemini-cli": GeminiCliTarget,
+}
+
 
 #: Harnesses worth measuring that nobody has written a target for yet. Listed so the gap
 #: is visible rather than implied, and so a contributor can see their own harness missing.
