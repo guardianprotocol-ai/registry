@@ -4,7 +4,7 @@ Open tests, detections and measurements for attacks on AI agents, mapped to MITR
 
 Get set up and oriented in about 15 minutes, then pick your first task. No dependencies beyond Python 3.9+.
 
-> **The repository is public and you need nothing from anyone to start.** Fork it, open a pull request, and the automatic checks run on your first one. The project is early: twelve patterns, a reference sensor and a scanner that measures three of them end to end. Plenty is unfinished, and that is where the work is.
+> **The repository is public and you need nothing from anyone to start.** Fork it, open a pull request, and the automatic checks run on your first one. The project is early: eighteen patterns, a reference sensor and a scanner that measures four of them end to end against a real agent. Plenty is unfinished, and that is where the work is.
 
 **What we are working on right now:** [PROGRAM.md](PROGRAM.md) sets out Season 1, October 5 to October 29, 2026, its six phases and what ships at the end. [docs/STATUS.md](docs/STATUS.md) shows how far along each one is.
 

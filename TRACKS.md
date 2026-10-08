@@ -26,7 +26,7 @@ Good first tasks: propose a pattern from a published source; tighten the mitigat
 
 **Measuring models and harnesses is the headline task on this track.** The same attack lands differently depending on the model, the agent software around it and the versions of both, and almost nobody has published those numbers. Running a pattern against a target and recording the result is the most useful thing a new contributor can do here. See `results/README.md` and the generated matrix in `docs/MATRIX.md`.
 
-Nine of the twelve patterns validate but can't run yet, because the scan has no scenario for them. Each missing scenario is its own issue. Beyond that: reference agents on open-weight models, so attack success rates can be compared across models, and a benign traffic corpus so every detection's false-alarm rate can be measured.
+Fourteen of the eighteen patterns validate but can't run yet, because the scan has no scenario for them. Each missing scenario is its own issue. Beyond that: reference agents on open-weight models, so attack success rates can be compared across models, and a benign traffic corpus so every detection's false-alarm rate can be measured.
 
 Good first tasks: measure one target with `--record` and open a pull request with the result files; write a scenario for one pattern.
 
