@@ -9,3 +9,4 @@ Each proposal says what problem it solves, what it changes, what stays compatibl
 | [0001](0001-declarative-rules.md) | Declarative detection rules | draft |
 | [0002](0002-registry-at-scale.md) | Running the registry at scale | draft |
 | [0003](0003-agent-to-agent-coverage.md) | Seeing traffic between agents | draft |
+| [0004](0004-attack-strategies.md) | How an attack is delivered, and saying so | draft |
