@@ -13,10 +13,10 @@ import sys
 from . import patterns, report, results, runner, scenarios, targets
 
 
-def _target(name):
+def _target(name, model=None):
     make = targets.REGISTRY.get(name)
     if make:
-        return make()
+        return make(model=model) if model else make()
     raise SystemExit(f"unknown target {name!r}. Run 'python3 -m guardian_scanner targets' "
                      "to see what this machine can run.")
 
@@ -43,6 +43,9 @@ def main(argv=None):
     r.add_argument("--repeat", type=int, default=10)
     r.add_argument("--pattern", action="append", dest="only")
     r.add_argument("--sensor", action="store_true", help="put the reference sensor in front")
+    r.add_argument("--model", default=None,
+                   help="pin the harness to one model, for example opus or claude-opus-5. "
+                        "Recorded as the model in the result file")
     r.add_argument("--json", action="store_true")
     r.add_argument("--record", default=None, metavar="DIR",
                    help="write a result file per pattern into DIR, usually ../results")
@@ -94,7 +97,7 @@ def main(argv=None):
 
     # Named 'measured', not 'results': the module of that name is imported above, and a
     # local would shadow it for the whole function, including the branch that uses it.
-    target = _target(a.target)
+    target = _target(a.target, getattr(a, "model", None))
     measured = runner.run_all(target, repeat=a.repeat, sensor=a.sensor, only=only)
     print(report.results_json(measured) if a.json
           else report.results_text(measured, a.repeat, skipped))

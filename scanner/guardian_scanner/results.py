@@ -277,7 +277,7 @@ def scanner_commit():
     return value if out.returncode == 0 and value else PLACEHOLDER
 
 
-def target_of(target_name, harness_version=None):
+def target_of(target_name, harness_version=None, model=None):
     """What the scan can honestly say about what it ran against.
 
     A closed harness does not tell us which model served the session, so that stays
@@ -288,11 +288,14 @@ def target_of(target_name, harness_version=None):
         return {"model": "none", "model_version": "none",
                 "harness": "scripted-" + slug(kind),
                 "harness_version": harness_version or SCHEMA_VERSION}
-    return {"model": PLACEHOLDER, "model_version": PLACEHOLDER,
+    # The model is whatever the operator pinned. A harness asked for nothing in particular
+    # does not report which model answered, so it stays unrecorded rather than guessed.
+    return {"model": model or PLACEHOLDER, "model_version": model or PLACEHOLDER,
             "harness": slug(target_name), "harness_version": harness_version or PLACEHOLDER}
 
 
-def document_for(result, sensor_on, date=None, commit=None, harness_version=None):
+def document_for(result, sensor_on, date=None, commit=None, harness_version=None,
+                 model=None):
     """Turn a scan Result into a result document, with placeholders where it cannot know."""
     scored = result.runs
     total = scored + result.errors
@@ -300,7 +303,7 @@ def document_for(result, sensor_on, date=None, commit=None, harness_version=None
     return {
         "schema_version": SCHEMA_VERSION,
         "pattern": result.pattern_id,
-        "target": target_of(result.target_name, harness_version),
+        "target": target_of(result.target_name, harness_version, model),
         "sensor": {"state": "on", "bundle": commit or scanner_commit()} if sensor_on
                   else {"state": "off"},
         "runs": total,
@@ -322,10 +325,11 @@ def record(scan_results, directory, sensor_on, date=None, commit=None, target=No
     os.makedirs(directory, exist_ok=True)
     # Asked once, not per result: a version check costs a process start.
     harness_version = target.version() if target is not None and hasattr(target, "version") else None
+    model = target.model_requested() if target is not None and hasattr(target, "model_requested") else None
     written = []
     for result in scan_results:
         doc = document_for(result, sensor_on, date=date, commit=commit,
-                           harness_version=harness_version)
+                           harness_version=harness_version, model=model)
         path = os.path.join(directory, filename_for(doc))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(doc, f, indent=2)

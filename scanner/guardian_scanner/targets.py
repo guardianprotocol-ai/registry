@@ -61,6 +61,10 @@ class ScriptedTarget:
         return "in-repo"
 
     note = "control, not a finding. No model, costs nothing, runs in CI"
+    supports_model = False
+
+    def model_requested(self):
+        return "none"
 
     def installed(self):
         return True
@@ -143,6 +147,8 @@ class CliAgentTarget:
     executable = None
     #: One line for the targets table.
     note = ""
+    #: Whether this harness lets the operator pin a model.
+    supports_model = False
 
     def installed(self):
         return bool(self.executable) and shutil.which(self.executable) is not None
@@ -181,9 +187,16 @@ class CliAgentTarget:
         """
         return None
 
-    def __init__(self, sensor_config=None, timeout=300):
+    def __init__(self, sensor_config=None, timeout=300, model=None):
         self.sensor_config = sensor_config
         self.timeout = timeout
+        # The model the operator asked the harness to use. A harness that cannot be pinned
+        # ignores this, and the result then records the model as unrecorded.
+        self.model = model
+
+    def model_requested(self):
+        """What to record as the model. Only ever what we asked for, never a guess."""
+        return self.model or None
 
     # ---- subclasses implement these two ----
 
@@ -230,9 +243,15 @@ class ClaudeCodeTarget(CliAgentTarget):
     executable = "claude"
     note = "costs tokens. Keeps its own session, so credentials cannot be checked from here"
 
+    #: Claude Code pins the model with --model, taking an alias or a full id.
+    supports_model = True
+
     def argv(self, prompt, config_path):
-        return ["claude", "-p", prompt, "--mcp-config", config_path, "--strict-mcp-config",
+        argv = ["claude", "-p", prompt, "--mcp-config", config_path, "--strict-mcp-config",
                 "--allowedTools", f"mcp__{self.server_key}", "--output-format", "json"]
+        if self.model:
+            argv += ["--model", self.model]
+        return argv
 
     def answer_of(self, stdout):
         return json.loads(stdout or "{}").get("result", "")
@@ -257,6 +276,7 @@ class GeminiCliTarget(CliAgentTarget):
 
     name = "gemini-cli"
     executable = "gemini"
+    supports_model = True
     note = "costs tokens. Wired and contract tested, not yet verified against the live API"
 
     def credentials(self):
@@ -284,8 +304,11 @@ class GeminiCliTarget(CliAgentTarget):
         return path
 
     def argv(self, prompt, config_path):
-        return ["gemini", "-p", prompt, "--approval-mode", "yolo",
+        argv = ["gemini", "-p", prompt, "--approval-mode", "yolo",
                 "--allowed-mcp-server-names", self.server_key, "-o", "json"]
+        if self.model:
+            argv += ["-m", self.model]
+        return argv
 
     def answer_of(self, stdout):
         if not stdout:
@@ -315,8 +338,8 @@ def gemini_cli(**kwargs):
 
 #: Everything `--target` accepts, in the order the table shows them.
 REGISTRY = {
-    "scripted:vulnerable": lambda: scripted("vulnerable"),
-    "scripted:hardened": lambda: scripted("hardened"),
+    "scripted:vulnerable": lambda **kw: scripted("vulnerable"),
+    "scripted:hardened": lambda **kw: scripted("hardened"),
     "claude-code": claude_code,
     "gemini-cli": gemini_cli,
 }
