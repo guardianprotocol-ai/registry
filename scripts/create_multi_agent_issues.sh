@@ -10,7 +10,17 @@ REPO="${1:-guardianprotocol-ai/registry}"
 command -v gh >/dev/null || { echo "Install the GitHub CLI first: https://cli.github.com"; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "Sign in first: gh auth login"; exit 1; }
 
-gh label create "track:multi-agent" --color "b60205" --description "Attacks that need more than one agent" --repo "$REPO" --force >/dev/null
+# Every label this script uses, created up front so the script does not depend on any
+# other having run first. `--force` makes this safe to repeat.
+ensure_labels() {
+  for spec in "$@"; do
+    name="${spec%%|*}"; rest="${spec#*|}"; color="${rest%%|*}"; desc="${rest#*|}"
+    gh label create "$name" --color "$color" --description "$desc" --repo "$REPO" --force >/dev/null
+  done
+}
+
+ensure_labels "track:multi-agent|b60205|Attacks that need more than one agent" "track:scanner|1d76db|Scanner, reference agents and measurement" "track:governance|5319e7|Policy, process and project decisions" "help wanted|008672|Extra attention is wanted" "proposal|d4c5f9|A written proposal for the group to decide"
+
 
 issue() {  # title, labels, body on stdin
   gh issue create --repo "$REPO" --title "$1" --label "$2" --body-file - >/dev/null

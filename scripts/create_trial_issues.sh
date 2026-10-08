@@ -10,7 +10,17 @@ REPO="${1:-guardianprotocol-ai/registry}"
 command -v gh >/dev/null || { echo "Install the GitHub CLI first: https://cli.github.com"; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "Sign in first: gh auth login"; exit 1; }
 
-gh label create "track:research" --color "1d76db" --description "Research, experiments and the trial" --repo "$REPO" --force >/dev/null
+# Every label this script uses, created up front so the script does not depend on any
+# other having run first. `--force` makes this safe to repeat.
+ensure_labels() {
+  for spec in "$@"; do
+    name="${spec%%|*}"; rest="${spec#*|}"; color="${rest%%|*}"; desc="${rest#*|}"
+    gh label create "$name" --color "$color" --description "$desc" --repo "$REPO" --force >/dev/null
+  done
+}
+
+ensure_labels "track:research|1d76db|Research, experiments and the trial" "season-1|0e8a16|Season 1: Oct 5 to Oct 29, 2026" "help wanted|008672|Extra attention is wanted"
+
 
 issue() {  # title, labels, body on stdin
   gh issue create --repo "$REPO" --title "$1" --label "$2" --body-file - >/dev/null
