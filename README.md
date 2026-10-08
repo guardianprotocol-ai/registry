@@ -124,8 +124,8 @@ Don't open a public issue for an active attack or anything specific to one vendo
 ## Who maintains it
 
 Maintained by the Guardian Protocol Research Group, a working group of YC founders and
-researchers. The group's name is proposed and pending the group's decision. How it publishes
-and how someone becomes an author are in [docs/RESEARCH.md](docs/RESEARCH.md).
+researchers. How it publishes and how someone becomes an author are in
+[docs/RESEARCH.md](docs/RESEARCH.md).
 
 ## License
 
