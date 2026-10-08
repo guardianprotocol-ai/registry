@@ -79,7 +79,10 @@ def test_the_body_names_the_technique_it_is_about():
 
 
 def test_no_em_dashes_anywhere():
-    bad = [i["title"] for i in built() if "—" in i["title"] or "—" in i["body"]]
+    # Escaped, not literal: scripts/check_invisible.py forbids the raw character in any
+    # tracked file, including the test that looks for it.
+    bad = [i["title"] for i in built()
+           if "\u2014" in i["title"] or "\u2014" in i["body"]]
     check("no em dashes in any issue", not bad, str(bad[:3]))
 
 

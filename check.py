@@ -37,6 +37,7 @@ CHECKS = [
     ("Claude Code hook tests", ".", ["hooks/claude_code/tests/test_hook.py"]),
     ("Pattern scaffold tests", ".", ["scripts/tests/test_new_pattern.py"]),
     ("Status guard tests", ".", ["scripts/tests/test_check_status_changes.py"]),
+    ("Invisible character tests", ".", ["scripts/tests/test_check_invisible.py"]),
     ("Contributor data tests", ".", ["scripts/tests/test_build_contributors.py"]),
     ("Meeting summary tests", ".", ["scripts/tests/test_shipped.py"]),
     ("Custom mapping detector tests", ".", ["scripts/tests/test_detect_custom_mapping.py"]),

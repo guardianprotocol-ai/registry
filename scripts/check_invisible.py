@@ -18,25 +18,56 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Built from codepoints on purpose. Writing the characters themselves would put the very
-# bytes this check exists to forbid into the file doing the forbidding.
-INVISIBLE = {
-    0x200B: "U+200B ZERO WIDTH SPACE",
-    0x200C: "U+200C ZERO WIDTH NON-JOINER",
-    0x200D: "U+200D ZERO WIDTH JOINER",
-    0x2060: "U+2060 WORD JOINER",
-    0xFEFF: "U+FEFF ZERO WIDTH NO-BREAK SPACE",
-    0x202A: "U+202A LEFT-TO-RIGHT EMBEDDING",
-    0x202B: "U+202B RIGHT-TO-LEFT EMBEDDING",
-    0x202D: "U+202D LEFT-TO-RIGHT OVERRIDE",
-    0x202E: "U+202E RIGHT-TO-LEFT OVERRIDE",
-    0x2066: "U+2066 LEFT-TO-RIGHT ISOLATE",
-    0x2067: "U+2067 RIGHT-TO-LEFT ISOLATE",
-    0x2068: "U+2068 FIRST STRONG ISOLATE",
-    0x2069: "U+2069 POP DIRECTIONAL ISOLATE",
+# Decided by Unicode category rather than by a list of codepoints. A hand written list is
+# wrong the moment someone reaches for a character nobody thought of: this one missed the
+# directional marks, the invisible maths operators, the soft hyphen and the variation
+# selectors, which are the vector in current invisible-text encoding attacks.
+#
+# Cf is the format category, which covers the zero-width characters, every bidirectional
+# control, the Arabic letter mark, the soft hyphen and the Unicode tag block. Cc is the
+# control characters, with the three whitespace ones every text file needs allowed through.
+INVISIBLE_CATEGORIES = ("Cf", "Cc")
+ALLOWED_CONTROLS = ("\t", "\n", "\r")
+
+# Invisible but not Cf, so named individually. Written as codepoints on purpose: putting the
+# characters themselves here would place the very bytes this check forbids into the file
+# doing the forbidding.
+ALSO_INVISIBLE = {
+    0x034F: "U+034F COMBINING GRAPHEME JOINER",
+    0x2800: "U+2800 BRAILLE PATTERN BLANK",
+    0x3164: "U+3164 HANGUL FILLER",
+    0xFFA0: "U+FFA0 HALFWIDTH HANGUL FILLER",
+    0x115F: "U+115F HANGUL CHOSEONG FILLER",
+    0x1160: "U+1160 HANGUL JUNGSEONG FILLER",
 }
-TAG_CHARACTERS = re.compile("[%s-%s]" % (chr(0xE0000), chr(0xE007F)))
+VARIATION_SELECTORS = ((0xFE00, 0xFE0F), (0xE0100, 0xE01EF))
+
+# The project's own rule is no em dashes anywhere. It was enforced only for generated
+# Season 1 issues, so it is checked here across every tracked file instead.
+EM_DASHES = {0x2014: "U+2014 EM DASH", 0x2015: "U+2015 HORIZONTAL BAR"}
+
 BINARY = (".png", ".ico", ".jpg", ".jpeg", ".gif", ".pdf", ".zip", ".gz", ".woff", ".woff2")
+
+
+def describe(character):
+    """A name for the report, without importing a table of our own."""
+    import unicodedata
+    try:
+        return "U+%04X %s" % (ord(character), unicodedata.name(character))
+    except ValueError:
+        return "U+%04X unnamed" % ord(character)
+
+
+def is_invisible(character):
+    import unicodedata
+    codepoint = ord(character)
+    if character in ALLOWED_CONTROLS:
+        return False
+    if codepoint in ALSO_INVISIBLE:
+        return True
+    if any(low <= codepoint <= high for low, high in VARIATION_SELECTORS):
+        return True
+    return unicodedata.category(character) in INVISIBLE_CATEGORIES
 
 
 def tracked_files():
@@ -52,15 +83,22 @@ def problems_in(path):
     except (OSError, UnicodeDecodeError):
         return []
     found = []
-    for codepoint, name in INVISIBLE.items():
-        character = chr(codepoint)
-        if character in text:
-            line = text[:text.index(character)].count("\n") + 1
-            found.append(f"{path}:{line}: live {name}. Write it as an escape instead.")
-    match = TAG_CHARACTERS.search(text)
-    if match:
-        line = text[:match.start()].count("\n") + 1
-        found.append(f"{path}:{line}: live Unicode tag characters. Write them as escapes instead.")
+    reported = set()
+    for index, character in enumerate(text):
+        if ord(character) < 128 or character in reported:
+            continue
+        codepoint = ord(character)
+        if is_invisible(character):
+            reported.add(character)
+            line = text[:index].count("\n") + 1
+            found.append(f"{path}:{line}: live {ALSO_INVISIBLE.get(codepoint) or describe(character)}"
+                         ". Write it as an escape instead.")
+        elif codepoint in EM_DASHES:
+            reported.add(character)
+            line = text[:index].count("\n") + 1
+            found.append(f"{path}:{line}: live {EM_DASHES[codepoint]}. The project uses none: "
+                         "write a comma, a colon or a full stop, or an escape if the character "
+                         "itself is the subject.")
     return found
 
 
