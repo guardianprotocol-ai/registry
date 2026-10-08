@@ -55,7 +55,17 @@ control, not the finding: the vulnerable one does what poisoned content tells it
 should read 100% without the sensor and 0% with it. If it does not, something is broken,
 and that is worth an issue.
 
-## 4. Point it at your own agent
+## 4. See what your machine can measure
+
+```bash
+python3 -m guardian_scanner targets
+```
+
+It prints every target, whether the harness is installed, whether credentials are set, and
+which harnesses nobody has written a target for yet. `unknown` is an honest answer: a
+harness that keeps its own session cannot be checked without spending a call.
+
+## 5. Point it at your own agent
 
 Today the scanner drives one real harness end to end:
 
@@ -114,7 +124,7 @@ harness is counted as errored rather than as a defended one.
 Until your harness has a target, you can still run the demo and the scripted scan, and you
 can read any pattern's `test` section and run it by hand.
 
-## 5. Record what you measured
+## 6. Record what you measured
 
 ```bash
 python3 -m guardian_scanner run --target claude-code --repeat 20 --record ../results
@@ -138,7 +148,7 @@ accident.
 Twenty runs is the request for the paper. Five is the floor the checks allow, and at five the
 interval is roughly 0 to 0.43, which says almost nothing.
 
-## 6. What to share, and what stays with you
+## 7. What to share, and what stays with you
 
 Sharing is opt-in, per result. If you want a row in the attack matrix, open a pull request
 with your result files. Nothing in them names your company unless you put it there, and the

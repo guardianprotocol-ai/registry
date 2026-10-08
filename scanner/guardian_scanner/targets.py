@@ -9,6 +9,7 @@ a real attack success rate comes from, and it costs tokens, so nothing runs it b
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -53,6 +54,14 @@ class Client:
 
 class ScriptedTarget:
     """A reference agent whose behaviour is fixed, so the scan has a known control."""
+
+    note = "control, not a finding. No model, costs nothing, runs in CI"
+
+    def installed(self):
+        return True
+
+    def credentials(self):
+        return True
 
     def __init__(self, kind):
         if kind not in ("vulnerable", "hardened"):
@@ -125,6 +134,22 @@ class CliAgentTarget:
     name = None
     #: MCP server key the lab is registered under. Harness flags usually reference it.
     server_key = "lab"
+    #: Command that must be on PATH. Set it and `targets` reports this harness for free.
+    executable = None
+    #: One line for the targets table.
+    note = ""
+
+    def installed(self):
+        return bool(self.executable) and shutil.which(self.executable) is not None
+
+    def credentials(self):
+        """True, False, or None when this target cannot cheaply tell.
+
+        None is an honest answer and the default. A harness that keeps its own session,
+        as Claude Code does, cannot be checked without spending a call, and guessing would
+        be worse than saying so.
+        """
+        return None
 
     def __init__(self, sensor_config=None, timeout=300):
         self.sensor_config = sensor_config
@@ -172,6 +197,8 @@ class ClaudeCodeTarget(CliAgentTarget):
     """
 
     name = "claude-code"
+    executable = "claude"
+    note = "costs tokens. Keeps its own session, so credentials cannot be checked from here"
 
     def argv(self, prompt, config_path):
         return ["claude", "-p", prompt, "--mcp-config", config_path, "--strict-mcp-config",
@@ -199,6 +226,22 @@ class GeminiCliTarget(CliAgentTarget):
     """
 
     name = "gemini-cli"
+    executable = "gemini"
+    note = "costs tokens. Wired and contract tested, not yet verified against the live API"
+
+    def credentials(self):
+        """Gemini CLI reads GEMINI_API_KEY, or an auth method in ~/.gemini/settings.json."""
+        for key in ("GEMINI_API_KEY", "GOOGLE_GENAI_USE_VERTEXAI", "GOOGLE_GENAI_USE_GCA"):
+            if os.environ.get(key):
+                return True
+        settings = os.path.join(os.path.expanduser("~"), ".gemini", "settings.json")
+        try:
+            with open(settings) as f:
+                configured = json.load(f) or {}
+        except (OSError, ValueError):
+            return False
+        return bool(configured.get("selectedAuthType")
+                    or (configured.get("security") or {}).get("auth"))
 
     def mcp_config(self, command, workdir, env):
         path = super().mcp_config(command, workdir, env)
@@ -238,6 +281,34 @@ def claude_code(**kwargs):
 
 def gemini_cli(**kwargs):
     return GeminiCliTarget(**kwargs)
+
+
+#: Everything `--target` accepts, in the order the table shows them.
+REGISTRY = {
+    "scripted:vulnerable": lambda: scripted("vulnerable"),
+    "scripted:hardened": lambda: scripted("hardened"),
+    "claude-code": claude_code,
+    "gemini-cli": gemini_cli,
+}
+
+#: Harnesses worth measuring that nobody has written a target for yet. Listed so the gap
+#: is visible rather than implied, and so a contributor can see their own harness missing.
+WANTED = (
+    ("cursor", "Cursor"),
+    ("codex-cli", "Codex CLI"),
+    ("ollama", "an open-weight model through Ollama"),
+    ("langgraph", "a custom framework, for example LangGraph"),
+)
+
+
+def available():
+    """[(name, installed, credentials, note)] for every target, for the targets table."""
+    rows = []
+    for name, make in REGISTRY.items():
+        target = make()
+        rows.append((name, target.installed(), target.credentials(),
+                     getattr(target, "note", "")))
+    return rows
 
 
 def sensor_wrapper(config_path):

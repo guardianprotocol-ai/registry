@@ -27,6 +27,41 @@ def validation_text(report):
     return "\n".join(lines)
 
 
+def targets_text(rows, wanted=()):
+    """What this machine can measure, and what nobody has written a target for yet."""
+    def mark(value):
+        return {True: "yes", False: "no", None: "unknown"}[value]
+
+    lines = [f"{'TARGET':<22}{'INSTALLED':<11}{'CREDENTIALS':<13}NOTES",
+             "-" * 78]
+    ready = 0
+    for name, installed, credentials, note in rows:
+        if installed and credentials is not False:
+            ready += 1
+        lines.append(f"{name:<22}{mark(installed):<11}{mark(credentials):<13}{note}")
+
+    lines.append("")
+    lines.append(f"{ready} of {len(rows)} ready on this machine.")
+    measures_a_model = [n for n, i, c, _ in rows
+                        if not n.startswith("scripted:") and i and c is not False]
+    if measures_a_model:
+        lines.append("Measures a real model: " + ", ".join(measures_a_model) +
+                     ". The scripted targets are the control, not the finding.")
+    else:
+        lines.append("Nothing here measures a real model yet. The scripted targets are the "
+                     "control, not the finding.")
+    lines.append("'unknown' means the harness keeps its own session and cannot be checked "
+                 "from here without spending a call.")
+
+    if wanted:
+        lines.append("")
+        lines.append("No target written yet, and each one is two short methods:")
+        for key, description in wanted:
+            lines.append(f"  {key:<20}{description}")
+        lines.append("See TEST_YOUR_AGENT.md. This is the highest value thing to contribute.")
+    return "\n".join(lines)
+
+
 def results_validation_text(report):
     """What check.py prints for results/."""
     count = len(report.results)
