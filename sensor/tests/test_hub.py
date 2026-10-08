@@ -345,6 +345,65 @@ def test_update_verifies_before_writing_anything():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+# ---------- the two version fields are shared, so they are not free text ----------
+
+def test_rules_version_cannot_carry_free_text():
+    """It is shared with every entry, and a hub sets it via the release manifest."""
+    for bad in (f"v1 {SECRETS[0]}", "ACME Corp internal", "r2026.10.08/../etc", "x" * 40,
+                "has spaces", "semi;colon"):
+        try:
+            hub.build_sightings([loaded_record()], "acme-labs", bad)
+            check(f"rules_version {bad[:28]!r} is refused", False, "accepted")
+        except hub.HubError:
+            check(f"rules_version {bad[:28]!r} is refused", True)
+
+
+def test_real_version_shapes_still_work():
+    for good in ("r2026.10.08", "2026.10.08", "1.2.3", "v0", "r2026.10.08-rc1", "a1b2c3d"):
+        doc = hub.build_sightings([loaded_record()], "acme-labs", good)
+        check(f"rules_version {good!r} is accepted",
+              doc["sightings"][0]["rules_version"] == good, str(doc["sightings"][0]))
+
+
+def test_a_hub_cannot_put_free_text_into_a_members_outgoing_data():
+    """verify_against_manifest returns the version that is later shared, so it is checked there too."""
+    try:
+        hub.verify_against_manifest({"files": {}, "rules_version": f"r1 {SECRETS[0]}"}, {})
+        check("a manifest with free text in rules_version is refused", False, "accepted")
+    except hub.HubError:
+        check("a manifest with free text in rules_version is refused", True)
+    version = hub.verify_against_manifest({"files": {}, "rules_version": "r2026.10.08"}, {})
+    check("a well formed manifest version is returned", version == "r2026.10.08", str(version))
+
+
+def test_sensor_version_is_not_free_text_either():
+    for bad in ("ACME Corp build with a very long trailing description", "tab\there"):
+        try:
+            hub.build_sightings([loaded_record()], "acme-labs", "r1", sensor_version=bad)
+            check(f"sensor_version {bad[:24]!r} is refused", False, "accepted")
+        except hub.HubError:
+            check(f"sensor_version {bad[:24]!r} is refused", True)
+    doc = hub.build_sightings([loaded_record()], "acme-labs", "r1")
+    check("the shipped sensor version is accepted",
+          doc["sightings"][0]["sensor_version"] == hub.SENSOR_VERSION, str(doc["sightings"][0]))
+
+
+def test_the_preview_shows_the_value_of_every_field_it_shares():
+    """The preview claims to be the whole of what leaves, so no value may be off screen.
+
+    sensor_version used to be named in the footer but never shown, which made the claim
+    untrue for the one field nothing else constrained. This asserts the general rule rather
+    than that one field, so a new field cannot be added and left invisible.
+    """
+    records = [loaded_record(), loaded_record(action="blocked")]
+    doc = hub.build_sightings(records, "acme-labs", "r2026.10.08")
+    text = hub.preview_text(doc)
+    for entry in doc["sightings"]:
+        for field in hub.ALLOWED_FIELDS:
+            check(f"the preview shows {field}", str(entry[field]) in text,
+                  f"{field}={entry[field]!r} missing from the preview")
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
