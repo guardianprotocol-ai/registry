@@ -32,6 +32,7 @@ fails fast rather than in review.
 | Every commit is signed off | `git commit -s`. A sign-off naming someone other than the author is refused |
 | `check.py` passes | Format, tests, rule lint and the rule gate, on Python 3.9, 3.12 and 3.13 |
 | Rule changes come with evidence | A change to `rules.py` or `signatures.json` needs a test in `sensor/tests/` or a case in `corpus/` |
+| A fix comes with a test that fails without it | Write the test first and watch it fail. A fix with no failing test is a fix nobody can keep: the next refactor quietly undoes it. Name the test after the behaviour, not the function, so a failure says what broke |
 | Patterns map to MITRE ATLAS | At least one real technique ID from `coverage/atlas-coverage.csv`, or an argued `maps_to.custom_reason` saying which technique came closest and what it misses |
 | Patterns credit someone | `credits` needs at least one entry with a `name`. `organization` is optional and leaving it out means an individual |
 | New patterns are `draft` | Only a maintainer changes a pattern's status, in a separate pull request |
