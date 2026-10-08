@@ -290,6 +290,87 @@ def test_adding_a_target_is_two_short_methods():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+# ---------- the targets table ----------
+
+def test_every_registered_target_can_be_built_and_reports_itself():
+    from guardian_scanner import report
+    rows = targets.available()
+    check("the registry and the table agree",
+          [r[0] for r in rows] == list(targets.REGISTRY), str([r[0] for r in rows]))
+    for name, installed, credentials, note in rows:
+        check(f"{name} reports installed as a bool", isinstance(installed, bool))
+        check(f"{name} reports credentials as yes, no or unknown",
+              credentials in (True, False, None), repr(credentials))
+        check(f"{name} carries a note", bool(note), name)
+
+
+def test_the_table_says_which_targets_measure_a_real_model():
+    from guardian_scanner import report
+    rows = [("scripted:vulnerable", True, True, "control"),
+            ("claude-code", True, None, "costs tokens"),
+            ("gemini-cli", True, False, "needs a key")]
+    text = report.targets_text(rows, targets.WANTED)
+    check("unknown credentials print as unknown", "unknown" in text, text[:200])
+    check("a target needing a key is not counted ready", "2 of 3 ready" in text, text)
+    check("it names what measures a real model", "Measures a real model: claude-code" in text, text)
+    check("it says the scripted targets are the control",
+          "control, not the finding" in text, text)
+
+
+def test_the_table_shows_the_harnesses_nobody_has_written_yet():
+    from guardian_scanner import report
+    text = report.targets_text(targets.available(), targets.WANTED)
+    for key, _ in targets.WANTED:
+        check(f"{key} is listed as wanted", key in text, text[-400:])
+    check("it points at the guide", "TEST_YOUR_AGENT.md" in text)
+
+
+def test_a_target_with_nothing_ready_says_so_rather_than_implying_coverage():
+    from guardian_scanner import report
+    text = report.targets_text([("gemini-cli", False, False, "not installed")], ())
+    check("no real model measured is stated plainly",
+          "Nothing here measures a real model yet" in text, text)
+    check("and it counts zero ready", "0 of 1 ready" in text, text)
+
+
+def test_gemini_credentials_follow_the_environment():
+    target = targets.gemini_cli()
+    saved = {k: os.environ.pop(k, None)
+             for k in ("GEMINI_API_KEY", "GOOGLE_GENAI_USE_VERTEXAI", "GOOGLE_GENAI_USE_GCA")}
+    try:
+        os.environ["GEMINI_API_KEY"] = "anything"
+        check("a key in the environment counts as credentials", target.credentials() is True)
+        del os.environ["GEMINI_API_KEY"]
+        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "1"
+        check("vertex auth counts too", target.credentials() is True)
+        del os.environ["GOOGLE_GENAI_USE_VERTEXAI"]
+        check("credentials is a bool when it can be determined",
+              isinstance(target.credentials(), bool))
+    finally:
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
+            else:
+                os.environ.pop(k, None)
+
+
+def test_claude_code_does_not_guess_at_its_own_credentials():
+    """It keeps its own session. Guessing would be worse than saying unknown."""
+    check("claude-code reports unknown", targets.claude_code().credentials() is None)
+
+
+def test_an_unregistered_target_is_refused_with_a_useful_message():
+    from guardian_scanner import __main__ as cli
+    try:
+        cli._target("my-harness")
+        ok, message = False, "accepted"
+    except SystemExit as e:
+        ok, message = True, str(e)
+    check("an unknown target is refused", ok, message)
+    check("the message points at the targets command",
+          "guardian_scanner targets" in message, message)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

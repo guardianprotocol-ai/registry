@@ -1,6 +1,7 @@
 """Command line for the scan.
 
   python3 -m guardian_scanner validate
+  python3 -m guardian_scanner targets
   python3 -m guardian_scanner validate-results
   python3 -m guardian_scanner run --target scripted:vulnerable --repeat 10
   python3 -m guardian_scanner run --target claude-code --repeat 5 --pattern GP-0001
@@ -13,14 +14,11 @@ from . import patterns, report, results, runner, scenarios, targets
 
 
 def _target(name):
-    if name.startswith("scripted:"):
-        return targets.scripted(name.split(":", 1)[1])
-    if name == "claude-code":
-        return targets.claude_code()
-    if name == "gemini-cli":
-        return targets.gemini_cli()
-    raise SystemExit(f"unknown target {name!r}. Use scripted:vulnerable, scripted:hardened, "
-                     "claude-code or gemini-cli.")
+    make = targets.REGISTRY.get(name)
+    if make:
+        return make()
+    raise SystemExit(f"unknown target {name!r}. Run 'python3 -m guardian_scanner targets' "
+                     "to see what this machine can run.")
 
 
 def main(argv=None):
@@ -34,6 +32,8 @@ def main(argv=None):
                         help="check every recorded result in results/")
     vr.add_argument("--results", default=None)
     vr.add_argument("--patterns", default=None)
+
+    sub.add_parser("targets", help="show which harnesses this machine can measure")
 
     ls = sub.add_parser("list", help="show which patterns the scan can run")
     ls.add_argument("--patterns", default=None)
@@ -49,6 +49,12 @@ def main(argv=None):
     r.add_argument("--patterns", default=None)
 
     a = ap.parse_args(argv)
+    # Answered before anything reads a pattern file: this command is about the machine,
+    # not the registry, and it has to work in a half set up checkout.
+    if a.command == "targets":
+        print(report.targets_text(targets.available(), targets.WANTED))
+        return 0
+
     directory = a.patterns or patterns.registry_dir()
     validation = patterns.validate_dir(directory)
 

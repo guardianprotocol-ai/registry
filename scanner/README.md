@@ -21,6 +21,7 @@ harness cannot be mistaken for a protected agent.
 ```bash
 cd scanner
 python3 -m guardian_scanner validate                                  # check every pattern file
+python3 -m guardian_scanner targets                                   # what this machine can measure
 python3 -m guardian_scanner list                                      # what can be run, and what cannot
 python3 -m guardian_scanner run --target scripted:vulnerable --repeat 10
 python3 -m guardian_scanner run --target scripted:vulnerable --repeat 10 --sensor
