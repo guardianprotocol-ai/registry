@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(ROOT, "scanner"))
 
 import build_matrix  # noqa: E402
 from guardian_scanner import results as result_files  # noqa: E402
+from guardian_scanner import scenarios as scenario_files  # noqa: E402
 
 failures = []
 
@@ -172,6 +173,39 @@ def test_check_mode_catches_a_stale_file():
 
 def test_the_committed_matrix_is_current():
     check("docs/MATRIX.md matches results/", build_matrix.main(["--check"]) == 0)
+
+
+# ---------- each cell says what it counts ----------
+
+def test_every_measured_pattern_publishes_its_success_criterion():
+    """A bare rate called 'attack success' overstated GP-0003, which counts tool use."""
+    page = build_matrix.build()
+    for pattern in sorted(scenario_files.SCENARIOS):
+        if f"## {pattern}" not in page:
+            continue
+        section = page.split(f"## {pattern}")[1].split("\n## ")[0]
+        check(f"{pattern} says what counts as success",
+              "**Counted as success:**" in section, section[:160])
+
+
+def test_the_published_criterion_is_the_judge_s_own_words():
+    """If these drift, the matrix describes a judge the scan is not using."""
+    for pattern, scenario in sorted(scenario_files.SCENARIOS.items()):
+        doc = (scenario.succeeded.__doc__ or "").strip()
+        check(f"{pattern} has a criterion to publish", bool(doc), "no docstring on its judge")
+        if doc:
+            check(f"{pattern} criterion matches its judge",
+                  build_matrix.criterion_of(pattern) == doc.split("\n")[0].strip(),
+                  build_matrix.criterion_of(pattern))
+
+
+def test_the_header_no_longer_calls_every_cell_an_attack_success_rate():
+    page = build_matrix.build()
+    head = page.split("## Before adding a row")[0]
+    check("the blanket claim is gone",
+          "Every cell is an attack success rate" not in head, head[-300:])
+    check("the header points the reader at the per pattern criterion",
+          "different for each pattern" in head, head[-300:])
 
 
 def main():

@@ -14,9 +14,13 @@ import json
 import math
 import os
 import re
+import sys
 import subprocess
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"
+# 0.1 had no run_log. Those files stay valid: a re-measurement is a second data
+# point, never a reason to invalidate the first one.
+READABLE_VERSIONS = ("0.1", "0.2")
 
 # Five is the smallest run count that says anything at all, and even then the interval is
 # roughly 0 to 0.43. The matrix prints the interval next to every rate for this reason.
@@ -182,6 +186,73 @@ def _check_credits(name, doc, report):
             return
 
 
+def _check_run_log(name, doc, report):
+    """A run log has to reproduce the totals, and must not carry a secret out of the lab.
+
+    The point of the log is that a reader can recount the rate instead of trusting it. A log
+    that disagrees with its own headline is worse than no log, so it is refused rather than
+    reported alongside.
+    """
+    log = doc.get("run_log")
+    if not log:
+        # No log at all is the 0.1 shape, and still valid. Only a log that exists has to
+        # agree with the totals above it.
+        return
+    if not isinstance(log, list) or not all(isinstance(r, dict) for r in log):
+        report.fail(name, "run_log must be a list of objects, one per run")
+        return
+    states = [r.get("outcome") for r in log]
+    unknown = sorted({st for st in states if st not in ("success", "defended", "errored")})
+    if unknown:
+        report.fail(name, "run_log outcome must be success, defended or errored, found "
+                          + ", ".join(repr(u) for u in unknown))
+        return
+    if len(log) != doc.get("runs"):
+        report.fail(name, f"run_log has {len(log)} run(s) but runs says {doc.get('runs')}")
+    if states.count("success") != doc.get("successes"):
+        report.fail(name, f"run_log shows {states.count('success')} success(es) but successes "
+                          f"says {doc.get('successes')}")
+    if states.count("errored") != doc.get("errored"):
+        report.fail(name, f"run_log shows {states.count('errored')} errored run(s) but errored "
+                          f"says {doc.get('errored')}")
+    for run in log:
+        if run.get("outcome") == "errored" and not run.get("error"):
+            report.fail(name, f"run {run.get('n')} errored but gives no reason")
+    found = sorted(set(_secrets_in(log)))
+    if found:
+        report.fail(name, "run_log looks like it contains a secret, matching "
+                          + ", ".join(found) + ". A result file is published, so scrub the "
+                          "answer or re-run against the lab server before opening a pull "
+                          "request")
+
+
+def _secrets_in(log):
+    """Reuse the sensor's own secret patterns rather than inventing a second list."""
+    try:
+        here = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        sys.path.insert(0, os.path.join(here, "sensor"))
+        from guardian_sensor import rules
+    except Exception:
+        return []
+    # The sensor flags canary tokens, because a canary leaving a real organisation is the
+    # signal it exists to catch. In a result file a canary is the opposite: it is the test
+    # working, and the tokens are harmless by construction. So it is not a reason to refuse
+    # publication, while a real credential still is.
+    # Matched by name rather than by exact pattern text: the sensor writes its own canary
+    # regex and the validator writes another, and comparing the two strings silently stopped
+    # exempting anything the moment they differed.
+    def is_canary_rule(found):
+        return "CANARY" in found.upper()
+
+    out = []
+    for run in log:
+        for field in ("answer", "error"):
+            value = run.get(field)
+            if isinstance(value, str) and value:
+                out.extend(f for f in rules.find_secrets(value) if not is_canary_rule(f))
+    return out
+
+
 def validate_one(name, doc, report, known_patterns=None, runnable=None):
     if not isinstance(doc, dict):
         report.fail(name, "a result file must contain one JSON object")
@@ -190,11 +261,13 @@ def validate_one(name, doc, report, known_patterns=None, runnable=None):
     if missing:
         report.fail(name, "missing field(s): " + ", ".join(missing))
         return
-    if doc.get("schema_version") != SCHEMA_VERSION:
-        report.fail(name, f"schema_version must be {SCHEMA_VERSION!r} for now")
+    if doc.get("schema_version") not in READABLE_VERSIONS:
+        report.fail(name, "schema_version must be one of "
+                          + ", ".join(repr(v) for v in READABLE_VERSIONS))
     pattern = doc.get("pattern")
     if known_patterns is not None and pattern not in known_patterns:
         report.fail(name, f"pattern {pattern!r} is not in patterns/")
+    _check_run_log(name, doc, report)
     _check_target(name, doc, report)
     _check_sensor(name, doc, report)
     numbers = _check_counts(name, doc, report)
@@ -300,7 +373,7 @@ def document_for(result, sensor_on, date=None, commit=None, harness_version=None
     scored = result.runs
     total = scored + result.errors
     low, high = wilson(result.successes, scored)
-    return {
+    doc = {
         "schema_version": SCHEMA_VERSION,
         "pattern": result.pattern_id,
         "target": target_of(result.target_name, harness_version, model),
@@ -318,6 +391,14 @@ def document_for(result, sensor_on, date=None, commit=None, harness_version=None
         "credits": [{"name": PLACEHOLDER, "organization": PLACEHOLDER}],
         "notes": PLACEHOLDER,
     }
+    log = result.run_log if hasattr(result, "run_log") else []
+    if log:
+        # One entry per run, so the rate can be recounted rather than trusted. Placed after
+        # interval so the headline numbers read first and the evidence follows.
+        items = list(doc.items())
+        at = [i for i, (k, _) in enumerate(items) if k == "interval"][0] + 1
+        doc = dict(items[:at] + [("run_log", log)] + items[at:])
+    return doc
 
 
 def record(scan_results, directory, sensor_on, date=None, commit=None, target=None):
