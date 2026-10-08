@@ -359,6 +359,64 @@ def test_the_recorded_result_carries_the_harness_version():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_a_model_can_be_pinned_and_is_recorded_as_asked_for():
+    """You can measure a model, but only the one you asked for, never a guess."""
+    t = targets.claude_code(model="opus")
+    argv = t.argv("hello", "/tmp/mcp.json")
+    check("claude-code passes the model through", argv[-2:] == ["--model", "opus"], str(argv[-3:]))
+    check("and records what was asked for", t.model_requested() == "opus")
+
+    g = targets.gemini_cli(model="gemini-2.5-pro")
+    check("gemini-cli uses its own flag",
+          g.argv("hello", "/tmp/mcp.json")[-2:] == ["-m", "gemini-2.5-pro"],
+          str(g.argv("hello", "/tmp/mcp.json")[-3:]))
+
+
+def test_an_unpinned_harness_records_nothing_rather_than_guessing():
+    t = targets.claude_code()
+    check("no --model flag when none was asked for",
+          "--model" not in t.argv("hello", "/tmp/mcp.json"))
+    check("the model stays unknown", t.model_requested() is None)
+
+
+def test_the_scripted_controls_have_no_model_at_all():
+    for kind in ("vulnerable", "hardened"):
+        t = targets.scripted(kind)
+        check(f"scripted:{kind} reports no model", t.model_requested() == "none")
+        check(f"scripted:{kind} cannot be pinned", t.supports_model is False)
+
+
+def test_the_pinned_model_reaches_the_result_file():
+    from guardian_scanner import results
+
+    class FakeResult:
+        pattern_id, target_name = "GP-0003", "claude-code"
+        runs, successes, errors = 20, 20, 0
+
+    class Pinned:
+        def version(self): return "2.1.274"
+        def model_requested(self): return "claude-opus-5"
+
+    class Unpinned:
+        def version(self): return "2.1.274"
+        def model_requested(self): return None
+
+    folder = tempfile.mkdtemp()
+    try:
+        doc = json.load(open(results.record([FakeResult()], folder, sensor_on=False,
+                                            date="2026-10-08", target=Pinned())[0]))
+        check("a pinned model is recorded",
+              doc["target"]["model"] == "claude-opus-5", str(doc["target"]))
+        check("and the harness version beside it",
+              doc["target"]["harness_version"] == "2.1.274", str(doc["target"]))
+        doc = json.load(open(results.record([FakeResult()], folder, sensor_on=False,
+                                            date="2026-10-09", target=Unpinned())[0]))
+        check("an unpinned run says unrecorded, not a guess",
+              doc["target"]["model"] == "unrecorded", str(doc["target"]))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 # ---------- the targets table ----------
 
 def test_every_registered_target_can_be_built_and_reports_itself():
