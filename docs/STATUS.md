@@ -20,7 +20,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Map | Still open | 43 |
 | Prove | With a runnable test | 7 |
 | Prove | With an attack case in the corpus | 16 |
-| Measure | With a recorded result | 5 |
+| Measure | With a recorded result | 7 |
 
 The benign corpus holds 15 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
 
@@ -53,7 +53,7 @@ The benign corpus holds 15 cases of ordinary work that no rule may flag. It is s
 | `AML.T0053` | AI Agent Tool Invocation | GP-0014 | no | no | no | covered |
 | `AML.T0054` | LLM Jailbreak |  | no | no | no | open |
 | `AML.T0056` | Extract LLM System Prompt | GP-0012 | no | yes | no | covered |
-| `AML.T0057` | LLM Data Leakage | GP-0002 | yes | yes | no | covered |
+| `AML.T0057` | LLM Data Leakage | GP-0002 | yes | yes | yes | covered |
 | `AML.T0061` | LLM Prompt Self-Replication | GP-0013 | no | no | no | covered |
 | `AML.T0062` | Discover LLM Hallucinations |  | no | no | no | open |
 | `AML.T0065` | LLM Prompt Crafting |  | no | no | no | open |
@@ -80,7 +80,7 @@ The benign corpus holds 15 cases of ordinary work that no rule may flag. It is s
 | `AML.T0084.003` | Discover AI Agent Configuration: Call Chains |  | no | no | no | open |
 | `AML.T0085.000` | Data from AI Services: RAG Databases |  | no | no | no | open |
 | `AML.T0085.001` | Data from AI Services: AI Agent Tools |  | no | no | no | open |
-| `AML.T0086` | Exfiltration via AI Agent Tool Invocation | GP-0002 | yes | yes | no | covered |
+| `AML.T0086` | Exfiltration via AI Agent Tool Invocation | GP-0002 | yes | yes | yes | covered |
 | `AML.T0092` | Manipulate User LLM Chat History |  | no | no | no | open |
 | `AML.T0093` | Prompt Infiltration via Public-Facing Application |  | no | no | no | open |
 | `AML.T0094` | Delay Execution of LLM Instructions |  | no | no | no | open |

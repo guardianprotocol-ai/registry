@@ -114,14 +114,20 @@ def test_not_testable_counts_as_resolved_and_carries_its_reason():
 def test_a_mapped_technique_is_covered_and_shows_its_pattern():
     """AML.T0086 is claimed by GP-0002 in the real pattern files."""
     folder, path = csv_with([row("AML.T0086")])
+    empty_results = tempfile.mkdtemp()
     try:
         items = build_status.collect(path)
         check("a mapped technique is covered", items[0]["state"] == "covered", str(items[0]))
         check("its pattern is named", "GP-0002" in items[0]["patterns"], str(items[0]))
-        check("a scenario is not a measurement: GP-0002 runs but has no recorded result",
+        # Runnable and measured are separate states. Point at an empty results folder so the
+        # distinction is built by the test rather than borrowed from whichever pattern in the
+        # repository happens to be unmeasured today.
+        items = build_status.collect(path, results_dir=empty_results)
+        check("a scenario is not a measurement",
               items[0]["runnable"] and not items[0]["measured"], str(items[0]))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
+        shutil.rmtree(empty_results, ignore_errors=True)
 
 
 def test_measured_means_a_recorded_result_exists():
