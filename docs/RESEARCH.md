@@ -2,9 +2,8 @@
 
 How this project publishes research, and how someone becomes an author on it.
 
-The group's name is **Guardian Protocol Research Group**. That name is **proposed, not
-decided**: the group confirms or changes it at the kickoff. Until then every document here
-says it is proposed.
+The group's name is **Guardian Protocol Research Group**, settled by the group at its
+first working session on October 8, 2026.
 
 This policy exists before the first paper on purpose. Authorship disputes are easy to avoid
 in advance and miserable to settle afterwards.

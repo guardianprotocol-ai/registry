@@ -49,7 +49,7 @@ It is not a separate authority. It does not merge code, promote patterns or deci
 this document assigns to maintainers. Taking part needs no title: show up, contribute, and
 you are in it.
 
-The name is proposed and the group decides it, like any other decision below.
+The group settled its name at its first working session on October 8, 2026.
 
 **Organizer, Guardian Protocol Research Group** is the only role the group has so far, and it is an organizing job rather than a scientific one: keep the work visible, keep the rhythm, review quickly, give credit. It carries no extra vote and no authority over findings. Frank Albanese holds it. Further roles, if the group creates any, are recorded here.
 
