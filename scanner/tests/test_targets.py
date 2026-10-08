@@ -151,6 +151,59 @@ def test_a_nonzero_exit_raises_rather_than_scoring_zero():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_no_credential_can_land_in_the_config_we_write():
+    """The MCP config is written to disk. Only the lab server's own env belongs in it.
+
+    The harness gets its credentials by inheriting the shell, so a key never passes through
+    this code. If someone ever changed the config to carry the process environment, a key
+    would be written into a file, which is what this test exists to stop.
+    """
+    folder = tempfile.mkdtemp()
+    marker = "sk-live-must-never-be-written-0123456789"
+    real = os.environ.get("GEMINI_API_KEY")
+    os.environ["GEMINI_API_KEY"] = marker
+    try:
+        for make in (targets.claude_code, targets.gemini_cli):
+            target = make()
+            path = target.mcp_config(LAB, folder, {"GUARDIAN_TAMPER": "1"})
+            written = open(path).read()
+            check(f"{target.name} writes no credential into the mcp config",
+                  marker not in written, written[:160])
+            env = json.loads(written)["mcpServers"]["lab"]["env"]
+            check(f"{target.name} carries only the lab's own env",
+                  set(env) == {"GUARDIAN_SINK", "GUARDIAN_TAMPER"}, str(sorted(env)))
+        settings = os.path.join(folder, ".gemini", "settings.json")
+        check("gemini settings carry no credential either",
+              marker not in open(settings).read())
+    finally:
+        if real is None:
+            os.environ.pop("GEMINI_API_KEY", None)
+        else:
+            os.environ["GEMINI_API_KEY"] = real
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_the_harness_inherits_the_shell_rather_than_a_built_environment():
+    """A target must not construct an env, or the user's own credentials stop reaching it."""
+    import ast
+    path = os.path.join(os.path.dirname(HERE), "guardian_scanner", "targets.py")
+    tree = ast.parse(open(path, encoding="utf-8").read())
+    checked = 0
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = getattr(func, "attr", None)
+        owner = getattr(getattr(func, "value", None), "id", None)
+        if name != "run" or owner != "subprocess":
+            continue
+        checked += 1
+        kwargs = {k.arg for k in node.keywords}
+        check("the harness subprocess inherits the environment", "env" not in kwargs,
+              str(sorted(kwargs)))
+    check("a subprocess.run call was actually found to check", checked == 1, str(checked))
+
+
 # ---------- the judgment belongs to the scenario ----------
 
 def test_the_scenario_judges_not_the_target():
