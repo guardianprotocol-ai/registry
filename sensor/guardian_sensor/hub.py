@@ -28,6 +28,12 @@ PATTERN_RE = re.compile(r"^GP-\d{4}$")
 ACTIONS = ("flagged", "blocked")
 ORG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$")
 HOUR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}$")
+# The two version fields are the only ones a caller hands in rather than the hub deriving
+# them, so they get the same treatment as the rest. Without a shape, anything a caller or a
+# release manifest puts here rides out in every entry, and 'nothing else leaves this
+# machine' stops being true. Releases look like r2026.10.08.
+RULES_VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
+SENSOR_VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$")
 
 DEFAULT_EVIDENCE = (".guardian/evidence.jsonl",)
 
@@ -111,6 +117,16 @@ def build_sightings(records, org, rules_version, sensor_version=SENSOR_VERSION):
             "It is a pseudonym you choose, never a company name.")
     if not isinstance(rules_version, str) or not rules_version.strip():
         raise HubError("rules_version is required. Run 'update' first, or pass --rules-version.")
+    if not RULES_VERSION_RE.match(rules_version):
+        raise HubError(
+            f"rules_version {rules_version!r} is not a version. Up to 32 characters, letters, "
+            "digits, dots, hyphens and underscores, like r2026.10.08. It is shared with every "
+            "entry, so it may not carry free text.")
+    if not SENSOR_VERSION_RE.match(sensor_version or ""):
+        raise HubError(
+            f"sensor_version {sensor_version!r} is not a version. Up to 40 characters, letters, "
+            "digits, spaces, dots, hyphens and underscores. It is shared with every entry, so "
+            "it may not carry free text.")
 
     counts = {}
     for record in records:
@@ -148,8 +164,14 @@ def preview_text(document):
         "",
         f"Member id: {document['org']}",
         f"Entries:   {len(entries)}",
-        "",
     ]
+    # Every field's value has to be on screen, not just its name. The promise above is that
+    # this is the whole of what leaves, and a member cannot consent to a value they were
+    # never shown. sensor_version is the same for every entry, so it belongs in the header
+    # rather than repeated down the table.
+    for name in sorted({e["sensor_version"] for e in entries}):
+        lines.append(f"Sensor:    {name}")
+    lines.append("")
     if not entries:
         lines.append("Nothing to share for that period.")
         return "\n".join(lines)
@@ -196,6 +218,12 @@ def verify_against_manifest(manifest, files):
     rules_version = manifest.get("rules_version")
     if not isinstance(rules_version, str) or not rules_version.strip():
         raise HubError("the manifest names no rules_version. Refusing to update.")
+    # Checked here too: this value is written into the update record and later shared with
+    # every sightings entry, so a hub must not be able to put free text into a member's
+    # outgoing data by way of its own manifest.
+    if not RULES_VERSION_RE.match(rules_version):
+        raise HubError(f"the manifest's rules_version {rules_version!r} is not a version. "
+                       "Refusing to update.")
 
     missing = sorted(set(expected) - set(files))
     if missing:

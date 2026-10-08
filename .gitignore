@@ -1,6 +1,7 @@
 evidence.json
 report.html
 __pycache__/
+dist/
 .guardian/
 sinkhole.jsonl
 contributors.json
