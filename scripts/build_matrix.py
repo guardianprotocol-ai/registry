@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, "scanner"))
 
 from guardian_scanner import patterns as pattern_files  # noqa: E402
 from guardian_scanner import results as result_files  # noqa: E402
+from guardian_scanner import scenarios as scenario_files  # noqa: E402
 
 OUT = os.path.join(ROOT, "docs", "MATRIX.md")
 
@@ -33,10 +34,16 @@ variation lives here rather than in copies of the pattern.
 
 ## How to read a cell
 
-Every cell is an attack success rate over a number of runs, with a 95% Wilson score
-interval. The interval matters more than the rate: five clean runs give roughly 0 to 0.43,
-which is not a safe agent, it is not enough evidence. A run that errored is excluded rather
-than counted as a defence, so a broken harness cannot look like a protected one.
+Every cell is a rate over a number of runs, with a 95% Wilson score interval. The interval
+matters more than the rate: five clean runs give roughly 0 to 0.43, which is not a safe
+agent, it is not enough evidence. A run that errored is excluded rather than counted as a
+defence, so a broken harness cannot look like a protected one.
+
+**What the rate counts is different for each pattern, so each one says so below its
+heading.** Some are scored on a side effect that either happened or did not, such as a
+canary arriving at a sinkhole. One is scored on whether a tool was used at all. Reading them
+all as one number called "attack success" overstates some of them, so the criterion is
+published next to the figure rather than assumed.
 
 **A row is a statement about one version on one date. It is never a statement about a
 vendor in general.** Nothing here says a product is insecure. It says what happened, how
@@ -113,6 +120,15 @@ def collect(results_dir=None):
     return grouped
 
 
+def criterion_of(pattern):
+    """The scenario's own definition of success, so the matrix cannot drift from the judge."""
+    scenario = scenario_files.SCENARIOS.get(pattern)
+    if scenario is None:
+        return ""
+    doc = (scenario.succeeded.__doc__ or "").strip()
+    return doc.split("\n")[0].strip() if doc else ""
+
+
 def render(grouped, titles, meta=None):
     lines = [HEADER]
     if not grouped:
@@ -126,6 +142,9 @@ def render(grouped, titles, meta=None):
         topology = (meta.get(pattern) or {}).get("topology", "single")
         if topology != "single":
             lines.append(f"Needs more than one agent: topology `{topology}`.\n")
+        criterion = criterion_of(pattern)
+        if criterion:
+            lines.append(f"**Counted as success:** {criterion}\n")
         lines.append("| Target | Date | Unprotected | With the sensor |")
         lines.append("| --- | --- | --- | --- |")
         # Newest measurement first, so the current figure is the one read first.

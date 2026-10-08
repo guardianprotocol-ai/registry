@@ -9,21 +9,74 @@ import json
 import math
 import os
 import tempfile
+import time
 
 from . import scenarios, targets
 
 Z = 1.959963985  # 95 per cent
+
+# An answer is agent output, so it is kept short and checked for secrets before publishing.
+MAX_ANSWER = 2000
+
+
+class Run:
+    """One run and the evidence the judge was given.
+
+    A rate built from bare booleans cannot be re-judged later: `successes: 20` is a number
+    someone typed, and a judge bug looks identical to a real finding. Keeping the calls and
+    the final answer means a reader can recount the rate and see what the judge keyed on.
+    """
+
+    def __init__(self, n, outcome, calls=None, answer=None, seconds=0.0, error=None):
+        self.n = n
+        self.outcome = outcome          # True, False, or None for an errored run
+        self.calls = calls or []
+        self.answer = answer
+        self.seconds = seconds
+        self.error = error
+
+    @property
+    def state(self):
+        return "errored" if self.outcome is None else ("success" if self.outcome else "defended")
+
+    def as_dict(self):
+        answer = self.answer
+        truncated = False
+        if isinstance(answer, str) and len(answer) > MAX_ANSWER:
+            answer, truncated = answer[:MAX_ANSWER], True
+        out = {"n": self.n, "outcome": self.state, "seconds": round(self.seconds, 2)}
+        # The calls are what the judge actually read, minus the answer, which is kept once.
+        # Empty entries are dropped: a side effect judge reads the workdir, not the calls,
+        # and recording "[{}]" says nothing while looking like it should.
+        judged_on = [d for d in ({k: v for k, v in c.items() if k != "answer"}
+                                 for c in self.calls) if d]
+        if judged_on:
+            out["judged_on"] = judged_on
+        if answer is not None:
+            out["answer"] = answer
+            if truncated:
+                out["answer_truncated_from"] = len(self.answer)
+        if self.error:
+            out["error"] = self.error
+        return out
 
 
 class Result:
     def __init__(self, pattern_id, target_name, outcomes):
         self.pattern_id = pattern_id
         self.target_name = target_name
-        self.outcomes = list(outcomes)
+        # Accepts Run records or bare booleans, so older callers and tests keep working.
+        self.log = [o if isinstance(o, Run) else Run(i + 1, o)
+                    for i, o in enumerate(outcomes)]
+        self.outcomes = [r.outcome for r in self.log]
         self.errors = sum(1 for o in self.outcomes if o is None)
         scored = [o for o in self.outcomes if o is not None]
         self.runs = len(scored)
         self.successes = sum(1 for o in scored if o)
+
+    @property
+    def run_log(self):
+        return [r.as_dict() for r in self.log]
 
     @property
     def rate(self):
@@ -57,8 +110,9 @@ def _sensor_config(workdir):
     return path
 
 
-def run_once(scenario, target, sensor=False):
-    """One run. Returns True if the attack worked, False if not, None if the run errored."""
+def run_once(scenario, target, sensor=False, n=1):
+    """One run, as a Run record: the verdict plus the evidence the judge saw."""
+    started = time.time()
     with tempfile.TemporaryDirectory() as workdir:
         command = scenario.server_command()
         if sensor:
@@ -75,14 +129,19 @@ def run_once(scenario, target, sensor=False):
                     warm.close()
             env = {"GUARDIAN_TAMPER": "1"} if scenario.tamper else {}
             calls = target.run(scenario, command, workdir, env)
-            return bool(scenario.succeeded(workdir, calls))
-        except Exception:
-            return None
+            outcome = bool(scenario.succeeded(workdir, calls))
+            answer = next((c.get("answer") for c in calls if c.get("answer") is not None), None)
+            return Run(n, outcome, calls=calls, answer=answer, seconds=time.time() - started)
+        except Exception as e:
+            # Errored runs leave the denominator, and the reason is kept so a run of zeros
+            # caused by a broken harness cannot be mistaken for a defended agent.
+            return Run(n, None, seconds=time.time() - started,
+                       error=f"{type(e).__name__}: {str(e)[:200]}")
 
 
 def run_pattern(pattern_id, target, repeat=10, sensor=False):
     scenario = scenarios.get(pattern_id)
-    outcomes = [run_once(scenario, target, sensor=sensor) for _ in range(repeat)]
+    outcomes = [run_once(scenario, target, sensor=sensor, n=i + 1) for i in range(repeat)]
     return Result(pattern_id, target.name, outcomes)
 
 
