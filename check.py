@@ -28,6 +28,7 @@ CHECKS = [
     ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
+    ("Sensor shutdown tests", "sensor", ["tests/test_shutdown.py"]),
     ("Sharing hub tests", "sensor", ["tests/test_hub.py"]),
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),

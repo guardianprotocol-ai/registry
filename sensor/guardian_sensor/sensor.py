@@ -140,8 +140,15 @@ def pump(src, dst, handler, sensor, reply_to=None):
                 continue
         except Exception as e:  # fail open
             sys.stderr.write(f"[guardian] sensor fault, relaying unchanged: {e}\n")
-        dst.write(line if line.endswith("\n") else line + "\n")
-        dst.flush()
+        try:
+            dst.write(line if line.endswith("\n") else line + "\n")
+            dst.flush()
+        except (BrokenPipeError, ValueError):
+            # The other end has gone: the server exited, or the client hung up. Relaying
+            # further is pointless and raising here would crash the proxy on a normal
+            # disconnect, which the client sees as the sensor breaking its MCP server.
+            sys.stderr.write("[guardian] the other end closed the pipe, stopping the relay\n")
+            return
 
 
 # The sharing hub commands. Anything else is the proxy, so the way the sensor has always
@@ -165,14 +172,42 @@ def main(argv=None):
     cfg = json.load(open(a.config)) if a.config else {}
     sensor = Sensor(cfg)
 
-    proc = subprocess.Popen(server_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+    try:
+        proc = subprocess.Popen(server_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                text=True, bufsize=1)
+    except OSError as e:
+        raise SystemExit(f"cannot start the MCP server {' '.join(server_cmd)!r}: {e}. "
+                         "The command after -- is run as given, so check the name and that it "
+                         "is installed and executable.")
     t = threading.Thread(target=pump, args=(proc.stdout, sys.stdout, sensor.inspect_response, sensor), daemon=True)
     t.start()
     pump(sys.stdin, proc.stdin, sensor.inspect_request, sensor, reply_to=sys.stdout)
-    proc.stdin.close()
+    _shut_down(proc)
     t.join(timeout=5)
-    proc.wait(timeout=5)
     return 0
+
+
+def _shut_down(proc, grace=5):
+    """Close stdin and make sure the server is actually gone.
+
+    A server that does not exit when its stdin closes used to raise TimeoutExpired out of
+    main, which left the client looking at a stack trace and left the server running as an
+    orphan holding the pipes open. One per session adds up over a working day.
+    """
+    try:
+        proc.stdin.close()
+    except (BrokenPipeError, OSError):
+        pass
+    for stop in (None, proc.terminate, proc.kill):
+        if stop is not None:
+            stop()
+        try:
+            return proc.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            if stop is None:
+                sys.stderr.write("[guardian] the MCP server did not exit when the client "
+                                 "disconnected, stopping it\n")
+    return proc.poll()
 
 
 if __name__ == "__main__":
