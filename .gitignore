@@ -4,3 +4,8 @@ __pycache__/
 .guardian/
 sinkhole.jsonl
 contributors.json
+# Credentials never belong in this repository. Each harness uses its own auth.
+.env
+.env.*
+*.key
+*.pem

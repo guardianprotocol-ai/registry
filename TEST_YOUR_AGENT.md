@@ -66,6 +66,17 @@ python3 -m guardian_scanner run --target claude-code --repeat 5 --pattern GP-000
 That starts a real Claude Code session, headless, over the lab server, and costs tokens.
 Nothing reaches for it unless you name it.
 
+### Credentials
+
+The scan never asks for an API key, never stores one and never writes one to disk. Each
+harness uses whatever authentication it already has, the same as when you run it yourself:
+Claude Code uses your existing session, and Gemini CLI reads `GEMINI_API_KEY` or whatever
+auth you configured for it. Your key reaches the harness by being in your shell, and it
+passes through nothing in this repository.
+
+Nothing in this repository contains a key, and it never should. If you ever find one, that
+is a security report, not an issue: see [SECURITY.md](SECURITY.md).
+
 A second harness is wired and waiting on someone to verify it:
 
 ```bash
