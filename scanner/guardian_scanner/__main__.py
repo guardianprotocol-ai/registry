@@ -14,6 +14,19 @@ import sys
 from . import patterns, report, results, runner, scenarios, targets
 
 
+def _target_class(name):
+    """The class behind a REGISTRY entry. The registry holds factories, not classes."""
+    return targets.CLASSES.get(name)
+
+
+def _model_example(name):
+    return getattr(_target_class(name), "model_example", "") or "a current model"
+
+
+def _model_verified_on(name):
+    return getattr(_target_class(name), "model_verified_on", "") or "an earlier date"
+
+
 def _target(name, model=None):
     make = targets.REGISTRY.get(name)
     if make:
@@ -102,6 +115,14 @@ def main(argv=None):
                 f"result file that validate-results refuses. A measurement needs at least "
                 f"{results.MIN_RUNS} runs to carry any information, and 20 is the figure Season 1 "
                 "asks for. Drop --record to try a smaller run without recording it.")
+        if getattr(_target_class(a.target), "requires_model", False) and not getattr(a, "model", None):
+            raise SystemExit(
+                f"{a.target} needs --model. Its own built-in default is retired for newly "
+                "issued API keys and fails inside the vendor's routing before the scenario "
+                "starts, with a 404 under a stack trace. Naming the model is also the honest "
+                f"thing for a measurement: --model {_model_example(a.target)} worked on "
+                f"{_model_verified_on(a.target)}. Current models are listed at "
+                "https://ai.google.dev/gemini-api/docs/models")
         if a.record and not os.path.isdir(a.record):
             raise SystemExit(
                 f"--record {a.record!r} is not a folder that exists. Create it first, or point at "

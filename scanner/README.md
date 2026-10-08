@@ -39,7 +39,7 @@ results.
 | `scripted:vulnerable` | A reference agent that does what poisoned content tells it | none |
 | `scripted:hardened` | A reference agent that reads the same content and declines | none |
 | `claude-code` | A real Claude Code session, headless, over the same lab server | tokens |
-| `gemini-cli` | A real Gemini CLI session over the same lab server. Wired and contract tested, not yet verified against the live API | tokens |
+| `gemini-cli` | A real Gemini CLI session over the same lab server. Verified against the live API on 2026-10-08 with gemini-cli 0.26.0. Needs `--model`, because the CLI's own default is retired for new API keys | tokens |
 
 The scripted agents are the control, not the finding: they exist so the scan can run in CI
 and so a change in the rules shows up immediately. `claude-code` is the only target that

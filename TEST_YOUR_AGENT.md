@@ -87,16 +87,31 @@ passes through nothing in this repository.
 Nothing in this repository contains a key, and it never should. If you ever find one, that
 is a security report, not an issue: see [SECURITY.md](SECURITY.md).
 
-A second harness is wired and waiting on someone to verify it:
+A second harness is wired and verified:
 
 ```bash
 export GEMINI_API_KEY=...
-python3 -m guardian_scanner run --target gemini-cli --repeat 5 --pattern GP-0003
+python3 -m guardian_scanner run --target gemini-cli --model gemini-3.5-flash \
+  --repeat 5 --pattern GP-0003
 ```
 
-`gemini-cli` has passing contract tests but has never completed a run against the live API,
-because the machine it was written on has no Gemini credentials. If you have a key, you are
-five minutes from the first measurement of a second model family in this registry.
+`gemini-cli` completed its first runs against the live API on 2026-10-08, with gemini-cli
+0.26.0 and `gemini-3.5-flash`.
+
+**You have to name a model, and the scan refuses to start without one.** Gemini CLI's own
+built-in default is retired for newly issued API keys, and it fails inside Gemini's routing
+before the scenario even runs: a 404 `ModelNotFoundError`, buried under a Node deprecation
+warning and a stack trace. `gemini-3.5-flash` and `gemini-3.5-flash-lite` both worked on
+2026-10-08; `gemini-2.5-flash` did not. Google's current models are at
+[ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models).
+
+Naming it is also the right thing for a measurement. The model is part of what you measured,
+so no target here carries a default: a default would fill the matrix with a model nobody
+chose, and would rot the day the vendor retires it.
+
+A fast, cheap model is not a like-for-like comparison with whatever serves another harness.
+The matrix records what you asked for, which is the honest unit: one harness, one named
+model, one date. It never supports a sentence of the form "vendor A versus vendor B".
 
 **If your harness has neither target,** writing one is the highest-value thing you can do
 here, and it is two short methods:

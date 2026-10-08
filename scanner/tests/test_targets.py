@@ -498,6 +498,69 @@ def test_an_unregistered_target_is_refused_with_a_useful_message():
           "guardian_scanner targets" in message, message)
 
 
+# ---------- a harness that cannot pick its own model must be told one ----------
+
+def test_the_class_table_covers_every_registry_entry():
+    """A missing entry reads as 'this target requires nothing', which is the silent kind."""
+    missing = sorted(set(targets.REGISTRY) - set(targets.CLASSES))
+    check("every target in REGISTRY has a class in CLASSES", not missing, str(missing))
+    extra = sorted(set(targets.CLASSES) - set(targets.REGISTRY))
+    check("CLASSES names no target the registry does not offer", not extra, str(extra))
+    for name, cls in sorted(targets.CLASSES.items()):
+        built = targets.REGISTRY[name]()
+        check(f"{name} builds the class CLASSES claims", isinstance(built, cls),
+              f"{type(built).__name__} is not {cls.__name__}")
+
+
+def test_gemini_requires_a_model_and_the_others_do_not():
+    check("gemini-cli requires a model", targets.GeminiCliTarget.requires_model)
+    for cls in (targets.ClaudeCodeTarget, targets.ScriptedTarget):
+        check(f"{cls.__name__} does not require one",
+              not getattr(cls, "requires_model", False))
+
+
+def test_a_target_that_requires_a_model_offers_a_dated_example():
+    """A list of blessed models rots exactly like a default. An example with a date does not."""
+    for name, cls in sorted(targets.CLASSES.items()):
+        if not getattr(cls, "requires_model", False):
+            continue
+        check(f"{name} names an example model", bool(cls.model_example), name)
+        check(f"{name} says when that example was verified",
+              bool(cls.model_verified_on), name)
+
+
+def test_the_gemini_note_no_longer_claims_it_is_unverified():
+    """It was verified on 2026-10-08. Leaving the old wording would understate the matrix."""
+    note = targets.GeminiCliTarget.note
+    check("the note does not say not yet verified", "not yet verified" not in note.lower(), note)
+    check("the note says it was verified", "verified" in note.lower(), note)
+    doc = targets.GeminiCliTarget.__doc__ or ""
+    check("the docstring does not say not yet verified",
+          "not yet verified" not in doc.lower(), doc[:200])
+
+
+# ---------- the docs show commands that would actually run ----------
+
+def test_documented_gemini_commands_name_a_model():
+    """A target that refuses without --model must not be documented without one."""
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    needs_model = sorted(n for n, c in targets.CLASSES.items()
+                         if getattr(c, "requires_model", False))
+    for doc in ("TEST_YOUR_AGENT.md", os.path.join("scanner", "README.md"),
+                "START_HERE.md", "README.md"):
+        path = os.path.join(root, doc)
+        if not os.path.exists(path):
+            continue
+        for number, line in enumerate(open(path, encoding="utf-8").read().splitlines(), 1):
+            if "guardian_scanner run" not in line:
+                continue
+            for name in needs_model:
+                if f"--target {name}" in line:
+                    check(f"{doc}:{number} names a model for {name}",
+                          "--model" in line or line.rstrip().endswith("\\"),
+                          line.strip()[:100])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
