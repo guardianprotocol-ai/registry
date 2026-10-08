@@ -93,14 +93,18 @@ def main(argv=None):
     unknown = [p for p in only if p not in runnable]
     if unknown:
         raise SystemExit(f"no scenario in scanner v0 for {', '.join(unknown)}")
+    # Two different reasons a pattern was not run, and saying the wrong one misleads anyone
+    # measuring a single pattern: no scenario exists, or --pattern left it out.
     skipped = [p for p in sorted(validation.patterns) if p not in only]
+    no_scenario = [p for p in skipped if p not in runnable]
+    left_out = [p for p in skipped if p in runnable]
 
     # Named 'measured', not 'results': the module of that name is imported above, and a
     # local would shadow it for the whole function, including the branch that uses it.
     target = _target(a.target, getattr(a, "model", None))
     measured = runner.run_all(target, repeat=a.repeat, sensor=a.sensor, only=only)
     print(report.results_json(measured) if a.json
-          else report.results_text(measured, a.repeat, skipped))
+          else report.results_text(measured, a.repeat, no_scenario, left_out))
 
     if a.record:
         written = results.record(measured, a.record, sensor_on=a.sensor, target=target)

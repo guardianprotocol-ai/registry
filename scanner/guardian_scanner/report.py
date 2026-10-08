@@ -82,7 +82,7 @@ def results_validation_text(report):
     return "\n".join(lines)
 
 
-def results_text(results, repeat, skipped=()):
+def results_text(results, repeat, no_scenario=(), left_out=()):
     head = (f"{'Pattern':<9} {'Target':<20} {'Runs':>4} {'ASR':>7} {'95% interval':>16}  "
             f"{'':<20} Errors")
     lines = ["", head, "-" * len(head)]
@@ -96,10 +96,14 @@ def results_text(results, repeat, skipped=()):
                  "95% Wilson score interval.")
     lines.append("A rate is a measurement, not a verdict: agents do not behave the same way twice, "
                  "and a narrow interval needs many runs.")
-    if skipped:
+    if no_scenario:
         lines.append("")
-        lines.append(f"Not run, because scanner v0 has no scenario for them yet: {', '.join(skipped)}. "
-                     "They were validated only.")
+        lines.append("Not run, because scanner v0 has no scenario for them yet: "
+                     f"{', '.join(no_scenario)}. They were validated only.")
+    if left_out:
+        lines.append("")
+        lines.append("Runnable, but left out by --pattern on this run: "
+                     f"{', '.join(left_out)}. Drop the flag to measure them too.")
     return "\n".join(lines)
 
 

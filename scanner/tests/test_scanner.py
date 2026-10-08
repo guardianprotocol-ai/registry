@@ -7,7 +7,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from guardian_scanner import patterns, runner, scenarios, targets  # noqa: E402
+from guardian_scanner import patterns, report, runner, scenarios, targets  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PATTERNS = os.path.join(REPO, "patterns")
@@ -346,6 +346,48 @@ def test_the_sensor_stops_a_tampered_tool():
           f"{without.rate}, errors {without.errors}")
     check("with the sensor the changed tool is blocked", withit.rate == 0.0,
           f"{withit.rate}, errors {withit.errors}")
+
+
+# ---------- why a pattern was not run ----------
+
+def test_a_filtered_pattern_is_not_called_unimplemented():
+    """--pattern GP-0001 must not claim the other runnable patterns have no scenario.
+
+    The two reasons a pattern is missing from a run are different, and printing the wrong
+    one tells a contributor measuring one pattern that three working patterns are broken.
+    """
+    text = report.results_text([], 20, no_scenario=["GP-0004"], left_out=["GP-0002", "GP-0003"])
+    check("a pattern with no scenario is named as validated only",
+          "GP-0004" in text.split("validated only")[0], text)
+    check("a runnable pattern left out by the flag is named separately",
+          "GP-0002" in text.split("left out by --pattern")[1], text)
+    no_scenario_claim = text.split("Not run, because")[1].split("\n")[0]
+    check("a runnable pattern is never called unimplemented",
+          "GP-0002" not in no_scenario_claim and "GP-0003" not in no_scenario_claim,
+          no_scenario_claim)
+
+
+def test_the_two_reasons_are_each_omitted_when_empty():
+    runnable_only = report.results_text([], 20, no_scenario=[], left_out=["GP-0002"])
+    check("no scenario line is absent when every pattern has one",
+          "has no scenario" not in runnable_only, runnable_only)
+    unimplemented_only = report.results_text([], 20, no_scenario=["GP-0004"], left_out=[])
+    check("left out line is absent when nothing was filtered",
+          "left out by --pattern" not in unimplemented_only, unimplemented_only)
+
+
+def test_the_reasons_are_computed_from_what_the_scan_can_run():
+    """Guards the split itself: every runnable pattern belongs in left_out, never no_scenario."""
+    runnable = set(scenarios.available())
+    every = sorted(patterns.validate_dir(PATTERNS).patterns)
+    only = ["GP-0001"]
+    skipped = [p for p in every if p not in only]
+    no_scenario = [p for p in skipped if p not in runnable]
+    left_out = [p for p in skipped if p in runnable]
+    check("no runnable pattern is listed as having no scenario",
+          not (set(no_scenario) & runnable), str(sorted(set(no_scenario) & runnable)))
+    check("every skipped runnable pattern is accounted for",
+          set(left_out) == (runnable - set(only)), str(sorted(set(left_out))))
 
 
 def main():
