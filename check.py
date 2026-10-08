@@ -32,6 +32,7 @@ CHECKS = [
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
     ("Result file tests", "scanner", ["tests/test_results.py"]),
+    ("Harness target tests", "scanner", ["tests/test_targets.py"]),
     ("Claude Code hook tests", ".", ["hooks/claude_code/tests/test_hook.py"]),
     ("Pattern scaffold tests", ".", ["scripts/tests/test_new_pattern.py"]),
     ("Status guard tests", ".", ["scripts/tests/test_check_status_changes.py"]),

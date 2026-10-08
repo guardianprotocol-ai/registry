@@ -66,11 +66,42 @@ python3 -m guardian_scanner run --target claude-code --repeat 5 --pattern GP-000
 That starts a real Claude Code session, headless, over the lab server, and costs tokens.
 Nothing reaches for it unless you name it.
 
-**If your agent is not Claude Code,** there is no target for it yet, and adding one is a
-Season 1 task. Open an issue naming your harness, labelled `track:scanner`. A target is one
-class in `scanner/guardian_scanner/targets.py`, and the existing one is the example. Until
-then, you can still run the demo and the scripted scan, and you can read any pattern's
-`test` section and run it by hand.
+A second harness is wired and waiting on someone to verify it:
+
+```bash
+export GEMINI_API_KEY=...
+python3 -m guardian_scanner run --target gemini-cli --repeat 5 --pattern GP-0003
+```
+
+`gemini-cli` has passing contract tests but has never completed a run against the live API,
+because the machine it was written on has no Gemini credentials. If you have a key, you are
+five minutes from the first measurement of a second model family in this registry.
+
+**If your harness has neither target,** writing one is the highest-value thing you can do
+here, and it is two short methods:
+
+```python
+class MyHarnessTarget(CliAgentTarget):
+    name = "my-harness"
+
+    def argv(self, prompt, config_path):
+        return ["my-harness", "--prompt", prompt, "--mcp-config", config_path]
+
+    def answer_of(self, stdout):
+        return json.loads(stdout or "{}").get("text", "")
+```
+
+`CliAgentTarget` in `scanner/guardian_scanner/targets.py` does the rest: it writes an MCP
+config pointing your harness at the lab server, runs it once per attempt, and hands the
+answer to the scenario. Add your class to `_target()` in `__main__.py` and it works with
+every pattern that already runs.
+
+Three rules the base class docstring spells out: one run is one process, restrict the
+harness to the lab server and nothing else, and raise on a non-zero exit so a broken
+harness is counted as errored rather than as a defended one.
+
+Until your harness has a target, you can still run the demo and the scripted scan, and you
+can read any pattern's `test` section and run it by hand.
 
 ## 5. Record what you measured
 
