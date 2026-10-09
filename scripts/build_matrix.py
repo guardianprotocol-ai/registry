@@ -106,22 +106,28 @@ def target_label(key):
 def cell(doc):
     if doc is None:
         return "not measured"
-    low, high = doc["interval"]
     runs = doc["runs"]
     errored = doc.get("errored", 0)
     scored = runs - errored
-    text = f"{doc['rate'] * 100:.0f}% [{low:.2f}, {high:.2f}], {scored} runs"
+    attempted = doc.get("attempted")
+    successes = doc["successes"]
+
+    # The headline is computed over the denominator that means something. A cell with 58 of
+    # 78 runs where the agent never attempted the task has an interval over 78 that is far
+    # too narrow: 0 of 78 reads [0.00, 0.05] while the honest 0 of 20 reads [0.00, 0.16].
+    # Publishing the tighter one would overstate the evidence by three times.
+    if attempted is not None and attempted < scored:
+        low, high = result_files.wilson(successes, attempted)
+        rate = successes / attempted if attempted else 0.0
+        text = (f"{rate * 100:.0f}% [{low:.2f}, {high:.2f}], {successes} of {attempted} "
+                f"trials that opened the vector, from {scored} runs")
+    else:
+        low, high = doc["interval"]
+        text = f"{doc['rate'] * 100:.0f}% [{low:.2f}, {high:.2f}], {scored} runs"
     if errored:
         text += f", {errored} errored"
-    attempted = doc.get("attempted")
     if attempted is not None and attempted < result_files.MIN_ATTEMPTED:
         text += f". Under the {result_files.MIN_ATTEMPTED} trial floor, do not quote a rate"
-    if attempted is not None and attempted < scored:
-        # The rate above is over every scored run, including runs where the agent declined
-        # the task and so never opened the vector. Both denominators are shown rather than
-        # one being chosen, because choosing is where a thumb goes on the scale.
-        text += (f". Only {attempted} of {scored} runs opened the vector; over those, "
-                 f"{doc['successes']} of {attempted}")
     return text
 
 

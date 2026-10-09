@@ -264,6 +264,35 @@ def test_the_flag_that_reaches_the_floor_is_documented():
         check(f"{doc} names the cap that makes it terminate", "--max-runs" in page, doc)
 
 
+# ---------- the published interval is over the denominator that means something ----------
+
+def test_a_partial_denominator_widens_the_interval_rather_than_narrowing_it():
+    """0 of 78 reads [0.00, 0.05]. 0 of 20 reads [0.00, 0.16]. The honest one is wider."""
+    doc = {"runs": 78, "errored": 0, "successes": 0, "attempted": 20,
+           "rate": 0.0, "interval": [0.0, 0.0469]}
+    text = build_matrix.cell(doc)
+    check("the interval is computed over the trials that opened the vector",
+          "[0.00, 0.16]" in text, text)
+    check("the narrower whole-run interval is not published",
+          "[0.00, 0.05]" not in text, text)
+    check("both counts are visible", "0 of 20" in text and "78 runs" in text, text)
+
+
+def test_a_full_denominator_uses_the_recorded_interval_unchanged():
+    doc = {"runs": 20, "errored": 0, "successes": 20, "attempted": 20,
+           "rate": 1.0, "interval": [0.8389, 1.0]}
+    text = build_matrix.cell(doc)
+    check("a full denominator keeps its own interval", "[0.84, 1.00]" in text, text)
+    check("and is described plainly as runs", "20 runs" in text, text)
+
+
+def test_a_cell_with_no_precondition_is_untouched():
+    doc = {"runs": 20, "errored": 0, "successes": 0, "rate": 0.0, "interval": [0.0, 0.1611]}
+    text = build_matrix.cell(doc)
+    check("no attempted count means the recorded interval stands",
+          "[0.00, 0.16], 20 runs" in text, text)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
