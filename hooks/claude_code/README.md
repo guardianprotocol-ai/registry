@@ -52,6 +52,26 @@ Unit tested against recorded payloads, and run live inside a headless Claude Cod
 
 Not tested: Windows, other clients, long sessions, and concurrent tool calls writing state at the same time.
 
+## What it costs to run
+
+No model, so no tokens and no per-call charge. The cost is latency, and for the hook it is
+dominated by something other than the checking.
+
+Measured on macOS 26.4.1, Python 3.13, 2026-10-09:
+
+| Payload | Added per tool call |
+| --- | --- |
+| Two bytes, so startup only | 52.1 ms |
+| 4 KB file read | 53.4 ms |
+| 200 KB web page | 128.8 ms |
+
+A hook is a separate process per tool call, so **about 52 ms of that is Python interpreter
+startup rather than inspection**: a 4 KB read spends 1.4 ms being checked and 52 ms starting
+up. Scanning itself is linear, roughly 365 ms per megabyte.
+
+For comparison, `sensor/README.md` records the proxy at 0.290 ms per message, because it
+starts once and stays running. The same rule engine runs in both.
+
 ## Known limits (v0)
 
 - Taint lasts for the rest of the session. A session that reads untrusted content and then makes a legitimate request to a domain outside the allow-list is blocked. Benign cases that must not be blocked are still to be written.

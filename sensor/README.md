@@ -51,6 +51,26 @@ python3 tests/test_rules.py
 
 `test_sensor.py` runs the same attack twice through a fake MCP server: without the sensor the canary leaks; with it, the exfiltration and the tampered tool are both blocked, a legitimate send to an allowed domain goes through, and evidence is recorded.
 
+## What it costs to run
+
+No model, so no tokens and no per-call charge on any plan or any vendor. The checkpoint is
+regex and rule evaluation over text, and the only cost is latency.
+
+Measured on macOS 26.4.1, Python 3.13, 2026-10-09, with the sensor in front of a stdio echo
+server, 200 messages:
+
+| | |
+| --- | --- |
+| Straight to the server | 0.164 ms per message |
+| Through the sensor | 0.454 ms per message |
+| **Added by the sensor** | **0.290 ms per message** |
+
+The proxy is long lived, so it pays process startup once rather than per call.
+
+Scanning cost is linear in the size of the text, about **365 ms per megabyte**, so a few
+hundred bytes of tool output costs a fraction of a millisecond and a 200 KB page costs
+roughly 73 ms. Numbers on another machine will differ; the shape will not.
+
 ## Known limits (v0)
 
 - It sees only tools that come from MCP servers. An agent's built-in tools (for example Claude Code's own shell, file and web tools) don't pass through MCP; covering those needs the client's hook system, which is next on the list.
