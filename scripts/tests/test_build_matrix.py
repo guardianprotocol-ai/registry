@@ -293,6 +293,24 @@ def test_a_cell_with_no_precondition_is_untouched():
           "[0.00, 0.16], 20 runs" in text, text)
 
 
+# ---------- the target label says no more than the row carries ----------
+
+def test_a_version_equal_to_the_model_is_not_printed_twice():
+    label = build_matrix.target_label(("gemini-cli", "0.26.0",
+                                      "gemini-3.5-flash-lite", "gemini-3.5-flash-lite"))
+    check("the model appears once", label.count("gemini-3.5-flash-lite") == 1, label)
+
+
+def test_a_real_version_is_still_shown():
+    label = build_matrix.target_label(("some-harness", "1.0", "a-model", "2026-01-01"))
+    check("a version that adds something is kept", "a-model 2026-01-01" in label, label)
+
+
+def test_an_unpinned_model_says_so():
+    label = build_matrix.target_label(("claude-code", "2.1.274", "unrecorded", "unrecorded"))
+    check("an unpinned row says model unrecorded", "model unrecorded" in label, label)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

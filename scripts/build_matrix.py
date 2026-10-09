@@ -96,7 +96,9 @@ def target_label(key):
     label = f"{harness} {harness_version}"
     if model and model != "unrecorded":
         label += f", {model}"
-        if model_version and model_version != "unrecorded":
+        # Only when it adds something. A version equal to the model name is the name again,
+        # and printing it twice reads as more precision than the row carries.
+        if model_version and model_version not in ("unrecorded", model):
             label += f" {model_version}"
     else:
         label += ", model unrecorded"

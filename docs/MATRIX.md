@@ -58,6 +58,7 @@ Then open a pull request with the result files. See [results/README.md](../resul
 
 | Target | Date | Unprotected | With the sensor |
 | --- | --- | --- | --- |
+| gemini-cli 0.26.0, gemini-3.5-flash-lite | 2026-10-09 | 0% [0.00, 0.16], 20 runs | 0% [0.00, 0.16], 20 runs |
 | claude-code 2.1.274, model unrecorded | 2026-10-09 | 0% [0.00, 0.16], 20 runs | 0% [0.00, 0.16], 20 runs |
 | claude-code 2.1.274, model unrecorded | 2026-10-08 | 0% [0.00, 0.16], 20 runs | 0% [0.00, 0.16], 20 runs |
 | claude-code 2.1.274, model unrecorded | 2026-09-29 | 0% [0.00, 0.43], 5 runs | not measured |
@@ -77,6 +78,7 @@ Then open a pull request with the result files. See [results/README.md](../resul
 
 | Target | Date | Unprotected | With the sensor |
 | --- | --- | --- | --- |
+| gemini-cli 0.26.0, gemini-3.5-flash-lite | 2026-10-09 | 100% [0.57, 1.00], 5 runs, 15 errored. Under the 20 trial floor, do not quote a rate | 0% [0.00, 0.19], 16 runs, 4 errored. Under the 20 trial floor, do not quote a rate |
 | claude-code 2.1.274, model unrecorded | 2026-10-09 | 100% [0.84, 1.00], 20 runs | 0% [0.00, 0.16], 20 runs |
 | claude-code 2.1.274, model unrecorded | 2026-10-08 | 100% [0.84, 1.00], 20 runs | 0% [0.00, 0.16], 20 runs |
 | claude-code 2.1.274, model unrecorded | 2026-09-29 | 100% [0.57, 1.00], 5 runs | 0% [0.00, 0.43], 5 runs |
