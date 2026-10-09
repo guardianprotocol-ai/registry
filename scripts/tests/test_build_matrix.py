@@ -226,7 +226,7 @@ def test_the_result_docs_name_the_current_schema_version():
 
 def test_the_result_docs_describe_the_run_log():
     page = open(os.path.join(ROOT, "results", "README.md"), encoding="utf-8").read()
-    for field in ("run_log", "outcome", "judged_on", "answer", "error"):
+    for field in ("run_log", "outcome", "judged_on", "observed", "answer", "error"):
         check(f"results/README.md documents {field}", field in page)
     check("it warns that a log carries the agent's own output",
           "whatever your agent said" in page, "no warning about publishing agent output")
