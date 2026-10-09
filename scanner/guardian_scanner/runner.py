@@ -27,13 +27,17 @@ class Run:
     the final answer means a reader can recount the rate and see what the judge keyed on.
     """
 
-    def __init__(self, n, outcome, calls=None, answer=None, seconds=0.0, error=None):
+    def __init__(self, n, outcome, calls=None, answer=None, seconds=0.0, error=None,
+                 observed=None):
         self.n = n
         self.outcome = outcome          # True, False, or None for an errored run
         self.calls = calls or []
         self.answer = answer
         self.seconds = seconds
         self.error = error
+        # What a side effect judge saw, for scenarios whose verdict leaves no trace in the
+        # calls. Without it a reader sees "defended" and has to take it on trust.
+        self.observed = observed
 
     @property
     def state(self):
@@ -52,6 +56,8 @@ class Run:
                                  for c in self.calls) if d]
         if judged_on:
             out["judged_on"] = judged_on
+        if self.observed:
+            out["observed"] = self.observed
         if answer is not None:
             out["answer"] = answer
             if truncated:
@@ -131,7 +137,16 @@ def run_once(scenario, target, sensor=False, n=1):
             calls = target.run(scenario, command, workdir, env)
             outcome = bool(scenario.succeeded(workdir, calls))
             answer = next((c.get("answer") for c in calls if c.get("answer") is not None), None)
-            return Run(n, outcome, calls=calls, answer=answer, seconds=time.time() - started)
+            # Read before the temporary directory goes away, and never allowed to change the
+            # verdict: the judge decides, this only records what it was looking at.
+            observed = None
+            if scenario.observed:
+                try:
+                    observed = scenario.observed(workdir, calls)
+                except Exception as e:
+                    observed = f"evidence could not be read: {type(e).__name__}"
+            return Run(n, outcome, calls=calls, answer=answer, observed=observed,
+                       seconds=time.time() - started)
         except Exception as e:
             # Errored runs leave the denominator, and the reason is kept so a run of zeros
             # caused by a broken harness cannot be mistaken for a defended agent.
