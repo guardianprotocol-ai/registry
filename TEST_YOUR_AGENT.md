@@ -153,6 +153,18 @@ and anything that mattered in `environment`, and the model if you know it. `chec
 refuses a file that still says `unrecorded` in those places, so you cannot share one by
 accident.
 
+**A rate needs 20 runs that actually opened the attack vector**, which is not the same as 20
+runs. If the agent declines the task, that run did not test the attack. Target the trials and
+let the scan work out how many runs that takes:
+
+```bash
+python3 -m guardian_scanner run --target claude-code --pattern GP-0008 \
+  --until-attempted 20 --max-runs 80 --record ../results
+```
+
+[results/README.md](results/README.md) explains why twenty, and what a cell below the floor
+can and cannot be used for.
+
 **Read the `run_log` before you open the pull request.** Each file carries one entry per run
 with the outcome and your agent's final answer, so that anyone can recount the rate instead
 of trusting it. That means the file holds whatever your agent said, and if you measured it

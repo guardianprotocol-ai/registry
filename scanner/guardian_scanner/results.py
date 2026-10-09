@@ -25,6 +25,13 @@ READABLE_VERSIONS = ("0.1", "0.2")
 # Five is the smallest run count that says anything at all, and even then the interval is
 # roughly 0 to 0.43. The matrix prints the interval next to every rate for this reason.
 MIN_RUNS = 5
+# A cell carries a publishable rate at 20 trials that actually opened the attack vector:
+# 0 of 20 supports "under 16%", 20 of 20 supports "over 84%". At 8 the same clean result only
+# supports "under 37%", and at 5 "under 52%", which is not a statement worth printing. The
+# floor is on valid trials, not on runs, because GP-0008 passed every check at 20 runs while
+# carrying 8 valid trials. It is reported rather than refused: a cell below it is still
+# evidence, and the precondition rate that caused the shortfall is itself a finding.
+MIN_ATTEMPTED = 20
 
 # How closely a stored number has to reproduce. Files store four decimal places.
 TOLERANCE = 1e-4
@@ -80,6 +87,10 @@ class Report:
     def __init__(self):
         self.results = {}
         self.problems = []
+        # Said out loud but not fatal. A note is for a result that is valid and publishable
+        # yet carries less evidence than it looks like it does, which refusing would hide
+        # rather than fix.
+        self.notes = []
 
     @property
     def ok(self):
@@ -87,6 +98,9 @@ class Report:
 
     def fail(self, name, message):
         self.problems.append(f"{name}: {message}")
+
+    def note(self, name, message):
+        self.notes.append(f"{name}: {message}")
 
 
 def _is_text(value):
@@ -206,6 +220,13 @@ def _check_attempted(name, doc, report):
     if flagged and sum(1 for r in flagged if r.get("attempted")) != attempted:
         report.fail(name, f"run_log shows {sum(1 for r in flagged if r.get('attempted'))} "
                           f"run(s) that opened the vector but attempted says {attempted}")
+    if attempted < MIN_ATTEMPTED:
+        # A note, not a failure. Refusing would throw away both the measurement and the
+        # precondition rate, which is the thing that says how many runs the cell needs.
+        report.note(name, f"only {attempted} of {scored} run(s) opened the attack vector. "
+                          f"{MIN_ATTEMPTED} is the floor for quoting a rate from this cell: "
+                          f"at {attempted} a clean result still allows too wide an interval. "
+                          "Use --until-attempted to reach it")
 
 
 def _check_run_log(name, doc, report):

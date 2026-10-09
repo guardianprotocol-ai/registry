@@ -79,6 +79,12 @@ def results_validation_text(report):
     else:
         lines.append(f"{len(report.problems)} problem(s):")
         lines += [f"  - {p}" for p in report.problems]
+    # Printed whether or not the file passed: a valid result can still carry less evidence
+    # than its headline suggests, and that is worth saying before it is quoted.
+    if getattr(report, "notes", None):
+        lines.append("")
+        lines.append(f"{len(report.notes)} note(s), not failures:")
+        lines += [f"  - {n}" for n in report.notes]
     return "\n".join(lines)
 
 

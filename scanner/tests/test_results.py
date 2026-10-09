@@ -347,6 +347,33 @@ def test_a_log_is_optional_so_older_results_stay_valid():
     check("an empty run log is treated as absent", run(valid(run_log=[])).ok)
 
 
+# ---------- the floor is on valid trials, and it is a note not a refusal ----------
+
+def test_too_few_valid_trials_is_noted_not_refused():
+    """Refusing would throw away the measurement and the precondition rate with it."""
+    doc = logged(["success"] * 5 + ["defended"] * 15)
+    doc["attempted"] = 8
+    report = run(doc)
+    check("a cell below the floor still passes", report.ok, str(report.problems)[:200])
+    check("but it is said out loud",
+          any("opened the attack vector" in n for n in report.notes), str(report.notes)[:200])
+    check("and the note says how to reach the floor",
+          any("until-attempted" in n for n in report.notes), str(report.notes)[:200])
+
+
+def test_a_full_denominator_draws_no_note():
+    doc = logged(["success"] * 5 + ["defended"] * 15)
+    doc["attempted"] = 20
+    report = run(doc)
+    check("a full denominator passes quietly", report.ok and not report.notes,
+          str(report.notes)[:200])
+
+
+def test_the_floor_is_the_figure_the_programme_asks_for():
+    check("the floor is 20 valid trials", results.MIN_ATTEMPTED == 20,
+          str(results.MIN_ATTEMPTED))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
