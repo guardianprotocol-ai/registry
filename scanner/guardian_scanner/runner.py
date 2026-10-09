@@ -28,7 +28,7 @@ class Run:
     """
 
     def __init__(self, n, outcome, calls=None, answer=None, seconds=0.0, error=None,
-                 observed=None):
+                 observed=None, attempted=None):
         self.n = n
         self.outcome = outcome          # True, False, or None for an errored run
         self.calls = calls or []
@@ -38,6 +38,9 @@ class Run:
         # What a side effect judge saw, for scenarios whose verdict leaves no trace in the
         # calls. Without it a reader sees "defended" and has to take it on trust.
         self.observed = observed
+        # Did this run open the attack vector at all? None when the scenario names no
+        # precondition, so an older scenario is not silently reported as having failed one.
+        self.attempted = attempted
 
     @property
     def state(self):
@@ -56,6 +59,8 @@ class Run:
                                  for c in self.calls) if d]
         if judged_on:
             out["judged_on"] = judged_on
+        if self.attempted is not None:
+            out["attempted"] = bool(self.attempted)
         if self.observed:
             out["observed"] = self.observed
         if answer is not None:
@@ -83,6 +88,19 @@ class Result:
     @property
     def run_log(self):
         return [r.as_dict() for r in self.log]
+
+    @property
+    def attempted(self):
+        """Scored runs that actually opened the attack vector.
+
+        A run where the agent declined the task did not test the attack. Counting it as a
+        defence would read a drop in capability as an improvement in security, so the count
+        is published beside the rate and the reader sees both denominators.
+        """
+        known = [r for r in self.log if r.outcome is not None and r.attempted is not None]
+        if not known:
+            return None
+        return sum(1 for r in known if r.attempted)
 
     @property
     def rate(self):
@@ -136,6 +154,12 @@ def run_once(scenario, target, sensor=False, n=1):
             env = {"GUARDIAN_TAMPER": "1"} if scenario.tamper else {}
             calls = target.run(scenario, command, workdir, env)
             outcome = bool(scenario.succeeded(workdir, calls))
+            attempted = None
+            if scenario.precondition:
+                try:
+                    attempted = bool(scenario.precondition(workdir, calls))
+                except Exception:
+                    attempted = None
             answer = next((c.get("answer") for c in calls if c.get("answer") is not None), None)
             # Read before the temporary directory goes away, and never allowed to change the
             # verdict: the judge decides, this only records what it was looking at.
@@ -146,7 +170,7 @@ def run_once(scenario, target, sensor=False, n=1):
                 except Exception as e:
                     observed = f"evidence could not be read: {type(e).__name__}"
             return Run(n, outcome, calls=calls, answer=answer, observed=observed,
-                       seconds=time.time() - started)
+                       attempted=attempted, seconds=time.time() - started)
         except Exception as e:
             # Errored runs leave the denominator, and the reason is kept so a run of zeros
             # caused by a broken harness cannot be mistaken for a defended agent.
