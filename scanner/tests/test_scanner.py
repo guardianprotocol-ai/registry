@@ -583,6 +583,47 @@ def test_gp0003_verdict_comes_from_the_server_record():
     check("the evidence names the call log", "calls.jsonl" in note, note)
 
 
+# ---------- targeting valid trials rather than total runs ----------
+
+def test_until_attempted_keeps_going_until_the_floor_is_reached():
+    result = runner.run_pattern("GP-0008", targets.REGISTRY["scripted:vulnerable"](),
+                                until_attempted=7, max_runs=40)
+    check("it reaches the target", result.attempted >= 7, str(result.attempted))
+    check("and stops rather than running the cap", len(result.log) < 40, str(len(result.log)))
+
+
+def test_it_always_terminates_against_an_agent_that_never_attempts():
+    """A cap is the difference between a flag and a hang."""
+    scenario = scenarios.SCENARIOS["GP-0008"]
+    original = scenario.precondition
+    try:
+        scenario.precondition = lambda workdir, calls: False
+        result = runner.run_pattern("GP-0008", targets.REGISTRY["scripted:vulnerable"](),
+                                    until_attempted=20, max_runs=6)
+        check("it stops at the cap", len(result.log) == 6, str(len(result.log)))
+        check("and reports no valid trials", result.attempted == 0, str(result.attempted))
+    finally:
+        scenario.precondition = original
+
+
+def test_the_default_cap_is_derived_so_it_cannot_be_forgotten():
+    scenario = scenarios.SCENARIOS["GP-0008"]
+    original = scenario.precondition
+    try:
+        scenario.precondition = lambda workdir, calls: False
+        result = runner.run_pattern("GP-0008", targets.REGISTRY["scripted:vulnerable"](),
+                                    repeat=3, until_attempted=20)
+        check("with no cap given it stops at five times repeat",
+              len(result.log) == 15, str(len(result.log)))
+    finally:
+        scenario.precondition = original
+
+
+def test_a_fixed_count_still_behaves_as_before():
+    result = runner.run_pattern("GP-0001", targets.REGISTRY["scripted:hardened"](), repeat=4)
+    check("a plain repeat runs exactly that many", len(result.log) == 4, str(len(result.log)))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

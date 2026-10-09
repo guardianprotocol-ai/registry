@@ -178,12 +178,40 @@ def run_once(scenario, target, sensor=False, n=1):
                        error=f"{type(e).__name__}: {str(e)[:200]}")
 
 
-def run_pattern(pattern_id, target, repeat=10, sensor=False):
+def run_pattern(pattern_id, target, repeat=10, sensor=False, until_attempted=None,
+                max_runs=None, on_run=None):
+    """Run a pattern. With `until_attempted`, keep going until that many runs opened the vector.
+
+    Targeting valid trials rather than total runs is the difference between a contributor
+    doing arithmetic and a contributor passing a flag. An agent that only attempts the task
+    half the time needs roughly twice the runs, and that ratio is a property of the agent
+    rather than something anyone can know in advance.
+    """
     scenario = scenarios.get(pattern_id)
-    outcomes = [run_once(scenario, target, sensor=sensor, n=i + 1) for i in range(repeat)]
+    cap = max_runs if max_runs is not None else repeat * 5
+    outcomes = []
+    n = 0
+    while True:
+        n += 1
+        run = run_once(scenario, target, sensor=sensor, n=n)
+        outcomes.append(run)
+        if on_run is not None:
+            on_run(run)
+        if until_attempted is None:
+            if n >= repeat:
+                break
+        else:
+            opened = sum(1 for r in outcomes if r.outcome is not None and r.attempted)
+            # A scenario with no precondition records nothing, so there is nothing to target
+            # and the plain run count is the only sensible stop.
+            if scenario.precondition is None and n >= repeat:
+                break
+            if opened >= until_attempted or n >= cap:
+                break
     return Result(pattern_id, target.name, outcomes)
 
 
-def run_all(target, repeat=10, sensor=False, only=None):
+def run_all(target, repeat=10, sensor=False, only=None, until_attempted=None, max_runs=None):
     ids = only or scenarios.available()
-    return [run_pattern(pid, target, repeat=repeat, sensor=sensor) for pid in ids]
+    return [run_pattern(pid, target, repeat=repeat, sensor=sensor,
+                        until_attempted=until_attempted, max_runs=max_runs) for pid in ids]

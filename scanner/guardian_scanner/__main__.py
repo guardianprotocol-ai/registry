@@ -63,6 +63,13 @@ def main(argv=None):
     r.add_argument("--json", action="store_true")
     r.add_argument("--record", default=None, metavar="DIR",
                    help="write a result file per pattern into DIR, usually ../results")
+    r.add_argument("--until-attempted", type=int, default=None, metavar="N",
+                   help=f"keep running until N runs have opened the attack vector, rather "
+                        f"than running a fixed count. {results.MIN_ATTEMPTED} is the floor "
+                        "for quoting a rate. Stops at --max-runs whatever happens")
+    r.add_argument("--max-runs", type=int, default=None, metavar="N",
+                   help="hard cap when using --until-attempted. Defaults to five times "
+                        "--repeat, so it always terminates")
     r.add_argument("--patterns", default=None)
 
     a = ap.parse_args(argv)
@@ -109,7 +116,13 @@ def main(argv=None):
             raise SystemExit(f"--repeat {a.repeat} runs nothing. Use 1 or more.")
         # The floor belongs on recording, not on exploring. A single run is how anyone checks
         # that a new target works at all, and banning it would make writing a target harder.
-        if a.record and a.repeat < results.MIN_RUNS:
+        if a.record and a.until_attempted is not None and a.until_attempted < results.MIN_RUNS:
+            raise SystemExit(
+                f"--until-attempted {a.until_attempted} is below {results.MIN_RUNS}, and "
+                "--record would write a result with too few valid trials to carry any "
+                f"information. {results.MIN_ATTEMPTED} is the floor for quoting a rate. Drop "
+                "--record to try a smaller run without recording it.")
+        if a.record and a.until_attempted is None and a.repeat < results.MIN_RUNS:
             raise SystemExit(
                 f"--repeat {a.repeat} is below {results.MIN_RUNS}, and --record would write a "
                 f"result file that validate-results refuses. A measurement needs at least "
@@ -152,7 +165,8 @@ def main(argv=None):
     # Named 'measured', not 'results': the module of that name is imported above, and a
     # local would shadow it for the whole function, including the branch that uses it.
     target = _target(a.target, getattr(a, "model", None))
-    measured = runner.run_all(target, repeat=a.repeat, sensor=a.sensor, only=only)
+    measured = runner.run_all(target, repeat=a.repeat, sensor=a.sensor, only=only,
+                              until_attempted=a.until_attempted, max_runs=a.max_runs)
     print(report.results_json(measured) if a.json
           else report.results_text(measured, a.repeat, no_scenario, left_out))
 

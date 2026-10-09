@@ -232,6 +232,38 @@ def test_the_result_docs_describe_the_run_log():
           "whatever your agent said" in page, "no warning about publishing agent output")
 
 
+# ---------- the published floor is the one the code uses ----------
+
+def test_the_documented_floor_matches_the_code():
+    page = open(os.path.join(ROOT, "results", "README.md"), encoding="utf-8").read()
+    floor = str(result_files.MIN_ATTEMPTED)
+    check("results/README.md names the floor the code enforces",
+          f"{floor} trials" in page or f"{floor} runs that actually opened" in page,
+          f"MIN_ATTEMPTED is {floor}")
+    check("it says the floor is on trials, not runs",
+          "Not twenty runs." in page or "not the same as 20" in page, "wording missing")
+    check("it explains what a cell below the floor may be used for",
+          "quoting such a cell as a rate" in page, "no guidance on under-powered cells")
+
+
+def test_the_matrix_marks_a_cell_below_the_floor():
+    low = {"interval": [0.11, 0.47], "runs": 20, "errored": 0, "rate": 0.25,
+           "successes": 5, "attempted": 8}
+    text = build_matrix.cell(low)
+    check("an under-powered cell is marked", "do not quote a rate" in text, text)
+    check("and still shows both denominators", "5 of 8" in text, text)
+    full = dict(low, attempted=20, successes=5)
+    check("a full denominator is not marked",
+          "do not quote a rate" not in build_matrix.cell(full), build_matrix.cell(full))
+
+
+def test_the_flag_that_reaches_the_floor_is_documented():
+    for doc in ("TEST_YOUR_AGENT.md", os.path.join("results", "README.md")):
+        page = open(os.path.join(ROOT, doc), encoding="utf-8").read()
+        check(f"{doc} names --until-attempted", "--until-attempted" in page, doc)
+        check(f"{doc} names the cap that makes it terminate", "--max-runs" in page, doc)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
