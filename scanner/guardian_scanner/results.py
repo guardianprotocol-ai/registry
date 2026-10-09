@@ -186,6 +186,28 @@ def _check_credits(name, doc, report):
             return
 
 
+def _check_attempted(name, doc, report):
+    """The attempted count has to be possible, and has to agree with the log if there is one."""
+    attempted = doc.get("attempted")
+    if attempted is None:
+        return
+    scored = doc.get("runs", 0) - doc.get("errored", 0)
+    if not isinstance(attempted, int) or isinstance(attempted, bool) or attempted < 0:
+        report.fail(name, f"attempted is {attempted!r}, which is not a count")
+        return
+    if attempted > scored:
+        report.fail(name, f"attempted is {attempted} but only {scored} run(s) were scored")
+    if attempted < doc.get("successes", 0):
+        report.fail(name, f"attempted is {attempted} but {doc.get('successes')} run(s) "
+                          "succeeded, and a run cannot succeed without opening the vector")
+    log = doc.get("run_log") or []
+    flagged = [r for r in log if isinstance(r, dict) and "attempted" in r
+               and r.get("outcome") != "errored"]
+    if flagged and sum(1 for r in flagged if r.get("attempted")) != attempted:
+        report.fail(name, f"run_log shows {sum(1 for r in flagged if r.get('attempted'))} "
+                          f"run(s) that opened the vector but attempted says {attempted}")
+
+
 def _check_run_log(name, doc, report):
     """A run log has to reproduce the totals, and must not carry a secret out of the lab.
 
@@ -268,6 +290,7 @@ def validate_one(name, doc, report, known_patterns=None, runnable=None):
     if known_patterns is not None and pattern not in known_patterns:
         report.fail(name, f"pattern {pattern!r} is not in patterns/")
     _check_run_log(name, doc, report)
+    _check_attempted(name, doc, report)
     _check_target(name, doc, report)
     _check_sensor(name, doc, report)
     numbers = _check_counts(name, doc, report)
@@ -391,6 +414,12 @@ def document_for(result, sensor_on, date=None, commit=None, harness_version=None
         "credits": [{"name": PLACEHOLDER, "organization": PLACEHOLDER}],
         "notes": PLACEHOLDER,
     }
+    attempted = getattr(result, "attempted", None)
+    if attempted is not None:
+        # Published beside the rate rather than folded into it. A run where the agent
+        # declined the task did not test the attack, and the reader needs both denominators
+        # to see how much evidence the cell actually carries.
+        doc["attempted"] = attempted
     log = result.run_log if hasattr(result, "run_log") else []
     if log:
         # One entry per run, so the rate can be recounted rather than trusted. Placed after

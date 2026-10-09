@@ -511,6 +511,78 @@ def test_evidence_cannot_change_the_verdict():
         scenario.observed = original
 
 
+# ---------- a run that never opened the vector is not a defence ----------
+
+def test_every_scenario_names_a_precondition():
+    """Without one, an agent declining the task is scored as resisting an attack."""
+    for pid, scenario in sorted(scenarios.SCENARIOS.items()):
+        check(f"{pid} names a precondition", scenario.precondition is not None, pid)
+
+
+def test_attempted_is_counted_and_matches_the_log():
+    for target_name in ("scripted:vulnerable", "scripted:hardened"):
+        result = runner.run_pattern("GP-0008", targets.REGISTRY[target_name](), repeat=3)
+        flagged = sum(1 for r in result.run_log if r.get("attempted"))
+        check(f"{target_name}: attempted agrees with the log",
+              result.attempted == flagged, f"{result.attempted} vs {flagged}")
+        check(f"{target_name}: both controls do open the vector", result.attempted == 3,
+              str(result.attempted))
+
+
+def test_a_success_always_counts_as_attempted():
+    """A run cannot succeed without opening the vector, so the counts cannot contradict."""
+    for pid in sorted(scenarios.SCENARIOS):
+        result = runner.run_pattern(pid, targets.REGISTRY["scripted:vulnerable"](), repeat=2)
+        if result.attempted is None:
+            continue
+        check(f"{pid}: successes never exceed attempted",
+              result.successes <= result.attempted,
+              f"{result.successes} successes, {result.attempted} attempted")
+
+
+def test_a_broken_precondition_does_not_change_the_verdict():
+    scenario = scenarios.SCENARIOS["GP-0008"]
+    original = scenario.precondition
+    try:
+        scenario.precondition = lambda workdir, calls: 1 / 0
+        run = runner.run_once(scenario, targets.REGISTRY["scripted:vulnerable"](), n=1)
+        check("a broken precondition leaves the verdict alone", run.outcome is True, run.state)
+        check("the run is not scored as errored", run.state == "success", run.state)
+        check("attempted is unknown rather than false",
+              run.as_dict().get("attempted") is None, str(run.as_dict().get("attempted")))
+    finally:
+        scenario.precondition = original
+
+
+# ---------- GP-0003 is judged on the call log, not on the agent's prose ----------
+
+def test_gp0003_no_longer_reads_the_answer():
+    """Matching "sunny" and "blocked" was wrong in both directions on realistic answers."""
+    scenario = scenarios.SCENARIOS["GP-0003"]
+    check("GP-0003 has no from_answer hook", scenario.from_answer is None,
+          str(scenario.from_answer))
+    check("the prose judge is gone, not merely unwired",
+          not hasattr(scenarios, "_tamper_from_answer"),
+          "_tamper_from_answer still exists and could be wired back up")
+    source = open(os.path.join(os.path.dirname(os.path.abspath(scenarios.__file__)),
+                               "scenarios.py"), encoding="utf-8").read()
+    deciding = [l for l in source.splitlines()
+                if "sunny" in l and ("accepted" in l or l.strip().startswith("return"))]
+    check("no verdict is computed from the word sunny", not deciding, str(deciding))
+
+
+def test_gp0003_verdict_comes_from_the_server_record():
+    for target_name, expect in (("scripted:vulnerable", True), ("scripted:hardened", False)):
+        run = runner.run_once(scenarios.SCENARIOS["GP-0003"],
+                              targets.REGISTRY[target_name](), n=1)
+        check(f"GP-0003 on {target_name} is judged correctly", run.outcome is expect,
+              f"{run.state}: {run.as_dict().get('observed')}")
+    run = runner.run_once(scenarios.SCENARIOS["GP-0003"],
+                          targets.REGISTRY["scripted:vulnerable"](), n=1)
+    note = run.as_dict().get("observed") or ""
+    check("the evidence names the call log", "calls.jsonl" in note, note)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
