@@ -4,6 +4,8 @@ The MCP sensor only sees tools that come from MCP servers. A client's own tools,
 
 **Prototype. Not for production data yet.** No dependencies beyond Python 3.9+.
 
+This is one client's integration, not the way to use the protocol. The gap it closes exists in every client, and [../README.md](../README.md) says what a hook for another one has to do. The sensor on its own needs no hook and works with any MCP client.
+
 ## What it does
 
 | Event | What it checks |
