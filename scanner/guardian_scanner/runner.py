@@ -170,6 +170,15 @@ def run_once(scenario, target, sensor=False, n=1):
                     warm.close()
             env = {"GUARDIAN_TAMPER": "1"} if scenario.tamper else {}
             calls = target.run(scenario, command, workdir, env)
+            if scenario.followup:
+                # A second session against the same working directory, so whatever the first
+                # one left behind is all the second one has. Its calls go to their own log,
+                # because telling the two sessions apart is the measurement.
+                second_env = dict(env)
+                second_env["GUARDIAN_CALLS"] = os.path.join(
+                    workdir, scenarios.SECOND_SESSION_CALLS)
+                calls = calls + target.run(scenario, command, workdir, second_env,
+                                           prompt=scenario.followup)
             outcome = bool(scenario.succeeded(workdir, calls))
             attempted = None
             if scenario.precondition:

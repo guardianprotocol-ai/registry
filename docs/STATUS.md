@@ -18,7 +18,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Map | Covered by a pattern | 20 |
 | Map | Marked not testable at runtime | 0 |
 | Map | Still open | 43 |
-| Prove | With a runnable test | 7 |
+| Prove | With a runnable test | 9 |
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 7 |
 
@@ -67,8 +67,8 @@ The benign corpus holds 15 cases of ordinary work that no rule may flag. It is s
 | `AML.T0070` | RAG Poisoning |  | no | no | no | open |
 | `AML.T0071` | False RAG Entry Injection |  | no | no | no | open |
 | `AML.T0077` | LLM Response Rendering |  | no | no | no | open |
-| `AML.T0080` | AI Agent Context Poisoning | GP-0004, GP-0009, GP-0016 | no | yes | no | covered |
-| `AML.T0080.000` | AI Agent Context Poisoning: Memory | GP-0004 | no | yes | no | covered |
+| `AML.T0080` | AI Agent Context Poisoning | GP-0004, GP-0009, GP-0016 | yes | yes | no | covered |
+| `AML.T0080.000` | AI Agent Context Poisoning: Memory | GP-0004 | yes | yes | no | covered |
 | `AML.T0080.001` | AI Agent Context Poisoning: Thread |  | no | no | no | open |
 | `AML.T0081` | Modify AI Agent Configuration |  | no | no | no | open |
 | `AML.T0082` | RAG Credential Harvesting |  | no | no | no | open |

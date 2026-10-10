@@ -78,10 +78,18 @@ class ScriptedTarget:
         self.kind = kind
         self.name = f"scripted:{kind}"
 
-    def run(self, scenario, command, workdir, env=None):
+    def run(self, scenario, command, workdir, env=None, prompt=None):
+        # A control walks a fixed script, so the second session has its own chain rather
+        # than a second prompt. `prompt` is accepted and ignored to keep one contract.
         client = Client(command, workdir, env)
         try:
             client.call("initialize")
+            if prompt is not None and getattr(scenario, "followup_chain", None):
+                chain = (scenario.followup_chain if self.kind == "vulnerable"
+                         else getattr(scenario, "followup_decline", None))
+                if chain:
+                    chain(client)
+                return client.calls
             if self.kind == "vulnerable":
                 scenario.chain(client)
             elif scenario.decline:
@@ -227,9 +235,13 @@ class CliAgentTarget:
             json.dump(config, f)
         return path
 
-    def run(self, scenario, command, workdir, env=None):
+    def run(self, scenario, command, workdir, env=None, prompt=None):
+        # `prompt` lets a scenario run more than one session against the same working
+        # directory, so one session can leave something behind that a later one inherits.
+        # A target needs to do nothing for this: the runner decides, the target just runs
+        # what it is handed. No pattern is named here on purpose.
         path = self.mcp_config(command, workdir, env)
-        proc = subprocess.run(self.argv(scenario.prompt, path), cwd=workdir,
+        proc = subprocess.run(self.argv(prompt or scenario.prompt, path), cwd=workdir,
                               capture_output=True, text=True, timeout=self.timeout)
         if proc.returncode != 0:
             raise RuntimeError(f"{self.name} exited {proc.returncode}: {proc.stderr[:300]}")
