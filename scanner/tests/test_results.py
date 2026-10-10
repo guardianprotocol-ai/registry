@@ -395,6 +395,35 @@ def test_the_scripted_controls_are_not_a_model_at_all():
     check("a control reports none, not unrecorded", t["model"] == "none", str(t))
 
 
+# ---------- a count beside the rate is still a claim ----------
+
+def test_a_dimension_count_cannot_exceed_the_runs():
+    doc = logged(["success"] * 5)
+    check("a count within the runs is fine",
+          run(dict(doc, dimensions={"noticed": 5})).ok)
+    check("a count above the runs is refused",
+          not run(dict(doc, dimensions={"noticed": 6})).ok)
+
+
+def test_a_dimension_has_to_agree_with_the_log():
+    doc = logged(["success"] * 5)
+    marked = [dict(e, noticed=True) for e in doc["run_log"][:3]] + doc["run_log"][3:]
+    check("a count matching the log is accepted",
+          run(dict(doc, run_log=marked, dimensions={"noticed": 3})).ok)
+    check("a count contradicting the log is refused",
+          not run(dict(doc, run_log=marked, dimensions={"noticed": 5})).ok)
+
+
+def test_a_dimension_that_is_not_a_count_is_refused():
+    doc = logged(["success"] * 5)
+    for bad in ({"noticed": "lots"}, {"noticed": True}, {"noticed": -1}, {}):
+        check(f"dimensions {bad} is refused", not run(dict(doc, dimensions=bad)).ok)
+
+
+def test_dimensions_stay_optional():
+    check("a result with no dimensions is valid", run(logged(["success"] * 5)).ok)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
