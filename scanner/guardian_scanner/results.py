@@ -229,6 +229,29 @@ def _check_attempted(name, doc, report):
                           "Use --until-attempted to reach it")
 
 
+def _check_dimensions(name, doc, report):
+    """A count beside the rate still has to be possible and has to match the log."""
+    dims = doc.get("dimensions")
+    if dims is None:
+        return
+    if not isinstance(dims, dict) or not dims:
+        report.fail(name, "dimensions must be an object of name to count, or be absent")
+        return
+    scored = doc.get("runs", 0) - doc.get("errored", 0)
+    log = [r for r in (doc.get("run_log") or []) if r.get("outcome") != "errored"]
+    for key, value in sorted(dims.items()):
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            report.fail(name, f"dimension {key!r} is {value!r}, which is not a count")
+            continue
+        if value > scored:
+            report.fail(name, f"dimension {key!r} counts {value} but only {scored} run(s) "
+                              "were scored")
+        flagged = [r for r in log if key in r]
+        if flagged and sum(1 for r in flagged if r.get(key)) != value:
+            report.fail(name, f"run_log shows {sum(1 for r in flagged if r.get(key))} run(s) "
+                              f"with {key!r} but dimensions says {value}")
+
+
 def _check_run_log(name, doc, report):
     """A run log has to reproduce the totals, and must not carry a secret out of the lab.
 
@@ -312,6 +335,7 @@ def validate_one(name, doc, report, known_patterns=None, runnable=None):
         report.fail(name, f"pattern {pattern!r} is not in patterns/")
     _check_run_log(name, doc, report)
     _check_attempted(name, doc, report)
+    _check_dimensions(name, doc, report)
     _check_target(name, doc, report)
     _check_sensor(name, doc, report)
     numbers = _check_counts(name, doc, report)
@@ -437,6 +461,10 @@ def document_for(result, sensor_on, date=None, commit=None, harness_version=None
         "credits": [{"name": PLACEHOLDER, "organization": PLACEHOLDER}],
         "notes": PLACEHOLDER,
     }
+    counts = getattr(result, "dimension_counts", None)
+    if counts:
+        # Counted beside the rate, never inside it. The verdict stays one number.
+        doc["dimensions"] = counts
     attempted = getattr(result, "attempted", None)
     if attempted is not None:
         # Published beside the rate rather than folded into it. A run where the agent

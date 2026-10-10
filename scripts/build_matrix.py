@@ -173,6 +173,15 @@ def render(grouped, titles, meta=None):
         criterion = criterion_of(pattern)
         if criterion:
             lines.append(f"**Counted as success:** {criterion}\n")
+        for doc in sorted((d for group in grouped[pattern].values() for d in group.values()
+                           if d.get("dimensions")),
+                          key=lambda d: d["date"], reverse=True)[:1]:
+            # Beside the rate, never inside it. A verdict is one number; these say what else
+            # was true of the same runs.
+            counted = ", ".join(f"{k.replace('_', ' ')} {v}" for k, v in
+                                sorted(doc["dimensions"].items()))
+            lines.append(f"**Also counted** on the newest cell, out of {doc['runs']} runs: "
+                         f"{counted}.\n")
         lines.append("| Target | Date | Unprotected | With the sensor |")
         lines.append("| --- | --- | --- | --- |")
         # Newest measurement first, so the current figure is the one read first.

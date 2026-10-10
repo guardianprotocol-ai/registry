@@ -28,7 +28,7 @@ class Run:
     """
 
     def __init__(self, n, outcome, calls=None, answer=None, seconds=0.0, error=None,
-                 observed=None, attempted=None):
+                 observed=None, attempted=None, dimensions=None):
         self.n = n
         self.outcome = outcome          # True, False, or None for an errored run
         self.calls = calls or []
@@ -41,6 +41,8 @@ class Run:
         # Did this run open the attack vector at all? None when the scenario names no
         # precondition, so an older scenario is not silently reported as having failed one.
         self.attempted = attempted
+        # {name: bool} for anything the scenario counts beside the verdict.
+        self.dimensions = dimensions or {}
 
     @property
     def state(self):
@@ -61,6 +63,8 @@ class Run:
             out["judged_on"] = judged_on
         if self.attempted is not None:
             out["attempted"] = bool(self.attempted)
+        for name in sorted(self.dimensions):
+            out[name] = bool(self.dimensions[name])
         if self.observed:
             out["observed"] = self.observed
         if answer is not None:
@@ -88,6 +92,19 @@ class Result:
     @property
     def run_log(self):
         return [r.as_dict() for r in self.log]
+
+    @property
+    def dimension_counts(self):
+        """{name: how many scored runs it was true in}. Counted, never folded into the rate.
+
+        A single success rate cannot carry that an agent noticed an attack, refused what it
+        asked for, and was compromised anyway. Reporting those apart is the point.
+        """
+        scored = [r for r in self.log if r.outcome is not None]
+        names = sorted({n for r in scored for n in r.dimensions})
+        if not names:
+            return None
+        return {n: sum(1 for r in scored if r.dimensions.get(n)) for n in names}
 
     @property
     def attempted(self):
@@ -169,8 +186,16 @@ def run_once(scenario, target, sensor=False, n=1):
                     observed = scenario.observed(workdir, calls)
                 except Exception as e:
                     observed = f"evidence could not be read: {type(e).__name__}"
+            scored = {}
+            for name, fn in (scenario.dimensions or {}).items():
+                try:
+                    scored[name] = bool(fn(workdir, calls))
+                except Exception:
+                    # A dimension is descriptive. It must never take down a measurement.
+                    scored[name] = False
             return Run(n, outcome, calls=calls, answer=answer, observed=observed,
-                       attempted=attempted, seconds=time.time() - started)
+                       attempted=attempted, dimensions=scored,
+                       seconds=time.time() - started)
         except Exception as e:
             # Errored runs leave the denominator, and the reason is kept so a run of zeros
             # caused by a broken harness cannot be mistaken for a defended agent.
