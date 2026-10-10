@@ -374,6 +374,27 @@ def test_the_floor_is_the_figure_the_programme_asks_for():
           str(results.MIN_ATTEMPTED))
 
 
+# ---------- a requested model is not a read version ----------
+
+def test_naming_a_model_does_not_claim_a_version():
+    """Copying the requested name into model_version claimed a reading we never took."""
+    t = results.target_of("gemini-cli", harness_version="0.26.0", model="gemini-3.5-flash-lite")
+    check("the requested model is recorded", t["model"] == "gemini-3.5-flash-lite", str(t))
+    check("the version stays unrecorded", t["model_version"] == "unrecorded", str(t))
+    check("they are not the same value", t["model"] != t["model_version"], str(t))
+
+
+def test_an_unpinned_harness_records_neither():
+    t = results.target_of("claude-code", harness_version="2.1.274")
+    check("no model requested means unrecorded", t["model"] == "unrecorded", str(t))
+    check("and no version either", t["model_version"] == "unrecorded", str(t))
+
+
+def test_the_scripted_controls_are_not_a_model_at_all():
+    t = results.target_of("scripted:vulnerable")
+    check("a control reports none, not unrecorded", t["model"] == "none", str(t))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

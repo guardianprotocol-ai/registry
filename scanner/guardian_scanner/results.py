@@ -405,9 +405,11 @@ def target_of(target_name, harness_version=None, model=None):
         return {"model": "none", "model_version": "none",
                 "harness": "scripted-" + slug(kind),
                 "harness_version": harness_version or SCHEMA_VERSION}
-    # The model is whatever the operator pinned. A harness asked for nothing in particular
-    # does not report which model answered, so it stays unrecorded rather than guessed.
-    return {"model": model or PLACEHOLDER, "model_version": model or PLACEHOLDER,
+    # The model is whatever the operator pinned, and nothing more. model_version stays
+    # unrecorded even when a model was named, because naming a model is a request and not a
+    # reading: the harness never says which version answered. Copying the requested name
+    # into model_version claimed a verified version we never had.
+    return {"model": model or PLACEHOLDER, "model_version": PLACEHOLDER,
             "harness": slug(target_name), "harness_version": harness_version or PLACEHOLDER}
 
 
