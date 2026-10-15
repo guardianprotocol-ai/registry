@@ -19,6 +19,9 @@ The next twelve months, by quarter. This is a statement of intent, reviewed in p
   harnesses, with the sensor off and on. Built on the attack matrix and under the authorship
   policy in `docs/RESEARCH.md`. Results from short measurement windows are labelled
   preliminary; v2 with longer-window data follows in Season 2
+- The sharing hub in use rather than only tested: the sighting format, the preview, and
+  the aggregation that withholds any total fewer than three organizations contributed to.
+  Brought ahead of the hooks work, because nothing else reports what a deployed agent saw
 - Application to the OpenSSF Sandbox
 
 ## Early 2027: the second paper
