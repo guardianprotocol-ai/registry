@@ -20,8 +20,13 @@ autonomous agent entered its production infrastructure through a malicious datas
 [more than 17,000 actions over a single unattended weekend](https://labs.cloudsecurityalliance.org/research/csa-research-note-huggingface-autonomous-agent-breach-202607/),
 escalating to node access and moving laterally. A second case followed in October. Both
 became public because the organization disclosed it and researchers wrote it up afterwards.
-Software has machinery for this, in CVEs and information sharing centres. For AI agents there
-is none, and a national centre has been recommended rather than built.
+Software has machinery for this, in CVEs and information sharing centres. For AI agents that
+machinery is being assembled now: an [AI information sharing and analysis centre is in
+development](https://www.nextgov.com/cybersecurity/2026/02/ai-info-sharing-center-development-cisa-official-says/411167/)
+under the Department of Homeland Security, and the people building it have said they want to
+avoid duplicating what the private sector already has. What nobody has is the layer
+underneath such a centre: the format a deployed agent's sensor uses to report, automatically,
+without naming its owner. An exchange needs something to exchange.
 
 One detail from that first disclosure is worth sitting with: during the investigation, hosted
 frontier models declined to help analyse the attacker's artifacts, because they could not
