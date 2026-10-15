@@ -39,7 +39,7 @@ The benign corpus holds 15 cases of ordinary work that no rule may flag. It is s
 | Technique | Name | Patterns | Runnable | Corpus | Measured | State |
 | --- | --- | --- | --- | --- | --- | --- |
 | `AML.T0006.003` | Active Scanning: Probe AI Agent Trigger Channels |  | no | no | no | open |
-| `AML.T0010.005` | AI Supply Chain Compromise: AI Agent Tool | GP-0003 | yes | no | yes | covered |
+| `AML.T0010.005` | AI Supply Chain Compromise: AI Agent Tool | GP-0003, GP-0019 | yes | no | yes | covered |
 | `AML.T0011.002` | User Execution: Poisoned AI Agent Tool |  | no | no | no | open |
 | `AML.T0018.003` | Manipulate AI Model: Modify Prompt Construction Logic |  | no | no | no | open |
 | `AML.T0024` | Exfiltration via AI Inference API |  | no | no | no | open |
@@ -91,7 +91,7 @@ The benign corpus holds 15 cases of ordinary work that no rule may flag. It is s
 | `AML.T0103` | Deploy AI Agent |  | no | no | no | open |
 | `AML.T0108` | AI Agent |  | no | no | no | open |
 | `AML.T0110` | AI Agent Tool Poisoning |  | no | no | no | open |
-| `AML.T0110.000` | AI Agent Tool Poisoning: Definition and Instructions | GP-0003 | yes | no | yes | covered |
+| `AML.T0110.000` | AI Agent Tool Poisoning: Definition and Instructions | GP-0003, GP-0019 | yes | no | yes | covered |
 | `AML.T0110.001` | AI Agent Tool Poisoning: Implementation |  | no | no | no | open |
 | `AML.T0110.002` | AI Agent Tool Poisoning: Runtime Response |  | no | no | no | open |
 | `AML.T0112.000` | Machine Compromise: Local AI Agent |  | no | no | no | open |

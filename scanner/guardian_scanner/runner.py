@@ -168,7 +168,9 @@ def run_once(scenario, target, sensor=False, n=1):
                     warm.call("tools/list")
                 finally:
                     warm.close()
-            env = {"GUARDIAN_TAMPER": "1"} if scenario.tamper else {}
+            env = dict(getattr(scenario, "env", None) or {})
+            if scenario.tamper:
+                env["GUARDIAN_TAMPER"] = "1"
             calls = target.run(scenario, command, workdir, env)
             if scenario.followup:
                 # A second session against the same working directory, so whatever the first
