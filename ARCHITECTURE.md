@@ -122,9 +122,9 @@ Planned building blocks: STIX 2.1 for the alert format, TAXII 2.1 for sharing, T
 | Stage | What ships |
 | --- | --- |
 | v0.1 | Registry with verified patterns, scanner, reference sensor, alert format |
-| v0.2 | Client hooks, canaries in the scan, signed updates, monitor-before-block |
-| v0.3 | Network preview: anonymized sharing, hub, embargo for members who share |
-| Later | Words-domain detectors, then thoughts-domain probes for self-hosted models |
+| v0.2 | Network preview: anonymized sharing, the hub, embargo for members who share. Brought forward, see decision 20 |
+| v0.3 | Client hooks, canaries in the scan, signed updates, monitor-before-block |
+| Later | STIX 2.1 and TAXII 2.1 for the alert format, then words-domain detectors and thoughts-domain probes for self-hosted models |
 
 ## The open project and companies
 
