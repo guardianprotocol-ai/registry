@@ -34,7 +34,7 @@ AML.T0010.001,AI Supply Chain Compromise: AI Software,Initial Access,Realized,Su
 AML.T0010.002,AI Supply Chain Compromise: Data,Initial Access,Realized,Supply chain,partial,partial,draft triage,
 AML.T0010.003,AI Supply Chain Compromise: Model,Initial Access,Realized,Supply chain,partial,partial,draft triage,
 AML.T0010.004,AI Supply Chain Compromise: Container Registry,Initial Access,Demonstrated,Supply chain,partial,partial,draft triage,
-AML.T0010.005,AI Supply Chain Compromise: AI Agent Tool,Initial Access,Realized,Agent runtime,yes,yes,draft triage,
+AML.T0010.005,AI Supply Chain Compromise: AI Agent Tool,Initial Access,Realized,Agent runtime,yes,yes,confirmed,
 AML.T0011,User Execution,Execution,Realized,General security with an AI angle,partial,partial,draft triage,
 AML.T0011.000,User Execution: Unsafe AI Artifacts,Execution,Realized,General security with an AI angle,partial,partial,draft triage,
 AML.T0011.001,User Execution: Malicious Package,Execution,Realized,General security with an AI angle,partial,partial,draft triage,
