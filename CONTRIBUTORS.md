@@ -20,3 +20,4 @@ alphabetical under `GOVERNANCE.md`.
 | Name | GitHub | Organization | Contributions |
 | --- | --- | --- | --- |
 | Frank Albanese | [@faalbane](https://github.com/faalbane) | Founding maintainer | Registry, sensor, scanner, hooks |
+| Vamsi | [@Vamsi-2581](https://github.com/Vamsi-2581) | Individual | MITRE ATLAS coverage triage |
