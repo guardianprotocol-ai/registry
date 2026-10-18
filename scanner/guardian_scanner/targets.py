@@ -78,10 +78,16 @@ class ScriptedTarget:
         self.kind = kind
         self.name = f"scripted:{kind}"
 
-    def run(self, scenario, command, workdir, env=None):
+    def run(self, scenario, command, workdir, env=None, prompt=None):
         client = Client(command, workdir, env)
         try:
             client.call("initialize")
+            if prompt is not None and getattr(scenario, "followup_chain", None):
+                chain = (scenario.followup_chain if self.kind == "vulnerable"
+                         else getattr(scenario, "followup_decline", None))
+                if chain:
+                    chain(client)
+                return client.calls
             if self.kind == "vulnerable":
                 scenario.chain(client)
             elif scenario.decline:
@@ -227,9 +233,10 @@ class CliAgentTarget:
             json.dump(config, f)
         return path
 
-    def run(self, scenario, command, workdir, env=None):
+    def run(self, scenario, command, workdir, env=None, prompt=None):
+        # The runner owns session sequencing; targets simply accept the prompt it hands them.
         path = self.mcp_config(command, workdir, env)
-        proc = subprocess.run(self.argv(scenario.prompt, path), cwd=workdir,
+        proc = subprocess.run(self.argv(prompt or scenario.prompt, path), cwd=workdir,
                               capture_output=True, text=True, timeout=self.timeout)
         if proc.returncode != 0:
             raise RuntimeError(f"{self.name} exited {proc.returncode}: {proc.stderr[:300]}")
