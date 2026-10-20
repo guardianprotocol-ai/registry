@@ -146,7 +146,7 @@ AML.T0084.003,Discover AI Agent Configuration: Call Chains,Discovery,Demonstrate
 AML.T0085,Data from AI Services,Collection,Demonstrated,General security with an AI angle,partial,partial,draft triage,
 AML.T0085.000,Data from AI Services: RAG Databases,Collection,Demonstrated,Agent runtime,yes,yes,draft triage,
 AML.T0085.001,Data from AI Services: AI Agent Tools,Collection,Demonstrated,Agent runtime,yes,yes,draft triage,
-AML.T0086,Exfiltration via AI Agent Tool Invocation,Exfiltration,Realized,Agent runtime,yes,yes,draft triage,
+AML.T0086,Exfiltration via AI Agent Tool Invocation,Exfiltration,Realized,Agent runtime,yes,yes,confirmed,
 AML.T0087,Gather Victim Identity Information,Reconnaissance,Realized,Attacker preparation (before contact),no,no,draft triage,
 AML.T0088,Generate Deepfakes,AI Attack Adaptation,Realized,General security with an AI angle,partial,partial,draft triage,
 AML.T0089,Enterprise Environment Discovery,Discovery,Realized,General security with an AI angle,partial,partial,draft triage,
