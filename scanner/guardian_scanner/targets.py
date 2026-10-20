@@ -108,6 +108,39 @@ class ScriptedTarget:
             client.close()
 
 
+# Lines a harness prints on every run, which crowd out the one line saying what went wrong.
+# A quota refusal and a crash look identical once the real message has been pushed past a
+# truncation limit by a deprecation warning.
+NOISE = ("DeprecationWarning", "--trace-deprecation", "YOLO mode is enabled",
+         "Hook registry initialized", "Full report available at")
+
+# A refusal by the service is not a defect in the agent and not a defence by the sensor. It
+# has to be named, because a run of zeros caused by an exhausted quota is indistinguishable
+# from a run of zeros caused by a working sensor.
+REFUSALS = (
+    ("RESOURCE_EXHAUSTED", "the model's quota is exhausted, so nothing was measured"),
+    ("quota", "the model's quota is exhausted, so nothing was measured"),
+    ("ModelNotFoundError", "the model name is not available to this key"),
+    ("PermissionDenied", "the credentials were refused"),
+    ("Unauthenticated", "the credentials were refused"),
+)
+
+
+def explain_failure(name, returncode, stderr):
+    """Say why a harness failed, in one line, keeping the service's own words.
+
+    Harnesses print a banner on every run and the real error after it, so a plain
+    truncation keeps the banner and throws away the cause.
+    """
+    lines = [l.strip() for l in (stderr or "").splitlines() if l.strip()]
+    signal = [l for l in lines if not any(n in l for n in NOISE)]
+    body = signal[0] if signal else (lines[0] if lines else "no output on stderr")
+    for needle, meaning in REFUSALS:
+        if needle.lower() in (stderr or "").lower():
+            return "%s could not run: %s. %s" % (name, meaning, body[:200])
+    return "%s exited %s: %s" % (name, returncode, body[:300])
+
+
 class CliAgentTarget:
     """Base for any agent harness that can be driven as a command line process.
 
@@ -244,7 +277,7 @@ class CliAgentTarget:
         proc = subprocess.run(self.argv(prompt or scenario.prompt, path), cwd=workdir,
                               capture_output=True, text=True, timeout=self.timeout)
         if proc.returncode != 0:
-            raise RuntimeError(f"{self.name} exited {proc.returncode}: {proc.stderr[:300]}")
+            raise RuntimeError(explain_failure(self.name, proc.returncode, proc.stderr))
         answer = self.answer_of(proc.stdout)
         # The scenario judges, never the target. A scenario that reads files on disk needs
         # nothing from the answer, so the answer is still carried for the record.

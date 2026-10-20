@@ -591,6 +591,45 @@ def test_documented_gemini_commands_name_a_model():
                           line.strip()[:100])
 
 
+def test_a_quota_refusal_is_named_rather_than_looking_like_a_crash():
+    """The real reason sits below a banner, so truncation alone throws it away."""
+    stderr = ("(node:1) [DEP0040] DeprecationWarning: The `punycode` module is deprecated.\n"
+              "(Use `node --trace-deprecation ...` to show where the warning was created)\n"
+              "YOLO mode is enabled. All tool calls will be automatically approved.\n"
+              "Hook registry initialized with 0 hook entries\n"
+              "TerminalQuotaError: You have exhausted your daily quota on this model.")
+    said = targets.explain_failure("gemini-cli", 1, stderr)
+    check("a quota refusal says so", "quota is exhausted" in said, said)
+    check("it says nothing was measured", "nothing was measured" in said, said)
+    check("the service's own words survive", "TerminalQuotaError" in said, said)
+    check("the deprecation banner is dropped", "DeprecationWarning" not in said, said)
+
+
+def test_a_retired_model_and_refused_credentials_are_named():
+    said = targets.explain_failure("gemini-cli", 1,
+                                   "ModelNotFoundError: models/gemini-2.5-pro is retired")
+    check("a retired model is named", "not available to this key" in said, said)
+    for text in ("PermissionDenied: bad key", "Unauthenticated: no key"):
+        said = targets.explain_failure("x", 1, text)
+        check(f"credentials refused for {text[:14]}", "credentials were refused" in said, said)
+
+
+def test_an_ordinary_crash_still_reports_the_exit_code():
+    said = targets.explain_failure("claude-code", 2, "Traceback: something broke")
+    check("a crash keeps its exit code", "exited 2" in said, said)
+    check("a crash is not called a refusal", "could not run" not in said, said)
+    check("empty stderr does not crash the explainer",
+          "no output on stderr" in targets.explain_failure("x", 1, ""))
+    check("None stderr does not crash the explainer",
+          "no output on stderr" in targets.explain_failure("x", 1, None))
+
+
+def test_a_banner_only_failure_still_says_something():
+    """Every line is noise. Saying nothing would be worse than repeating the banner."""
+    said = targets.explain_failure("x", 1, "YOLO mode is enabled.\nHook registry initialized")
+    check("a banner only failure is not blank", len(said) > len("x exited 1: "), said)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
