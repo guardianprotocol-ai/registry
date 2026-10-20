@@ -111,14 +111,20 @@ class ScriptedTarget:
 # Lines a harness prints on every run, which crowd out the one line saying what went wrong.
 # A quota refusal and a crash look identical once the real message has been pushed past a
 # truncation limit by a deprecation warning.
-NOISE = ("DeprecationWarning", "--trace-deprecation", "YOLO mode is enabled",
-         "Hook registry initialized", "Full report available at")
+# Matched against the start of a line, never anywhere inside it. The harness prints its
+# real error on a line that also says where the full report was written, so a substring
+# match on that phrase throws away the message it was meant to introduce.
+NOISE = ("(node:", "(Use `node", "YOLO mode is enabled", "Hook registry initialized",
+         "at ", "An unexpected critical error")
 
 # A refusal by the service is not a defect in the agent and not a defence by the sensor. It
 # has to be named, because a run of zeros caused by an exhausted quota is indistinguishable
 # from a run of zeros caused by a working sensor.
 REFUSALS = (
-    ("RESOURCE_EXHAUSTED", "the model's quota is exhausted, so nothing was measured"),
+    ("prepayment credits", "the account is out of credit, so nothing was measured"),
+    ("Payment Required", "the account is out of credit, so nothing was measured"),
+    ("exhausted your daily quota", "the daily quota is used up, so nothing was measured"),
+    ("RESOURCE_EXHAUSTED", "the service refused on limits or credit, so nothing was measured"),
     ("quota", "the model's quota is exhausted, so nothing was measured"),
     ("ModelNotFoundError", "the model name is not available to this key"),
     ("PermissionDenied", "the credentials were refused"),
@@ -133,7 +139,7 @@ def explain_failure(name, returncode, stderr):
     truncation keeps the banner and throws away the cause.
     """
     lines = [l.strip() for l in (stderr or "").splitlines() if l.strip()]
-    signal = [l for l in lines if not any(n in l for n in NOISE)]
+    signal = [l for l in lines if not any(l.startswith(n) for n in NOISE)]
     body = signal[0] if signal else (lines[0] if lines else "no output on stderr")
     for needle, meaning in REFUSALS:
         if needle.lower() in (stderr or "").lower():
