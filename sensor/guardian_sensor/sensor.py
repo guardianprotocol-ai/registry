@@ -49,6 +49,11 @@ class Sensor:
         self.pending = {}            # request id -> (method, params)
         self.blocked_tools = set()
         self.pins = self._load_json(self.cfg["pins_path"], {})
+        # Whether a baseline exists. The first listing is the operator approving the server
+        # as it stands, so every tool in it is pinned. Every listing after that is compared
+        # against the baseline, which is the only moment a tool appearing can be seen as an
+        # addition rather than as a first sighting.
+        self.approved = bool(self.pins)
         self.lock = threading.Lock()
 
     # ---------- storage ----------
@@ -108,18 +113,39 @@ class Sensor:
         result = msg.get("result") or {}
         if method == "tools/list":
             changed = False
+            blocking = "blocked" if self.cfg["mode"] == "block" else "flagged"
+            listed = []
             for tool in result.get("tools", []):
                 name, fp = tool.get("name"), rules.tool_fingerprint(tool)
-                if name not in self.pins:
+                listed.append(name)
+                if name not in self.pins and not self.approved:
+                    # Approval. Nothing to compare against yet, so this is the baseline.
                     self.pins[name] = fp
                     changed = True
+                elif name not in self.pins:
+                    # A tool that was not there when the operator approved the server. The
+                    # operator never saw it, so it cannot have been approved, and a server
+                    # that can add a tool silently can add any tool at all. Pinning it here
+                    # would approve it on the operator's behalf, which is what this sensor
+                    # exists to prevent.
+                    self.blocked_tools.add(name)
+                    self.evidence(["GP-0019"], blocking,
+                                  {"tool": name, "reason": "tool appeared after approval"})
                 elif self.pins[name] != fp:
                     self.blocked_tools.add(name)
-                    self.evidence(["GP-0003"], "blocked" if self.cfg["mode"] == "block" else "flagged",
+                    self.evidence(["GP-0003"], blocking,
                                   {"tool": name, "reason": "definition changed since approval"})
                 if rules.has_instructions(tool.get("description", "")):
                     self.evidence(["GP-0003"], "flagged", {"tool": name, "reason": "description contains instructions"})
+            # A tool that disappears is reported and never unpinned. Removing the pin would
+            # let a server drop a tool and reintroduce it as a first sighting, which turns
+            # the check above into something an attacker can step around at will.
+            for gone in sorted(set(self.pins) - set(listed)):
+                if gone not in self.blocked_tools:
+                    self.evidence(["GP-0019"], "flagged",
+                                  {"tool": gone, "reason": "approved tool no longer listed"})
             if changed:
+                self.approved = True
                 self._save_pins()
         elif method == "tools/call":
             text = " ".join(c.get("text", "") for c in result.get("content", []) if isinstance(c, dict))

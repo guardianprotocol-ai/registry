@@ -174,6 +174,7 @@ RULES = {
     "GP-0010": "Untrusted content tries to steer which sources the agent trusts or recommends",
     "GP-0011": "Runaway tool use: the same call repeated beyond the session budget",
     "GP-0012": "Outbound content contains the agent's own system prompt canary",
+    "GP-0019": "A tool appeared on an approved server, or its input schema changed, after approval",
 }
 
 
