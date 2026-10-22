@@ -60,6 +60,15 @@ SETTINGS = {
 SETTING_NAMES = tuple(sorted(SETTINGS))
 
 
+class Unwritable(Exception):
+    """Where we were told to keep state cannot be written to."""
+
+    def __init__(self, path, cause):
+        self.path = path
+        self.cause = cause
+        super().__init__("%s: %s" % (path, cause))
+
+
 class _OnlyOne:
     """An exclusive lock, so two polls cannot run the same exercise twice.
 
@@ -87,8 +96,15 @@ class _OnlyOne:
             # No advisory locking here. Say nothing and carry on: a missing lock is a risk of
             # double counting, while refusing to run at all is a certainty of no data.
             return True
-        os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
-        self.handle = open(self.path, "w")
+        try:
+            os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
+            self.handle = open(self.path, "w")
+        except OSError as e:
+            # A managed laptop may not let anything write where we expected, which is a
+            # common enough arrangement in the organizations this is built for. Raised as
+            # something the caller can explain, rather than a traceback a participant has to
+            # interpret.
+            raise Unwritable(self.path, e)
         try:
             fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
@@ -300,12 +316,25 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
     at = now or _now()
 
     lock_path = os.path.join(os.path.dirname(os.path.abspath(a.log)) or ".", LOCK_NAME)
-    with _OnlyOne(lock_path) as acquired:
-        if not acquired:
-            # Another poll is already working. Saying nothing is right: this happens on a
-            # timer, so a message here would be noise on a machine that is behaving.
-            return 0
-        return _poll(a, at, out, opener)
+    try:
+        with _OnlyOne(lock_path) as acquired:
+            if not acquired:
+                # Another poll is already working. Saying nothing is right: this happens on
+                # a timer, so a message here would be noise on a machine that is behaving.
+                return 0
+            return _poll(a, at, out, opener)
+    except Unwritable as e:
+        # Running without being able to record would mean no way to tell an exercise has
+        # already run, so the same one would repeat on every poll and a member's sightings
+        # would fill with it. Refusing is the safe direction, and saying where to point it
+        # instead is the useful part.
+        out.write("Cannot keep state in %s (%s).\n" % (os.path.dirname(e.path), e.cause))
+        out.write("Nothing ran, because without a record there is no way to tell an "
+                  "exercise from a repeat of it.\n")
+        out.write("Point it somewhere writable with --log and --dir, then enrol again:\n\n")
+        out.write("  python3 -m guardian_sensor agenda --base %s --log <path> --dir <path>\n"
+                  % a.base)
+        return 1
 
 
 def _poll(a, at, out, opener):

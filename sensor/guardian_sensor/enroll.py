@@ -29,6 +29,11 @@ DEFAULT_INTERVAL = 60
 # repository would be entangled with their data, and an operator asking somebody to "just
 # pull" would be asking them to risk it.
 def data_dir(home=None):
+    # GUARDIAN_HOME exists for a participant whose home directory is managed and locked
+    # down, which is normal on a corporate machine and is the audience this is for.
+    override = os.environ.get("GUARDIAN_HOME")
+    if override and home is None:
+        return os.path.abspath(override)
     return os.path.join(home or os.path.expanduser("~"), ".guardian")
 
 
@@ -155,7 +160,24 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
     module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     work_dir = data_dir()
     log_dir = work_dir
-    os.makedirs(work_dir, exist_ok=True)
+    # The first thing a participant ever runs, so a traceback here is the first thing they
+    # see of this project. A managed laptop may not allow writing here at all, which is a
+    # common arrangement in exactly the organizations this is built for.
+    try:
+        os.makedirs(work_dir, exist_ok=True)
+        probe = os.path.join(work_dir, ".writable")
+        with open(probe, "w") as f:
+            f.write("")
+        os.remove(probe)
+    except OSError as e:
+        out.write("Cannot write to %s (%s).\n\n" % (work_dir, e))
+        out.write("This needs somewhere to keep its own records, and that is the usual "
+                  "place. If your machine\nkeeps that directory locked down, say where "
+                  "instead:\n\n")
+        out.write("  GUARDIAN_HOME=/path/you/can/write python3 -m guardian_sensor enroll "
+                  "--base %s --org %s\n\n" % (a.base, a.org or "<your-member-id>"))
+        out.write("Nothing was installed.\n")
+        return 1
 
     if kind == "launchd":
         body = plistlib.dumps(launchd_plist(python, module_dir, a.base, a.org,

@@ -409,6 +409,28 @@ def test_the_lock_is_released_so_the_next_poll_works():
               out.getvalue()[-200:])
 
 
+def test_an_unwritable_state_directory_refuses_rather_than_crashing():
+    """Running without being able to record would mean no way to tell an exercise from a
+    repeat of it, so the same one would run on every poll and fill a member's sightings."""
+    with tempfile.TemporaryDirectory() as w:
+        locked = os.path.join(w, "locked")
+        os.makedirs(locked)
+        os.chmod(locked, 0o500)
+        try:
+            out = io.StringIO()
+            code = agenda.main(["--base", "https://x.test",
+                                "--log", os.path.join(locked, "deeper", "a.jsonl")],
+                               out=out, opener=Fake(due()))
+            text = out.getvalue()
+            check("it exits non zero", code == 1, str(code))
+            check("it says it cannot keep state", "Cannot keep state" in text, text[:200])
+            check("it says nothing ran", "Nothing ran" in text, text[:300])
+            check("it says where to point it instead", "--log" in text, text[:400])
+            check("no traceback reaches the participant", "Traceback" not in text, text[:200])
+        finally:
+            os.chmod(locked, 0o700)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

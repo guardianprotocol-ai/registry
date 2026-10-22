@@ -184,6 +184,61 @@ def test_the_label_is_namespaced():
           enroll.LABEL.startswith("network.guardianprotocol."), enroll.LABEL)
 
 
+def test_an_unwritable_home_is_explained_rather_than_raised():
+    """The first thing a participant ever runs, so a traceback here is the first thing they
+    see of this project. A managed laptop that locks down the home directory is normal in
+    exactly the organizations this is built for."""
+    with tempfile.TemporaryDirectory() as home:
+        locked = os.path.join(home, "locked")
+        os.makedirs(locked)
+        os.chmod(locked, 0o500)
+        saved = os.environ.get("HOME")
+        os.environ["HOME"] = locked
+        try:
+            out = io.StringIO()
+            code = enroll.main(["--base", BASE, "--org", "a-lab"], out=out,
+                               platform="darwin", runner=Runner())
+        finally:
+            os.chmod(locked, 0o700)
+            if saved is not None:
+                os.environ["HOME"] = saved
+        text = out.getvalue()
+        check("it exits non zero", code == 1, str(code))
+        check("it says it cannot write", "Cannot write to" in text, text[:200])
+        check("it offers somewhere else", "GUARDIAN_HOME" in text, text[:400])
+        check("and installs nothing", "Nothing was installed" in text, text[-200:])
+        check("no traceback reaches the participant", "Traceback" not in text, text[:200])
+
+
+def test_the_data_directory_can_be_moved_for_a_managed_machine():
+    saved = os.environ.get("GUARDIAN_HOME")
+    os.environ["GUARDIAN_HOME"] = "/somewhere/writable"
+    try:
+        check("the override is honoured",
+              enroll.data_dir() == "/somewhere/writable", enroll.data_dir())
+        # An explicit home still wins, so the tests above and any caller passing one are
+        # not quietly redirected by an environment variable.
+        check("an explicit home still wins",
+              enroll.data_dir("/home/someone") == "/home/someone/.guardian",
+              enroll.data_dir("/home/someone"))
+    finally:
+        if saved is None:
+            del os.environ["GUARDIAN_HOME"]
+        else:
+            os.environ["GUARDIAN_HOME"] = saved
+
+
+def test_the_service_carries_absolute_paths_into_the_override():
+    """Otherwise a participant who moved the data directory would have a service writing
+    somewhere else entirely, and would not find out."""
+    args = enroll.agenda_args(BASE, "a-lab", "/somewhere/writable")
+    pairs = dict(zip(args, args[1:]))
+    check("the log is inside the override",
+          pairs["--log"].startswith("/somewhere/writable"), pairs["--log"])
+    check("the drill directory is too",
+          pairs["--dir"].startswith("/somewhere/writable"), pairs["--dir"])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

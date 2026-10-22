@@ -208,6 +208,14 @@ in `spec/agenda-1.md`. A channel that could invoke arbitrary actions on particip
 machines would be a botnet whoever was running it, and it would have to be removed before
 production, so whatever it proved would not be what shipped.
 
+If your machine keeps your home directory locked down, which is normal on a managed laptop,
+say where to keep records instead:
+
+```bash
+GUARDIAN_HOME=/path/you/can/write python3 -m guardian_sensor enroll \
+  --base https://guardianprotocol.network/season1 --org <your-member-id>
+```
+
 Nothing is shared by this. Building and sending a report stays a separate, deliberate act.
 
 ## Sharing hub, reference implementation
