@@ -76,8 +76,8 @@ def exercises():
     )
 
 
-def run_once(workdir, config_path, python=None, extra_env=None):
-    """Drive one protected session. Returns the sensor's stderr log."""
+def run_once(workdir, config_path, python=None, extra_env=None, protected=True):
+    """Drive one session, with or without the sensor in front. Returns its stderr log."""
     python = python or sys.executable
     env = {**os.environ, **(extra_env or {}),
            "GUARDIAN_SINK": os.path.join(workdir, "sinkhole.jsonl"),
@@ -86,8 +86,11 @@ def run_once(workdir, config_path, python=None, extra_env=None):
            # listing offered, so this one was never approved by anybody.
            "GUARDIAN_ADD": "1",
            "PYTHONPATH": SENSOR_ROOT + os.pathsep + os.environ.get("PYTHONPATH", "")}
-    cmd = [python, "-m", "guardian_sensor", "--config", config_path, "--",
-           python, LAB_SERVER]
+    server = [python, LAB_SERVER]
+    # The control arm. The same attack with nothing in front of it, which is how a reader
+    # tells a quiet sensor apart from an attack that was never going to land anyway.
+    cmd = ([python, "-m", "guardian_sensor", "--config", config_path, "--"] + server
+           if protected else server)
     c = _Client(cmd, env, workdir)
     c.call("initialize")
     # Approval. Whatever the server offers now is what the operator is taken to have
@@ -269,6 +272,9 @@ def main(argv=None, out=sys.stdout):
     ap.add_argument("--mode", default="block", choices=("block", "monitor"))
     ap.add_argument("--keep", action="store_true",
                     help="keep the evidence file rather than starting clean")
+    ap.add_argument("--unprotected", action="store_true",
+                    help="run the same attack with no sensor in front. The control arm: every "
+                         "exercise is expected to get through, and that is the result")
     ap.add_argument("--respond", action="store_true",
                     help="also run the same attack before and after a rule update, and time "
                          "the difference")
@@ -298,11 +304,13 @@ def main(argv=None, out=sys.stdout):
                 pass
 
     config_path = write_config(workdir, a.mode)
-    out.write("Running the drill against a local lab server, through your sensor.\n")
+    protected = not a.unprotected
+    out.write("Running the drill against a local lab server, %s.\n"
+              % ("through your sensor" if protected else "with NO sensor in front"))
     out.write("Nothing leaves this machine. The sink is a file in %s.\n\n" % a.dir)
 
     started = time.time()
-    log = run_once(workdir, config_path)
+    log = run_once(workdir, config_path, protected=protected)
     seconds = time.time() - started
 
     rows = summarize(read_evidence(workdir))
@@ -313,13 +321,26 @@ def main(argv=None, out=sys.stdout):
     out.write("\n%d of %d exercises caught in %.1f seconds.\n"
               % (len(rows) - len(missed), len(rows), seconds))
 
+    if not protected:
+        # In the control arm nothing catching anything is the expected result, and anything
+        # catching something would mean the sensor was in front after all.
+        if not missed:
+            out.write("\nSomething is wrong. With no sensor in front nothing should have "
+                      "been caught, so\nsomething was in the path that should not have "
+                      "been.\n")
+            return 1
+        out.write("\nThat is the control arm, and it is the point: with nothing in front, "
+                  "the attack lands.\nThe canary reached the sink. Run again without "
+                  "--unprotected to see the difference.\n")
+        return 0
+
     if missed:
         out.write("\nSomething is wrong, and it is worth knowing rather than reporting "
                   "around. Missed: %s.\nThe sensor's own log follows.\n\n%s\n"
                   % (", ".join(missed), log.strip()))
         return 1
 
-    if a.respond:
+    if a.respond and protected:
         if respond(workdir, a.org, out) is None:
             return 1
 

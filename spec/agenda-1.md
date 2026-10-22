@@ -32,8 +32,35 @@ A JSON object at `<base>/agenda.json`, served over HTTPS.
 | --- | --- | --- | --- |
 | `exercise_id` | string | yes | at most 64 characters, letters, digits, hyphens, underscores |
 | `run_after` | string | yes | `YYYY-MM-DDTHH:MM:SSZ`, UTC |
-| `respond` | boolean | no | whether to run the response half as well. Default false |
+| `settings` | object | no | the permutation to run, from the fixed space below |
+| `respond` | boolean | no | kept for agendas written before `settings`. May not contradict it |
 | `note` | string | no | at most 200 characters, shown to the operator |
+
+## Settings
+
+This is what makes a controlled experiment possible. An operator may schedule as many
+permutations as a study needs, in any order, without any participant being available for
+them.
+
+| Setting | Values | What it selects |
+| --- | --- | --- |
+| `mode` | `block`, `monitor` | whether the sensor blocks or only records |
+| `respond` | `true`, `false` | whether the same attack runs before and after a rule update |
+| `protected` | `true`, `false` | whether the sensor is in front at all. The control arm |
+
+Every value selects among behaviour the participant installed. **An implementation must
+refuse a setting it does not offer, and a known setting with a value outside its list.** A
+setting that is silently dropped is a permutation the operator believes they ran and did not,
+which is worse for a study than a refusal.
+
+The space is deliberately small. Adding to it is a deliberate act with a test, because each
+addition widens what an agenda can cause on somebody else's machine. A setting that took a
+path, a URL, a command or free text would stop being a selection and start being an
+instruction, and this document exists to keep that line visible.
+
+An implementation must print the permutation it is running and record it alongside the run, so
+a participant can see what was asked of their machine without reading the implementation's
+source, and an operator can see which arm a machine took without correlating logs.
 
 **An implementation must refuse a document carrying any other field**, rather than ignoring
 it. Ignoring an unknown key means a later version that understands it would obey something an

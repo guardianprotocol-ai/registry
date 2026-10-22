@@ -69,10 +69,94 @@ def test_an_agenda_naming_an_action_is_refused():
                   "does not understand" in str(e), str(e))
 
 
-def test_the_only_keys_allowed_are_when_and_whether_to_respond():
+def test_the_only_keys_allowed_are_when_and_which_permutation():
     check("the allow-list is exactly what it should be",
-          set(agenda.ALLOWED_KEYS) == {"exercise_id", "run_after", "respond", "note"},
+          set(agenda.ALLOWED_KEYS) == {"exercise_id", "run_after", "respond", "note",
+                                       "settings"},
           str(agenda.ALLOWED_KEYS))
+
+
+def test_settings_select_from_installed_behaviour_and_cannot_introduce_any():
+    """The line this whole design turns on. An operator may schedule every permutation the
+    study needs; they may not introduce behaviour the participant did not install."""
+    check("every setting has a fixed list of values",
+          all(isinstance(v, tuple) and v for v in agenda.SETTINGS.values()),
+          str(agenda.SETTINGS))
+    check("no setting takes free text",
+          all(all(isinstance(x, (bool, str)) for x in v) for v in agenda.SETTINGS.values()),
+          str(agenda.SETTINGS))
+    for name in ("command", "shell", "exec", "script", "path", "url", "env"):
+        check(f"{name} is not a setting", name not in agenda.SETTINGS, name)
+
+
+def test_a_known_setting_with_an_unknown_value_is_refused():
+    for setting, bad in (("mode", "off"), ("mode", "silent"), ("respond", "yes"),
+                         ("protected", "sometimes")):
+        try:
+            agenda.parse_settings({setting: bad})
+            check(f"{setting}={bad!r} is refused", False, "accepted")
+        except hub.HubError as e:
+            check(f"{setting}={bad!r} is refused", "may only be one of" in str(e), str(e))
+
+
+def test_an_unknown_setting_is_refused_and_the_known_ones_are_listed():
+    try:
+        agenda.parse_settings({"sudo": True})
+        check("an unknown setting is refused", False, "accepted")
+    except hub.HubError as e:
+        check("an unknown setting is refused", "does not offer" in str(e), str(e))
+        check("and the sensor says what it does offer", "mode" in str(e), str(e))
+        check("and says why it refuses rather than ignores",
+              "permutation you would believe you had run" in str(e), str(e))
+    try:
+        agenda.parse_settings("block")
+        check("settings must be an object", False, "accepted")
+    except hub.HubError as e:
+        check("settings must be an object", "must be an object" in str(e), str(e))
+    check("absent settings are empty", agenda.parse_settings(None) == {})
+
+
+def test_the_old_respond_field_still_works_and_may_not_contradict_settings():
+    """An agenda written for an earlier sensor keeps running."""
+    _, _, settings, _ = agenda.parse(due(respond=True))
+    check("the top level field is honoured", settings.get("respond") is True, str(settings))
+    _, _, settings, _ = agenda.parse(due(settings={"respond": True}))
+    check("the setting is honoured", settings.get("respond") is True, str(settings))
+    try:
+        agenda.parse(due(respond=True, settings={"respond": False}))
+        check("a contradiction is refused", False, "accepted")
+    except hub.HubError as e:
+        check("a contradiction is refused", "disagree" in str(e), str(e))
+
+
+def test_the_permutation_is_printed_and_recorded():
+    """A participant should see what was asked of their machine without reading our source,
+    and an operator should see which arm a machine took without reading a log."""
+    with tempfile.TemporaryDirectory() as w:
+        log = os.path.join(w, "a.jsonl")
+        out = io.StringIO()
+        agenda.main(["--base", "https://x.test", "--log", log, "--dir", os.path.join(w, "d"),
+                     "--org", "a-lab"],
+                    out=out, opener=Fake(due(settings={"protected": False})))
+        check("the settings are printed", "protected=False" in out.getvalue(),
+              out.getvalue()[:300])
+        record = json.loads(open(log).read().strip().splitlines()[0])
+        check("and recorded with the run", record["settings"] == {"protected": False},
+              str(record))
+
+
+def test_the_control_arm_runs_and_catches_nothing():
+    """With no sensor in front, nothing catching anything is the result, not a failure."""
+    with tempfile.TemporaryDirectory() as w:
+        out = io.StringIO()
+        code = agenda.main(["--base", "https://x.test", "--log", os.path.join(w, "a.jsonl"),
+                            "--dir", os.path.join(w, "d"), "--org", "a-lab"],
+                           out=out, opener=Fake(due(settings={"protected": False})))
+        check("the control arm exits clean", code == 0, out.getvalue()[-300:])
+        check("nothing is caught", "0 of 3 exercises caught" in out.getvalue(),
+              out.getvalue()[-300:])
+        check("and that is reported as the point",
+              "that is the control arm" in out.getvalue().lower(), out.getvalue()[-300:])
 
 
 def test_a_refused_agenda_is_recorded_so_it_is_not_silent():
@@ -89,11 +173,12 @@ def test_a_refused_agenda_is_recorded_so_it_is_not_silent():
 # ---------- parsing ----------
 
 def test_a_well_formed_agenda_parses():
-    exercise_id, run_after, respond, note = agenda.parse(
-        due(respond=True, note="Season 1 fire drill."))
+    exercise_id, run_after, settings, note = agenda.parse(
+        due(settings={"respond": True, "mode": "monitor"}, note="Season 1 fire drill."))
     check("the exercise is named", exercise_id == "season1-drill-a", exercise_id)
     check("the time is read as UTC", run_after.tzinfo == UTC, str(run_after))
-    check("respond is carried", respond is True, str(respond))
+    check("the settings are carried",
+          settings == {"respond": True, "mode": "monitor"}, str(settings))
     check("the note is carried", note == "Season 1 fire drill.", note)
 
 

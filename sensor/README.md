@@ -180,9 +180,26 @@ ordinary case between exercises and is quiet on purpose.
             --base https://guardianprotocol.network/season1 --org <your-member-id>
 ```
 
-**The agenda says when, never what.** The action is fixed in the installed code and is the
-same local drill you can run by hand. A document carrying any other field is refused rather
-than ignored. So the worst anyone could do by taking over the publishing point is make your
+An agenda can also say which permutation to run, which is what makes a controlled experiment
+possible without anyone being available for it:
+
+```json
+{"exercise_id": "season1-p3",
+ "run_after": "2026-10-27T14:00:00Z",
+ "settings": {"mode": "block", "respond": true},
+ "note": "Season 1, arm 3."}
+```
+
+`mode` is `block` or `monitor`. `respond` runs the same attack before and after a rule
+update. `protected` set to false is the control arm, with no sensor in front, where every
+exercise is expected to get through and that is the result. The permutation is printed on
+every run and recorded beside it.
+
+**The agenda says when and which arm, never what.** The action is fixed in the installed code and is the
+same local drill you can run by hand. A document carrying any other field, or a setting the sensor does not offer, is
+refused rather than ignored. The values are a fixed list you can read in
+`guardian_sensor/agenda.py`, so what can happen on your machine is settled when you install
+it, not when somebody publishes a file. So the worst anyone could do by taking over the publishing point is make your
 machine run an exercise you already installed, against a lab server on your own machine, which
 shares nothing.
 

@@ -32,10 +32,31 @@ AGENDA_NAME = "agenda.json"
 DEFAULT_LOG = os.path.join(".guardian", "agenda.jsonl")
 DEFAULT_DIR = os.path.join(".guardian", "drill")
 
-# The only keys an agenda may carry. An agenda that could name a command would be the thing
-# this file exists to avoid, so the shape is checked rather than trusted, and a key nobody
-# recognises is a refusal rather than something to ignore.
-ALLOWED_KEYS = ("exercise_id", "run_after", "respond", "note")
+# The only keys an agenda may carry. A key nobody recognises is a refusal rather than
+# something to ignore, because ignoring one means a later version that understands it would
+# obey what an earlier one dropped.
+ALLOWED_KEYS = ("exercise_id", "run_after", "respond", "note", "settings")
+
+# The parameter space an agenda may move through, and the only values each may take.
+#
+# This is what makes a controlled experiment possible: the operator can schedule as many
+# permutations as the study needs, in any order, without anyone being available for them.
+# What it cannot do is introduce behaviour. Every value below selects among things the
+# participant installed and can read in this file, so the set of possible outcomes is fixed
+# at install time and auditable by the person whose machine it is.
+#
+# An agenda that could carry a command, a path, a URL or a script would be arbitrary
+# execution on other people's machines, which is a different thing however it is labelled.
+# Adding a setting here is a deliberate act with a test, not a configuration change.
+SETTINGS = {
+    # Whether the sensor blocks or only records. The headline comparison in any write up.
+    "mode": ("block", "monitor"),
+    # Whether the response half runs: the same attack before and after a rule update.
+    "respond": (True, False),
+    # Whether the sensor is in front at all. The control arm.
+    "protected": (True, False),
+}
+SETTING_NAMES = tuple(sorted(SETTINGS))
 
 
 def _fetch(url, opener=None):
@@ -44,8 +65,36 @@ def _fetch(url, opener=None):
         return response.read()
 
 
+def parse_settings(raw):
+    """Check the settings an agenda asks for against the installed parameter space.
+
+    Every value is compared against a fixed list. An unknown setting, or a known setting with
+    an unexpected value, is refused and named, because a setting silently dropped is a
+    permutation the operator believes they ran and did not.
+    """
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise hub.HubError("settings must be an object")
+    unknown = sorted(set(raw) - set(SETTINGS))
+    if unknown:
+        raise hub.HubError(
+            "settings carries %s, which this sensor does not offer. It understands %s. A "
+            "setting it does not know is refused rather than ignored, because a dropped "
+            "setting is a permutation you would believe you had run."
+            % (", ".join(unknown), ", ".join(SETTING_NAMES)))
+    out = {}
+    for name, value in sorted(raw.items()):
+        if value not in SETTINGS[name]:
+            raise hub.HubError(
+                "settings.%s is %r, and may only be one of %s"
+                % (name, value, ", ".join(repr(v) for v in SETTINGS[name])))
+        out[name] = value
+    return out
+
+
 def parse(document):
-    """Check an agenda. Returns (exercise_id, run_after, respond, note) or raises."""
+    """Check an agenda. Returns (exercise_id, run_after, settings, note) or raises."""
     if not isinstance(document, dict):
         raise hub.HubError("the agenda is not an object")
     extra = sorted(set(document) - set(ALLOWED_KEYS))
@@ -72,14 +121,23 @@ def parse(document):
     except (TypeError, ValueError):
         raise hub.HubError("run_after must look like 2026-10-27T14:00:00Z, in UTC")
 
-    respond = document.get("respond", False)
-    if not isinstance(respond, bool):
-        raise hub.HubError("respond must be true or false")
+    settings = parse_settings(document.get("settings"))
+    # `respond` predates `settings` and still works, so an agenda written for an earlier
+    # sensor keeps running. The two must not disagree, because an operator who set both and
+    # got one silently is running a permutation they did not choose.
+    if "respond" in document:
+        if not isinstance(document["respond"], bool):
+            raise hub.HubError("respond must be true or false")
+        if "respond" in settings and settings["respond"] != document["respond"]:
+            raise hub.HubError(
+                "the agenda sets respond twice, at the top level and in settings, and they "
+                "disagree. Use settings.")
+        settings.setdefault("respond", document["respond"])
 
     note = document.get("note", "")
     if not isinstance(note, str) or len(note) > 200:
         raise hub.HubError("note must be a string of at most 200 characters")
-    return exercise_id, run_after, respond, note
+    return exercise_id, run_after, settings, note
 
 
 def already_ran(log_path, exercise_id):
@@ -105,12 +163,12 @@ def already_ran(log_path, exercise_id):
     return False
 
 
-def record(log_path, exercise_id, outcome, detail=""):
+def record(log_path, exercise_id, outcome, detail="", settings=None):
     os.makedirs(os.path.dirname(log_path) or ".", exist_ok=True)
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps({"time": _now().isoformat(timespec="seconds"),
                             "exercise_id": exercise_id, "outcome": outcome,
-                            "detail": detail}) + "\n")
+                            "settings": settings or {}, "detail": detail}) + "\n")
 
 
 def _now():
@@ -142,7 +200,7 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
         return 0
 
     try:
-        exercise_id, run_after, respond, note = parse(document)
+        exercise_id, run_after, settings, note = parse(document)
     except hub.HubError as e:
         out.write("refusing this agenda: %s\n" % e)
         record(a.log, str(document.get("exercise_id", "unparsed"))[:64], "refused", str(e))
@@ -156,21 +214,34 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
         out.write("exercise %s has already run here. Nothing to do.\n" % exercise_id)
         return 0
 
+    described = ", ".join("%s=%s" % (k, v) for k, v in sorted(settings.items())) or "defaults"
+
     if a.dry_run:
-        out.write("exercise %s is due and would run now.\n" % exercise_id)
+        out.write("exercise %s is due and would run now, with %s.\n"
+                  % (exercise_id, described))
         if note:
             out.write("note from the agenda: %s\n" % note[:200])
         return 0
 
     out.write("Running exercise %s, published for %s.\n"
               % (exercise_id, run_after.isoformat(timespec="seconds")))
+    # Printed every run. An operator should be able to see which permutation their machine
+    # took part in without reading a log, and a participant should be able to see what was
+    # asked of their machine without reading our source.
+    out.write("Settings for this exercise: %s\n" % described)
     if note:
         out.write("Note from the agenda: %s\n" % note[:200])
+
     argv_for_drill = ["--dir", a.dir] + (["--org", a.org] if a.org else [])
-    if respond:
+    if settings.get("respond"):
         argv_for_drill.append("--respond")
+    if "mode" in settings:
+        argv_for_drill += ["--mode", settings["mode"]]
+    if settings.get("protected") is False:
+        argv_for_drill.append("--unprotected")
     code = drill.main(argv_for_drill, out=out)
-    record(a.log, exercise_id, "ran" if code == 0 else "failed", "drill exit %d" % code)
+    record(a.log, exercise_id, "ran" if code == 0 else "failed", "drill exit %d" % code,
+           settings=settings)
 
     out.write("\nRecorded in %s. Nothing has been shared: build and read a report when you "
               "are ready.\n" % a.log)
