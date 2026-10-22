@@ -150,8 +150,12 @@ def test_a_hostile_document_cannot_write_outside_the_log_it_was_given():
         for root, _, names in os.walk(w):
             after.update(os.path.join(root, n) for n in names)
         created = sorted(p for p in after - before)
-        check("only the log it was told to write was created",
-              created in ([], [log]), str(created))
+        # The lock lives beside the log, by design: one poll at a time, released with the
+        # file handle. Anything else appearing here would mean a hostile document had chosen
+        # a path, which is the thing this test exists to catch.
+        allowed = {log, os.path.join(os.path.dirname(log), agenda.LOCK_NAME)}
+        check("only the log and its lock were created",
+              set(created) <= allowed, str(created))
         check("nothing was written above the directory it was given",
               all(p.startswith(w) for p in after), str(sorted(after)))
 

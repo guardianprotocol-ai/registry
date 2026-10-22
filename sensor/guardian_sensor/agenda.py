@@ -29,6 +29,7 @@ import urllib.request
 from . import drill, hub
 
 AGENDA_NAME = "agenda.json"
+LOCK_NAME = ".agenda.lock"
 DEFAULT_LOG = os.path.join(".guardian", "agenda.jsonl")
 DEFAULT_DIR = os.path.join(".guardian", "drill")
 
@@ -57,6 +58,50 @@ SETTINGS = {
     "protected": (True, False),
 }
 SETTING_NAMES = tuple(sorted(SETTINGS))
+
+
+class _OnlyOne:
+    """An exclusive lock, so two polls cannot run the same exercise twice.
+
+    A service manager starts the next poll on a timer whether or not the last one finished.
+    Normally a poll takes under a second, but a slow publisher can hold the fetch for its
+    full timeout and a hanging exercise holds it longer, and then two polls overlap. Both see
+    an exercise that has not run, and both run it.
+
+    That is not a crash. It is worse: the participant's sightings carry the same exercise two
+    or three times, so one organization appears in an aggregate to have seen something
+    repeatedly, and the counts a study reports are quietly wrong.
+
+    Held for the whole poll and released on exit, including on a crash, because the operating
+    system drops the lock with the file handle.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.handle = None
+
+    def __enter__(self):
+        try:
+            import fcntl
+        except ImportError:
+            # No advisory locking here. Say nothing and carry on: a missing lock is a risk of
+            # double counting, while refusing to run at all is a certainty of no data.
+            return True
+        os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
+        self.handle = open(self.path, "w")
+        try:
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            self.handle.close()
+            self.handle = None
+            return False
+        return True
+
+    def __exit__(self, *exc):
+        if self.handle is not None:
+            self.handle.close()
+            self.handle = None
+        return False
 
 
 def _fetch(url, opener=None):
@@ -254,6 +299,16 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
     a = ap.parse_args([] if argv is None else argv)
     at = now or _now()
 
+    lock_path = os.path.join(os.path.dirname(os.path.abspath(a.log)) or ".", LOCK_NAME)
+    with _OnlyOne(lock_path) as acquired:
+        if not acquired:
+            # Another poll is already working. Saying nothing is right: this happens on a
+            # timer, so a message here would be noise on a machine that is behaving.
+            return 0
+        return _poll(a, at, out, opener)
+
+
+def _poll(a, at, out, opener):
     url = a.base.rstrip("/") + "/" + AGENDA_NAME
     try:
         document = json.loads(_fetch(url, opener).decode("utf-8"))

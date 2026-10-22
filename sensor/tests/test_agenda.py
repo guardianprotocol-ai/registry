@@ -342,6 +342,73 @@ def test_the_heartbeat_is_at_most_daily():
               agenda.heartbeat_due(log, at))
 
 
+def test_overlapping_polls_run_an_exercise_once():
+    """A service manager starts the next poll on a timer whether or not the last one
+    finished. A slow publisher holds the fetch, a hanging exercise holds it longer, and then
+    two polls overlap, both see an exercise that has not run, and both run it.
+
+    That is not a crash. It is worse: the participant's sightings carry the same exercise two
+    or three times, one organization appears in an aggregate to have seen something
+    repeatedly, and the counts a study reports are quietly wrong. Three overlapping polls ran
+    it three times before this lock existed.
+    """
+    import threading
+    import time as clock
+
+    class Slow:
+        def __call__(self, url, timeout=None):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            clock.sleep(0.3)
+            return json.dumps(due()).encode("utf-8")
+
+    with tempfile.TemporaryDirectory() as w:
+        log = os.path.join(w, "a.jsonl")
+        results = []
+
+        def poll():
+            out = io.StringIO()
+            agenda.main(["--base", "https://x.test", "--log", log,
+                         "--dir", os.path.join(w, "d"), "--org", "a-lab"],
+                        out=out, opener=Slow())
+            results.append(out.getvalue())
+
+        threads = [threading.Thread(target=poll) for _ in range(3)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        ran = [r for r in results if "Running exercise" in r]
+        check("only one of three overlapping polls runs the exercise", len(ran) == 1,
+              f"{len(ran)} of 3 ran it")
+        records = [json.loads(l) for l in open(log) if l.strip()]
+        check("and only one run is recorded",
+              len([r for r in records if r["outcome"] == "ran"]) == 1, str(records))
+        check("the polls that lost the lock say nothing",
+              all(r == "" for r in results if "Running exercise" not in r),
+              str([r[:60] for r in results]))
+
+
+def test_the_lock_is_released_so_the_next_poll_works():
+    with tempfile.TemporaryDirectory() as w:
+        log = os.path.join(w, "a.jsonl")
+        args = ["--base", "https://x.test", "--log", log, "--dir", os.path.join(w, "d"),
+                "--org", "a-lab"]
+        agenda.main(args, out=io.StringIO(), opener=Fake(due()))
+        out = io.StringIO()
+        agenda.main(args, out=out, opener=Fake(due(exercise_id="season1-drill-b")))
+        check("a later poll acquires the lock and runs", "3 of 3" in out.getvalue(),
+              out.getvalue()[-200:])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
