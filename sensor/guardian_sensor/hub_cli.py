@@ -38,10 +38,19 @@ def report(argv, out=sys.stdout):
     a = ap.parse_args(argv)
 
     paths = a.evidence or list(hub.DEFAULT_EVIDENCE)
-    rules_version = a.rules_version or hub.current_rules_version(a.updates) or "unrecorded"
 
     try:
         records = hub.read_evidence(paths, since=a.since)
+        # Falls back to the digest of the rule bundle the sensor actually ran, which every
+        # detection records. The old fallback was the literal string "unrecorded", which the
+        # specification forbids for good reason: an entry whose rule set is unknown cannot
+        # be compared with any other entry, so it is noise in an aggregate. A member who has
+        # never run `update` still has a knowable rule set, the one they installed, and
+        # saying so is both true and useful. It also costs them no extra step.
+        rules_version = (a.rules_version
+                         or hub.current_rules_version(a.updates)
+                         or hub.rules_version_from(records)
+                         or "unrecorded")
         document = hub.build_sightings(records, a.org, rules_version)
     except hub.HubError as e:
         print(f"guardian: {e}", file=sys.stderr)

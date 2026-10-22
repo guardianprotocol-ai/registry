@@ -126,6 +126,17 @@ def fingerprints_in(records):
                    if r.get("rules_fingerprint")})
 
 
+def rules_version_from(records):
+    """A version derived from the rule bundle the evidence was produced under.
+
+    Every detection records a digest of the bundle that was loaded, so a member who has never
+    fetched a published release still has a knowable rule set: the one they installed. `b` for
+    bundle, so it cannot be mistaken for a release name like r2026.10.08.
+    """
+    seen = fingerprints_in(records)
+    return "b%s" % seen[0] if len(seen) == 1 else None
+
+
 def _source_of(record):
     """Where a detection came from. Anything not marked as a drill counts as live.
 
@@ -222,11 +233,16 @@ def preview_text(document):
     if not entries:
         lines.append("Nothing to share for that period.")
         return "\n".join(lines)
-    lines.append(f"{'pattern':<10} {'action':<9} {'hour':<15} {'rules':<12} {'source':<7} count")
-    lines.append("-" * 64)
+    # Width from the longest value present, not a guess. A bundle digest is longer than a
+    # release name, and a column that overflows looks like a bug in the thing a member is
+    # being asked to trust.
+    rules_width = max([len(e["rules_version"]) for e in entries] + [len("rules")])
+    lines.append(f"{'pattern':<10} {'action':<9} {'hour':<15} "
+                 f"{'rules':<{rules_width}} {'source':<7} count")
+    lines.append("-" * (52 + rules_width))
     for e in entries:
         lines.append(f"{e['pattern']:<10} {e['action']:<9} {e['hour']:<15} "
-                     f"{e['rules_version']:<12} {e['source']:<7} {e['count']}")
+                     f"{e['rules_version']:<{rules_width}} {e['source']:<7} {e['count']}")
     drills = sum(e["count"] for e in entries if e["source"] == "drill")
     if drills:
         lines += ["",

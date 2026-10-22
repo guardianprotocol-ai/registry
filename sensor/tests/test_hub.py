@@ -435,6 +435,39 @@ def test_a_report_refuses_to_span_two_rule_bundles():
     check("evidence predating the field still reports", len(doc["sightings"]) == 2, str(doc))
 
 
+def test_the_rules_version_falls_back_to_the_bundle_that_ran():
+    """A member who has never fetched a release still has a knowable rule set: the one they
+    installed. The specification forbids a placeholder, because an entry whose rule set is
+    unknown cannot be compared with any other entry."""
+    records = [{"time": "2026-10-22T13:04:11+00:00", "patterns": ["GP-0001"],
+                "action": "blocked", "detail": {}, "rules_fingerprint": "34d9a7a88daa"}]
+    check("a version is derived from the bundle",
+          hub.rules_version_from(records) == "b34d9a7a88daa",
+          str(hub.rules_version_from(records)))
+    check("it cannot be mistaken for a release name",
+          not hub.rules_version_from(records).startswith("r"))
+    check("it matches the shape the format requires",
+          hub.RULES_VERSION_RE.match(hub.rules_version_from(records)) is not None)
+    mixed = records + [dict(records[0], rules_fingerprint="other0000000")]
+    check("two bundles derive nothing, since no one version describes them",
+          hub.rules_version_from(mixed) is None, str(hub.rules_version_from(mixed)))
+    old = [{k: v for k, v in records[0].items() if k != "rules_fingerprint"}]
+    check("evidence predating the field derives nothing",
+          hub.rules_version_from(old) is None, str(hub.rules_version_from(old)))
+
+
+def test_the_preview_column_fits_a_bundle_digest():
+    records = [{"time": "2026-10-22T13:04:11+00:00", "patterns": ["GP-0001"],
+                "action": "blocked", "detail": {}}]
+    text = hub.preview_text(hub.build_sightings(records, "a-lab", "b34d9a7a88daa"))
+    rows = [l for l in text.splitlines() if "GP-0001" in l]
+    header = next(l for l in text.splitlines() if l.startswith("pattern"))
+    check("the digest is not truncated", "b34d9a7a88daa" in rows[0], rows[0])
+    check("the columns still line up",
+          rows[0].index("live") == header.index("source"),
+          f"{header!r} vs {rows[0]!r}")
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
