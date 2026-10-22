@@ -195,6 +195,39 @@ def test_a_broken_canary_file_is_loud_and_the_sensor_keeps_running():
         shutil.rmtree(w, ignore_errors=True)
 
 
+def test_a_refusal_does_not_say_which_rule_fired():
+    """The oracle. An attacker holding stolen credentials sends them one at a time and reads
+    the answers. If a canary match is distinguishable from any other refusal, they learn
+    which key is the fake one and exfiltrate the rest, which turns the canary into a filter
+    that helps them. Two distinguishable refusals are an oracle whatever the wording."""
+    w = tempfile.mkdtemp()
+    try:
+        canary_hit = session(w, [(SECRET, "staging payment key", canaries.ARMED)],
+                             f"deploy key is {SECRET} thanks")
+    finally:
+        shutil.rmtree(w, ignore_errors=True)
+    w = tempfile.mkdtemp()
+    try:
+        # A different rule entirely: a send to an address outside the allow-list, with no
+        # canary registered at all.
+        other = session(w, [], "ordinary text")
+    finally:
+        shutil.rmtree(w, ignore_errors=True)
+
+    from guardian_sensor.sensor import _refusal
+    check("a canary refusal names no rule",
+          "GP-0020" not in _refusal(["GP-0020"]), _refusal(["GP-0020"]))
+    check("every refusal is the same text",
+          _refusal(["GP-0020"]) == _refusal(["GP-0003"]) == _refusal(["GP-0002", "GP-0020"]),
+          "refusals differ by rule")
+    check("it points the operator at their own log",
+          "evidence log" in _refusal(["GP-0020"]), _refusal(["GP-0020"]))
+    check("the canary hit was still blocked", canary_hit["blocked"])
+    check("and still recorded in full locally",
+          gp0020(canary_hit)[0]["detail"].get("canary") == "staging payment key",
+          str(gp0020(canary_hit)))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

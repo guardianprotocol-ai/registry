@@ -40,6 +40,33 @@ DEFAULT_CONFIG = {
 }
 
 
+# One refusal, the same for every rule. Naming the rule that fired is an oracle: an attacker
+# holding a set of stolen credentials can send them one at a time and learn which are
+# registered canaries from the answers, then exfiltrate only the real ones. That turns a
+# canary into a filter that helps them.
+#
+# Naming every rule except canaries does not fix it, because then the unnamed answer is
+# itself the signal. Two distinguishable refusals are an oracle whatever the wording, so
+# there is one.
+#
+# The cost is that a developer whose legitimate work is blocked is not told why in the
+# response. They are told where to look, and the reason is already there in full, on their
+# own machine, with the tool name and the matching detail. That is a better trade than
+# telling an adversary which of their stolen keys is the fake one.
+REFUSAL = ("Blocked by Guardian sensor. This action was stopped by local policy. "
+           "The reason, including which rule matched, is recorded in this machine's "
+           "Guardian evidence log.")
+
+
+def _refusal(hits):
+    """What the agent is told when a call is refused. The same for every rule, deliberately.
+
+    `hits` is accepted and not used, so that a future change has to delete this argument on
+    purpose rather than discover that varying the response by rule is an oracle.
+    """
+    return REFUSAL
+
+
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
@@ -143,8 +170,7 @@ class Sensor:
             return None
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "isError": True,
-            "content": [{"type": "text", "text": f"Blocked by Guardian sensor ({', '.join(sorted(set(hits)))}). "
-                                                 "This action was stopped because it matches a known attack pattern."}]}}
+            "content": [{"type": "text", "text": _refusal(hits)}]}}
 
     # ---------- server -> client ----------
     def inspect_response(self, msg):

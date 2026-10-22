@@ -131,6 +131,10 @@ def handle_pre(payload, cfg, store):
     record(cfg, ids, "blocked" if blocking else "flagged", detail)
     if not blocking:
         return None
+    # Naming the rule here is safe today because this hook implements no detection whose
+    # trigger is itself a secret. If registered canaries (GP-0020) are ever added to it, this
+    # reason has to become uniform across rules the way the sensor's is, or the response
+    # becomes an oracle telling an attacker which of their stolen credentials is the fake.
     return {"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "deny",

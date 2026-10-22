@@ -78,6 +78,14 @@ an intruder read customer environment variables directly, with no agent involved
 and nothing here would have fired. What it would catch is the next step: an agent that has
 been handed one of those credentials passing it onward.
 
+A refusal does not say which rule fired. That is deliberate and it costs something: a
+developer whose legitimate work is blocked has to read the evidence log to learn why, rather
+than being told in the response. The reason is that an attacker holding a set of stolen
+credentials can send them one at a time and read the answers, and if a canary match looks
+different from any other refusal they learn which key is the fake one and take the rest. So
+every refusal is identical, and the full reason is recorded locally where only the operator
+sees it.
+
 It is also not checked on tool output. A canary coming back from a file read means the agent
 now holds the value, which is a different event from the agent sending it, and recording
 both under one pattern would make the evidence ambiguous about which happened.
