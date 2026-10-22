@@ -248,6 +248,7 @@ def pump(src, dst, handler, sensor, reply_to=None):
 HUB_COMMANDS = ("report", "update")
 DRILL_COMMAND = "drill"
 CANARY_COMMAND = "canary"
+AGENDA_COMMAND = "agenda"
 
 
 def main(argv=None):
@@ -261,6 +262,9 @@ def main(argv=None):
     if args[:1] == [CANARY_COMMAND]:
         from . import canary_cli
         return canary_cli.main(args[1:])
+    if args[:1] == [AGENDA_COMMAND]:
+        from . import agenda
+        return agenda.main(args[1:])
 
     ap = argparse.ArgumentParser(prog="guardian_sensor")
     ap.add_argument("--config", default=None)

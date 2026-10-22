@@ -163,6 +163,36 @@ The number is the adoption step only, with the rule already in hand. It leaves o
 else seeing the attack first and the report reaching you, which is what the exchange is for
 and what is still unmeasured. The command says so itself rather than leaving it to a reader.
 
+## Taking part in a scheduled exercise
+
+Install once, leave it running, and the exercise happens without you being available for it.
+
+```bash
+python3 -m guardian_sensor agenda --base https://guardianprotocol.network/season1 --org <your-member-id>
+```
+
+Safe to run hourly from cron or launchd. It fetches a published agenda, runs the local drill
+once when its time has come, and does nothing the rest of the time. A missing agenda is the
+ordinary case between exercises and is quiet on purpose.
+
+```
+0 * * * * cd ~/guardian && python3 -m guardian_sensor agenda \
+            --base https://guardianprotocol.network/season1 --org <your-member-id>
+```
+
+**The agenda says when, never what.** The action is fixed in the installed code and is the
+same local drill you can run by hand. A document carrying any other field is refused rather
+than ignored. So the worst anyone could do by taking over the publishing point is make your
+machine run an exercise you already installed, against a lab server on your own machine, which
+shares nothing.
+
+That boundary is the reason this is a static file instead of a service, and it is specified
+in `spec/agenda-1.md`. A channel that could invoke arbitrary actions on participants'
+machines would be a botnet whoever was running it, and it would have to be removed before
+production, so whatever it proved would not be what shipped.
+
+Nothing is shared by this. Building and sending a report stays a separate, deliberate act.
+
 ## Sharing hub, reference implementation
 
 `python3 -m guardian_sensor report --preview` and `python3 -m guardian_sensor update` are the
