@@ -76,10 +76,10 @@ def exercises():
     )
 
 
-def run_once(workdir, config_path, python=None):
+def run_once(workdir, config_path, python=None, extra_env=None):
     """Drive one protected session. Returns the sensor's stderr log."""
     python = python or sys.executable
-    env = {**os.environ,
+    env = {**os.environ, **(extra_env or {}),
            "GUARDIAN_SINK": os.path.join(workdir, "sinkhole.jsonl"),
            "GUARDIAN_TAMPER": "",
            # A tool appears on the second listing. The approved set is whatever the first
@@ -167,6 +167,96 @@ def summarize(records):
     return [(pid, reason, pid in seen) for pid, reason in exercises()]
 
 
+# The signature the response drill withholds and then restores. It has to be one that is the
+# only thing catching its attack, or the attack is stopped either way and the two runs do not
+# differ. The lab server's usual injected page trips four separate signatures, so a novel
+# phrasing was written for this, along with the one rule that catches it.
+WITHHELD_RULE = "prior-to-output-attach"
+
+
+def rules_without(signature_id, dest):
+    """Write a rule bundle with one instruction signature removed.
+
+    This is not a weakened sensor pretending to be a current one. It is what an operator
+    genuinely has before a rule reaches them, which is the state every participant is in for
+    some window after an attack is first seen somewhere else.
+
+    An entry is dropped from the instruction list rather than a whole key being deleted,
+    because the engine reads several keys by name at import and losing one stops the sensor
+    starting at all. A missing list entry is what an older bundle actually looks like.
+    """
+    from . import rules as rules_module
+    with open(rules_module.SIGNATURES_PATH, encoding="utf-8") as f:
+        bundle = json.load(f)
+    before = len(bundle.get("instruction", []))
+    bundle["instruction"] = [e for e in bundle.get("instruction", [])
+                             if e.get("id") != signature_id]
+    with open(dest, "w", encoding="utf-8") as f:
+        json.dump(bundle, f, indent=2, ensure_ascii=True)
+    return len(bundle["instruction"]) < before
+
+
+def exfiltration_blocked(records):
+    """Whether the unrequested send was stopped.
+
+    GP-0001 fires only when a tool result carried instructions and a send then went
+    somewhere outside the allow-list. With the signature withheld the page is not recognized
+    as carrying instructions, nothing is tainted, and the send is allowed. So this is a
+    difference in whether the attack was stopped, not in whether it was annotated.
+    """
+    return any("GP-0001" in r.get("patterns", []) for r in records)
+
+
+def respond(workdir, org, out, python=None):
+    """Measure what adopting a rule buys, on this machine, in both directions.
+
+    Two sessions against the same attack. The first runs the rules the operator has before
+    the update and lets the attack through. The second runs the rules after it and stops it.
+    The elapsed time between them is time to protection for a single participant, which is
+    the quantity the whole exchange exists to minimize and the one nothing had measured.
+    """
+    before_dir = os.path.join(workdir, "before")
+    after_dir = os.path.join(workdir, "after")
+    for d in (before_dir, after_dir):
+        os.makedirs(d, exist_ok=True)
+
+    stale = os.path.join(workdir, "rules-before-update.json")
+    if not rules_without(WITHHELD_RULE, stale):
+        out.write("Cannot run the response drill: the signature it withholds, %s, is not in "
+                  "this rule set.\n" % WITHHELD_RULE)
+        return None
+
+    out.write("\nResponse drill. The same attack twice, with a rule update in between.\n\n")
+
+    started = time.time()
+    run_once(before_dir, write_config(before_dir), python,
+             extra_env={"GUARDIAN_SIGNATURES": stale, "GUARDIAN_NOVEL": "1"})
+    caught_before = exfiltration_blocked(read_evidence(before_dir))
+    out.write("  before the update   GP-0001  %s\n"
+              % ("blocked" if caught_before else "got through"))
+
+    run_once(after_dir, write_config(after_dir), python,
+             extra_env={"GUARDIAN_NOVEL": "1"})
+    caught_after = exfiltration_blocked(read_evidence(after_dir))
+    elapsed = time.time() - started
+    out.write("  after the update    GP-0001  %s\n"
+              % ("blocked" if caught_after else "got through"))
+
+    if caught_before or not caught_after:
+        out.write("\nThis proves nothing. The two runs have to differ, and they did not: "
+                  "the attack must get\nthrough before the update and be stopped after it. "
+                  "Something is wrong with the drill\nrather than with the sensor.\n")
+        return None
+
+    out.write("\nThe attack got through, a rule arrived, and the same attack was stopped. "
+              "%.1f seconds\non one machine, with no human in the loop.\n" % elapsed)
+    out.write("\nThat number is not time to protection for a network. It is the adoption "
+              "step only, with the\nrule already in hand. The parts it leaves out, somebody "
+              "else seeing the attack first and the\nreport reaching you, are what the "
+              "exchange is for and what is still unmeasured.\n")
+    return elapsed
+
+
 def main(argv=None, out=sys.stdout):
     import argparse
     ap = argparse.ArgumentParser(
@@ -179,6 +269,9 @@ def main(argv=None, out=sys.stdout):
     ap.add_argument("--mode", default="block", choices=("block", "monitor"))
     ap.add_argument("--keep", action="store_true",
                     help="keep the evidence file rather than starting clean")
+    ap.add_argument("--respond", action="store_true",
+                    help="also run the same attack before and after a rule update, and time "
+                         "the difference")
     a = ap.parse_args([] if argv is None else argv)
 
     workdir = os.path.abspath(a.dir)
@@ -225,6 +318,10 @@ def main(argv=None, out=sys.stdout):
                   "around. Missed: %s.\nThe sensor's own log follows.\n\n%s\n"
                   % (", ".join(missed), log.strip()))
         return 1
+
+    if a.respond:
+        if respond(workdir, a.org, out) is None:
+            return 1
 
     out.write("\nEvidence is in %s. Nothing has been shared.\n" % os.path.join(a.dir, "evidence.jsonl"))
     out.write("\nTo see exactly what would be shared, and share nothing:\n")

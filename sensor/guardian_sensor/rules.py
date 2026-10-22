@@ -17,7 +17,14 @@ import re
 # checks over them. Changing what the sensor looks for means changing that file, which the
 # rule lint (scripts/lint_rules.py) and the rule gate (scripts/rule_gate.py) check.
 
-SIGNATURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "signatures.json")
+# A sensor runs as its own process for one session, so the rule set is chosen once at
+# startup and never changes underneath a running session. GUARDIAN_SIGNATURES points at a
+# verified bundle on disk, which is how an operator runs rules newer than their install
+# without replacing it, and how the response drill measures the before and after of
+# adopting one. It is a path to data, not a way to author rules: nothing in the file can
+# execute, and the checks that read it are still the fixed ones in this module.
+SIGNATURES_PATH = (os.environ.get("GUARDIAN_SIGNATURES")
+                   or os.path.join(os.path.dirname(os.path.abspath(__file__)), "signatures.json"))
 
 _FLAGS = {"i": re.I, "s": re.S}
 

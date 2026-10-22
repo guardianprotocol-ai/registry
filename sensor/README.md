@@ -75,6 +75,31 @@ count an exercise you ran on yourself as a real incident. See decision 21.
 Pick a member id that is not your company name. It is a pseudonym and it is the only
 identifier that travels with your sightings.
 
+### The response half
+
+```bash
+python3 -m guardian_sensor drill --org <your-member-id> --respond
+```
+
+Runs the same attack twice, with a rule update in between.
+
+```
+  before the update   GP-0001  got through
+  after the update    GP-0001  blocked
+
+The attack got through, a rule arrived, and the same attack was stopped. 0.2 seconds
+on one machine, with no human in the loop.
+```
+
+The attack is a phrasing that no signature caught until one was written for it, so the
+first run is a sensor that genuinely does not know the attack rather than one weakened to
+look that way. The difference is in whether the send was blocked, not in whether it was
+annotated.
+
+The number is the adoption step only, with the rule already in hand. It leaves out somebody
+else seeing the attack first and the report reaching you, which is what the exchange is for
+and what is still unmeasured. The command says so itself rather than leaving it to a reader.
+
 ## Sharing hub, reference implementation
 
 `python3 -m guardian_sensor report --preview` and `python3 -m guardian_sensor update` are the

@@ -22,7 +22,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 7 |
 
-The benign corpus holds 15 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
+The benign corpus holds 18 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
 
 ## What the columns mean
 

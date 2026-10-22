@@ -66,6 +66,11 @@
       "id": "call-repeatedly",
       "pattern": "\\bcall \\w+ (again|repeatedly|\\d+ times)\\b",
       "flags": "is"
+    },
+    {
+      "id": "prior-to-output-attach",
+      "flags": "is",
+      "pattern": "\\b(prior to|ahead of) (producing|generating|returning|sending) \\w+\\b[^.]{0,80}\\b(attach|append|copy|relay|include)\\b[^.]{0,60}(contents of|notes\\.txt|credential|secret|api[ _-]?key|token|password|environment (file|variable)|\\.env)"
     }
   ],
   "bias": [
