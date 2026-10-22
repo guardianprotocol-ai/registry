@@ -100,9 +100,11 @@ def parse(document):
     extra = sorted(set(document) - set(ALLOWED_KEYS))
     if extra:
         raise hub.HubError(
-            "the agenda carries %s, which this sensor does not understand. An agenda may say "
-            "when to run a local exercise and nothing else, so an unknown key is refused "
-            "rather than ignored." % ", ".join(extra))
+            "the agenda carries %s, which this sensor does not understand. Either this sensor "
+            "is older than the agenda, in which case update it and the exercise will run on "
+            "the next poll, or the agenda is asking for something this sensor does not offer. "
+            "An unknown key is refused rather than ignored, because ignoring one means a "
+            "later version would obey what this one dropped." % ", ".join(extra))
     missing = sorted({"exercise_id", "run_after"} - set(document))
     if missing:
         raise hub.HubError("the agenda is missing %s" % ", ".join(missing))

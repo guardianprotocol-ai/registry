@@ -14,16 +14,21 @@ cd registry/sensor
 python3 -m guardian_sensor drill --org <your-member-id>
 ```
 
-That runs the drill by hand and proves it works. Then the one line that makes them a
-participant, in `crontab -e`:
+That runs the drill by hand and proves it works. Then one command to take part:
 
-```
-0 * * * * cd ~/registry/sensor && python3 -m guardian_sensor agenda \
-            --base https://guardianprotocol.network/season1 --org <your-member-id>
+```bash
+python3 -m guardian_sensor enroll \
+  --base https://guardianprotocol.network/season1 --org <your-member-id>
 ```
 
-Hourly. It does nothing until there is an exercise due, runs it once when there is, and never
-shares anything. That is the whole installation.
+It prints the service it is about to install, writes it, starts it, and confirms it is
+running. After that the participant does nothing, ever. The service polls every sixty
+seconds, runs an exercise once when one is due, and shares nothing.
+
+Add `--print-only` to see the service and install nothing. Stop at any time with `--remove`.
+
+Everything it writes stays in `~/.guardian`, never in the repository, so updating the code
+never touches a participant's records.
 
 A member id is a pseudonym they choose. Never a company name.
 

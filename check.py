@@ -31,6 +31,7 @@ CHECKS = [
     ("Fire drill tests", "sensor", ["tests/test_drill.py"]),
     ("Registered canary tests", "sensor", ["tests/test_canaries.py"]),
     ("Scheduled agenda tests", "sensor", ["tests/test_agenda.py"]),
+    ("Enrolment tests", "sensor", ["tests/test_enroll.py"]),
     ("Registered canaries end to end", "sensor", ["tests/test_canary_sensor.py"]),
     ("Sightings spec conformance", ".", ["spec/tests/test_conformance.py"]),
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
