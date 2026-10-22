@@ -225,7 +225,17 @@ def test_an_exercise_in_the_future_does_not_run():
         code = agenda.main(["--base", "https://x.test", "--log", os.path.join(w, "a.jsonl")],
                            out=out, opener=Fake(due(run_after="2099-01-01T00:00:00Z")))
         check("it waits", code == 0 and "has not come yet" in out.getvalue(), out.getvalue())
-        check("and nothing is logged", not os.path.exists(os.path.join(w, "a.jsonl")))
+        # One heartbeat, so there is proof of life, and nothing more.
+        log = os.path.join(w, "a.jsonl")
+        check("a sign of life is recorded", os.path.exists(log))
+        check("recorded as waiting, not as a run", '"outcome": "waiting"' in open(log).read(),
+              open(log).read())
+        quiet = io.StringIO()
+        agenda.main(["--base", "https://x.test", "--log", log], out=quiet,
+                    opener=Fake(due(run_after="2099-01-01T00:00:00Z")))
+        check("the next poll says nothing at all", quiet.getvalue() == "", repr(quiet.getvalue()))
+        check("and writes nothing more", len(open(log).read().strip().splitlines()) == 1,
+              open(log).read())
 
 
 def test_an_exercise_runs_once_however_often_this_is_polled():
@@ -243,9 +253,11 @@ def test_an_exercise_runs_once_however_often_this_is_polled():
         for n in range(3):
             again = io.StringIO()
             agenda.main(args, out=again, opener=Fake(due()))
-            check(f"poll {n + 2} does nothing", "already run here" in again.getvalue(),
-                  again.getvalue())
-        check("the log holds one record", len(open(log).read().strip().splitlines()) == 1,
+            check(f"poll {n + 2} runs nothing", "3 of 3" not in again.getvalue(),
+                  again.getvalue()[:160])
+            check(f"poll {n + 2} is silent", again.getvalue() == "", repr(again.getvalue()))
+        check("the log still holds one run",
+              len([l for l in open(log).read().splitlines() if '"ran"' in l]) == 1,
               open(log).read())
 
 
@@ -268,9 +280,18 @@ def test_a_missing_agenda_is_quiet():
         out = io.StringIO()
         code = agenda.main(["--base", "https://x.test", "--log", os.path.join(w, "a.jsonl")],
                            out=out, opener=Fake(error=OSError("404")))
+        log = os.path.join(w, "a.jsonl")
         check("a missing agenda exits clean", code == 0, str(code))
-        check("and says so briefly", "no agenda at" in out.getvalue(), out.getvalue())
-        check("and writes nothing", not os.path.exists(os.path.join(w, "a.jsonl")))
+        check("the first one says so", "no agenda at" in out.getvalue(), out.getvalue())
+        check("and leaves one sign of life", os.path.exists(log))
+        # Polling every sixty seconds for a month is forty three thousand polls. A line each
+        # would be two megabytes of "nothing happened" per participant, with the one line
+        # that matters buried in it.
+        quiet = io.StringIO()
+        agenda.main(["--base", "https://x.test", "--log", log], out=quiet,
+                    opener=Fake(error=OSError("404")))
+        check("and every poll after that is silent", quiet.getvalue() == "",
+              repr(quiet.getvalue()))
 
 
 def test_dry_run_changes_nothing():
@@ -291,6 +312,34 @@ def test_it_fetches_the_agenda_from_the_expected_place():
                     out=io.StringIO(), opener=fake)
     check("a trailing slash does not double up",
           fake.urls == ["https://x.test/season1/agenda.json"], str(fake.urls))
+
+
+def test_a_waiting_record_is_not_mistaken_for_a_run():
+    """Heartbeats and runs share a log. If a heartbeat counted as a run, an exercise would
+    be skipped on the strength of the machine having been alive."""
+    with tempfile.TemporaryDirectory() as w:
+        log = os.path.join(w, "a.jsonl")
+        agenda.record(log, "season1-drill-a", "waiting", "scheduled")
+        check("a waiting record does not count as a run",
+              not agenda.already_ran(log, "season1-drill-a"))
+        agenda.record(log, "season1-drill-a", "ran", "drill exit 0")
+        check("a run does", agenda.already_ran(log, "season1-drill-a"))
+
+
+def test_the_heartbeat_is_at_most_daily():
+    with tempfile.TemporaryDirectory() as w:
+        log = os.path.join(w, "a.jsonl")
+        at = datetime.datetime(2026, 10, 27, 12, 0, tzinfo=UTC)
+        check("with no log at all, one is due", agenda.heartbeat_due(log, at))
+        agenda.record(log, "", "waiting", "no agenda")
+        later = datetime.datetime.now(UTC) + datetime.timedelta(hours=1)
+        check("an hour later, none is due", not agenda.heartbeat_due(log, later))
+        much_later = datetime.datetime.now(UTC) + datetime.timedelta(hours=25)
+        check("a day later, one is due", agenda.heartbeat_due(log, much_later))
+        with open(log, "w", encoding="utf-8") as f:
+            f.write("not json\n")
+        check("an unreadable log does not suppress the heartbeat",
+              agenda.heartbeat_due(log, at))
 
 
 def main():

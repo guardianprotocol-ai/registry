@@ -179,6 +179,10 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
               % (a.base.rstrip("/") + "/agenda.json", a.interval))
     out.write("Everything it writes stays in %s, not in the repository, so updating the "
               "code\nnever touches your records.\n" % work_dir)
+    # The service points at this checkout. Moving it is the one thing a participant can do
+    # that breaks participation silently, since the failure lands in a log nobody reads.
+    out.write("\nIt runs the code in %s. If you move or delete that, this stops working and\n"
+              "will not tell you, so run enroll again afterwards.\n" % module_dir)
     out.write("Stop at any time with: python3 -m guardian_sensor enroll --remove "
               "--base %s\n\n" % a.base)
 

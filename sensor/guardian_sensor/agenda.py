@@ -169,7 +169,8 @@ def already_ran(log_path, exercise_id):
                     record = json.loads(line)
                 except ValueError:
                     continue
-                if record.get("exercise_id") == exercise_id:
+                if (record.get("exercise_id") == exercise_id
+                        and record.get("outcome") in ("ran", "failed")):
                     return True
     except OSError:
         return False
@@ -186,6 +187,57 @@ def record(log_path, exercise_id, outcome, detail="", settings=None):
 
 def _now():
     return datetime.datetime.now(datetime.timezone.utc)
+
+
+# How often a quiet poll leaves any trace. Polling every sixty seconds for a month is about
+# forty three thousand polls, and a line each would be two megabytes of "nothing happened"
+# per participant, with the one line that matters buried in it. So a quiet poll is silent,
+# and a heartbeat is recorded once a day instead: enough to prove the machine is alive,
+# little enough that the log stays readable.
+HEARTBEAT_HOURS = 24
+
+
+def last_record(log_path):
+    """The most recent record in the log, or None."""
+    found = None
+    try:
+        with open(log_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    found = json.loads(line)
+                except ValueError:
+                    continue
+    except OSError:
+        return None
+    return found
+
+
+def heartbeat_due(log_path, at):
+    """Whether it is time to leave a sign of life."""
+    previous = last_record(log_path)
+    if previous is None:
+        return True
+    try:
+        when = datetime.datetime.fromisoformat(previous["time"])
+    except (KeyError, TypeError, ValueError):
+        return True
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    return (at - when) >= datetime.timedelta(hours=HEARTBEAT_HOURS)
+
+
+def module_is_present():
+    """Whether the code this service points at is still where it was installed from.
+
+    A participant who moves or deletes their clone after enrolling would otherwise have a
+    service that fails every minute forever while they believe they are taking part. The
+    import having worked is the check: this function only exists to be called from a place
+    that can say so usefully.
+    """
+    return os.path.isdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def main(argv=None, out=sys.stdout, opener=None, now=None):
@@ -206,10 +258,12 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
     try:
         document = json.loads(_fetch(url, opener).decode("utf-8"))
     except Exception as e:
-        # A missing or unreachable agenda is the ordinary case between exercises. Quiet on
-        # purpose, because this runs hourly and a cron job that emails on every poll gets
-        # turned off within a week.
-        out.write("no agenda at %s (%s)\n" % (url, type(e).__name__))
+        # A missing or unreachable agenda is the ordinary case between exercises, so a quiet
+        # poll says nothing at all. A service that narrates every minute buries the one line
+        # that matters and fills a participant's disk with it.
+        if heartbeat_due(a.log, at):
+            record(a.log, "", "waiting", "no agenda at %s (%s)" % (url, type(e).__name__))
+            out.write("no agenda at %s (%s). Waiting.\n" % (url, type(e).__name__))
         return 0
 
     try:
@@ -230,11 +284,16 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
         return 1
 
     if at < run_after:
-        out.write("exercise %s is scheduled for %s, which has not come yet.\n"
-                  % (exercise_id, run_after.isoformat(timespec="seconds")))
+        if heartbeat_due(a.log, at):
+            record(a.log, exercise_id, "waiting",
+                   "scheduled for %s" % run_after.isoformat(timespec="seconds"))
+            out.write("exercise %s is scheduled for %s, which has not come yet.\n"
+                      % (exercise_id, run_after.isoformat(timespec="seconds")))
         return 0
     if already_ran(a.log, exercise_id):
-        out.write("exercise %s has already run here. Nothing to do.\n" % exercise_id)
+        if heartbeat_due(a.log, at):
+            record(a.log, exercise_id, "waiting", "already run here")
+            out.write("exercise %s has already run here. Nothing to do.\n" % exercise_id)
         return 0
 
     described = ", ".join("%s=%s" % (k, v) for k, v in sorted(settings.items())) or "defaults"
