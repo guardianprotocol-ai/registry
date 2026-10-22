@@ -41,6 +41,21 @@ if [ -z "$RUNTIME" ]; then
 fi
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# A container runtime on macOS shares the home directory and usually not much else. A
+# repository outside it mounts as an empty directory, and the failure is an OCI runtime error
+# about a read-only filesystem that says nothing about the real cause. Checked here so the
+# message is about the cause.
+case "$REPO" in
+  "$HOME"/*) ;;
+  *)
+    echo "This repository is at $REPO, outside $HOME." >&2
+    echo "A container runtime here shares the home directory and not that path, so every" >&2
+    echo "node would mount an empty directory and fail with an unhelpful runtime error." >&2
+    echo "Run the rehearsal from a clone under your home directory." >&2
+    exit 1
+    ;;
+esac
 echo "runtime:  $RUNTIME"
 echo "image:    $IMAGE   (python 3.9, the oldest version supported)"
 echo "nodes:    $NODES"
