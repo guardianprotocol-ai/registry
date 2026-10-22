@@ -138,6 +138,20 @@ can make a participant's machine run, at most, a local exercise that participant
 consented to, against a lab server on their own machine, which shares nothing. They cannot
 cause any other action, because no other action is expressible in the format.
 
+## Clocks
+
+A sighting carries the hour a detection fell in, taken from the participant's own clock. A
+machine that has been asleep and drifted puts its detections in the wrong hour, which
+silently corrupts any measurement taken across machines.
+
+Nothing in this format can correct somebody's clock. An implementation should compare its own
+time against the `Date` header the publishing point returns, say so when the difference is
+more than half an hour, and record the difference beside the run. A study measuring time
+across machines has to know which readings are unreliable, and the server it just spoke to
+reports its own time for free.
+
+A drifted clock is not a reason to refuse an exercise. It is a reason to know.
+
 ## Not in this version
 
 No signature. The agenda is fetched over HTTPS and its shape is checked, which means a

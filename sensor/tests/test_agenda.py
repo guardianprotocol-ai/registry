@@ -466,6 +466,71 @@ def test_offline_or_a_base_is_required():
     check("and both are offered", "--offline" in out.getvalue(), out.getvalue())
 
 
+def test_a_drifted_clock_is_noticed_and_said_out_loud():
+    """A sighting's hour comes from the participant's clock. A laptop that has been asleep
+    and drifted puts its detections in the wrong hour bucket, which silently corrupts a
+    measurement taken across machines. Nothing here can fix somebody's clock, but the server
+    it just spoke to reports its own time for free."""
+    import email.utils
+
+    class Dated:
+        def __init__(self, offset_seconds):
+            self.offset = offset_seconds
+
+        def __call__(self, url, timeout=None):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        @property
+        def headers(self):
+            served = datetime.datetime.now(UTC) - datetime.timedelta(seconds=self.offset)
+            return {"Date": email.utils.format_datetime(served)}
+
+        def read(self):
+            return json.dumps(due()).encode("utf-8")
+
+    for offset, expect in ((3 * 3600, "ahead of"), (-3 * 3600, "behind")):
+        with tempfile.TemporaryDirectory() as w:
+            out = io.StringIO()
+            agenda.main(["--base", "https://x.test", "--log", os.path.join(w, "a.jsonl"),
+                         "--dir", os.path.join(w, "d"), "--org", "a-lab"],
+                        out=out, opener=Dated(offset))
+            text = out.getvalue()
+            check(f"a clock {expect} the server is reported", expect in text, text[:400])
+            check("and the consequence is named",
+                  "land in the wrong hour" in text, text[:400])
+            check("the exercise still runs, since a bad clock is not a reason to stop",
+                  "3 of 3" in text, text[-200:])
+            detail = json.loads(open(os.path.join(w, "a.jsonl")).read().strip())["detail"]
+            check("the skew is recorded with the run", "clock skew" in detail, detail)
+
+    with tempfile.TemporaryDirectory() as w:
+        out = io.StringIO()
+        agenda.main(["--base", "https://x.test", "--log", os.path.join(w, "a.jsonl"),
+                     "--dir", os.path.join(w, "d"), "--org", "a-lab"],
+                    out=out, opener=Dated(60))
+        check("a minute of drift says nothing, since an hour is the finest time carried",
+              "wrong hour" not in out.getvalue(), out.getvalue()[:300])
+
+
+def test_a_server_that_reports_no_time_is_not_a_problem():
+    """Most do, some do not, and a missing header is not worth refusing over."""
+    with tempfile.TemporaryDirectory() as w:
+        out = io.StringIO()
+        code = agenda.main(["--base", "https://x.test", "--log", os.path.join(w, "a.jsonl"),
+                            "--dir", os.path.join(w, "d"), "--org", "a-lab"],
+                           out=out, opener=Fake(due()))
+        check("it still runs", code == 0 and "3 of 3" in out.getvalue(),
+              out.getvalue()[-200:])
+        check("and says nothing about a clock it could not check",
+              "wrong hour" not in out.getvalue(), out.getvalue()[:300])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

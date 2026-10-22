@@ -21,6 +21,7 @@ Run from cron or launchd, hourly. Python 3.9+ standard library only.
 """
 import argparse
 import datetime
+import email.utils
 import json
 import os
 import sys
@@ -121,9 +122,34 @@ class _OnlyOne:
 
 
 def _fetch(url, opener=None):
+    """Fetch the agenda, and the publishing point's own clock if it offers one.
+
+    Returns (body, skew_seconds_or_None). A sighting's hour comes from the participant's
+    clock, so a machine that has been asleep and drifted puts its detections in the wrong
+    hour bucket. Nothing here can correct somebody's clock, but a study measuring time across
+    machines has to know when a reading is unreliable, and the server it just spoke to
+    reports its own time for free.
+    """
     opener = opener or urllib.request.urlopen
     with opener(url, timeout=30) as response:
-        return response.read()
+        body = response.read()
+        skew = None
+        try:
+            served = response.headers.get("Date")
+            if served:
+                when = email.utils.parsedate_to_datetime(served)
+                if when.tzinfo is None:
+                    when = when.replace(tzinfo=datetime.timezone.utc)
+                skew = (datetime.datetime.now(datetime.timezone.utc) - when).total_seconds()
+        except (AttributeError, TypeError, ValueError):
+            skew = None
+        return body, skew
+
+
+# How far a clock may drift before an hour bucket stops meaning anything. An hour is the
+# finest granularity a sighting carries, so half of one is where a reading starts landing in
+# the wrong bucket.
+SKEW_LIMIT_SECONDS = 1800
 
 
 def parse_settings(raw):
@@ -383,8 +409,10 @@ def _poll(a, at, out, opener):
     if a.offline:
         return _offline(a, at, out)
     url = a.base.rstrip("/") + "/" + AGENDA_NAME
+    skew = None
     try:
-        document = json.loads(_fetch(url, opener).decode("utf-8"))
+        body, skew = _fetch(url, opener)
+        document = json.loads(body.decode("utf-8"))
     except Exception as e:
         # A missing or unreachable agenda is the ordinary case between exercises, so a quiet
         # poll says nothing at all. A service that narrates every minute buries the one line
@@ -435,6 +463,13 @@ def _poll(a, at, out, opener):
 
     out.write("Running exercise %s, published for %s.\n"
               % (exercise_id, run_after.isoformat(timespec="seconds")))
+    # Said out loud, because a participant can fix their clock and nobody else can, and
+    # because a reading from a drifted machine should not be quietly averaged with the rest.
+    if skew is not None and abs(skew) > SKEW_LIMIT_SECONDS:
+        out.write("This machine's clock is %d minutes %s the publishing point. An hour is "
+                  "the finest\ntime a sighting carries, so this run will land in the wrong "
+                  "hour. Worth fixing.\n"
+                  % (abs(skew) / 60, "ahead of" if skew > 0 else "behind"))
     # Printed every run. An operator should be able to see which permutation their machine
     # took part in without reading a log, and a participant should be able to see what was
     # asked of their machine without reading our source.
@@ -450,7 +485,10 @@ def _poll(a, at, out, opener):
     if settings.get("protected") is False:
         argv_for_drill.append("--unprotected")
     code = drill.main(argv_for_drill, out=out)
-    record(a.log, exercise_id, "ran" if code == 0 else "failed", "drill exit %d" % code,
+    if skew is not None:
+        settings = dict(settings)
+    record(a.log, exercise_id, "ran" if code == 0 else "failed",
+           "drill exit %d%s" % (code, "" if skew is None else ", clock skew %ds" % round(skew)),
            settings=settings)
 
     out.write("\nRecorded in %s. Nothing has been shared: build and read a report when you "
