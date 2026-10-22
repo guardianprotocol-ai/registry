@@ -64,15 +64,28 @@ What a hit reports is the label and the state. Never the value, not in the evide
 a log line, not in an error.
 
 Where to place one: a credential nothing legitimate uses, a file nothing should read, a row
-no query should return. The Railway disclosure of October 2026 is the shape of the case this
-is for, where customers learned their keys were taken from an announcement rather than from
-their own instrumentation.
+no query should return.
 
-Known limits, stated because they matter when choosing a value. Matching is on whole tokens,
-so a value spliced into a longer run of characters or re-encoded on the way out is not found:
-this catches a credential being passed on, not one being smuggled. Matching is case
-sensitive, as credentials are. Values shorter than twelve characters, and values containing
-spaces, are refused rather than silently never matched.
+### What this does not cover
+
+Worth being exact, because the obvious overclaim is easy to make.
+
+**This fires when an agent passes a registered value into a tool call.** It is checked on
+outbound arguments, before the call is forwarded, because after that the value has gone.
+
+So it does not detect a platform being breached. In the Railway disclosure of October 2026
+an intruder read customer environment variables directly, with no agent involved anywhere,
+and nothing here would have fired. What it would catch is the next step: an agent that has
+been handed one of those credentials passing it onward.
+
+It is also not checked on tool output. A canary coming back from a file read means the agent
+now holds the value, which is a different event from the agent sending it, and recording
+both under one pattern would make the evidence ambiguous about which happened.
+
+Matching is on whole tokens, so a value spliced into a longer run of characters or re-encoded
+on the way out is not found: this catches a credential being passed on, not one being
+smuggled. Matching is case sensitive, as credentials are. Values shorter than twelve
+characters, and values containing spaces, are refused rather than silently never matched.
 
 ## Fire drill
 

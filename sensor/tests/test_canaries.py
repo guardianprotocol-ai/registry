@@ -251,6 +251,56 @@ def test_list_arm_and_remove():
         check("the store is empty afterwards", canaries.load(path)["canaries"] == [])
 
 
+def test_hit_counts_come_from_the_evidence_log():
+    """A counter that always reads zero would have an operator arm a canary that had been
+    firing all week, which is the opposite of what the baseline period is for."""
+    with tempfile.TemporaryDirectory() as w:
+        path = os.path.join(w, "evidence.jsonl")
+        check("a missing evidence log counts nothing", canaries.hits_by_label(path) == {})
+        with open(path, "w", encoding="utf-8") as f:
+            for label in ("staging payment key", "staging payment key", "unused row"):
+                f.write(json.dumps({"patterns": ["GP-0020"], "action": "flagged",
+                                    "detail": {"canary": label}}) + "\n")
+            f.write(json.dumps({"patterns": ["GP-0002"], "action": "blocked",
+                                "detail": {"canary": "not a canary record"}}) + "\n")
+            f.write("\n")
+            f.write("not json at all\n")
+        counts = canaries.hits_by_label(path)
+        check("hits are counted per label",
+              counts == {"staging payment key": 2, "unused row": 1}, str(counts))
+        check("records for other patterns are not counted",
+              "not a canary record" not in counts, str(counts))
+
+
+def test_no_hit_counter_is_stored_in_the_canary_file():
+    """It would give the component holding the digests a write path on a hot code path."""
+    entry = canaries.add(fresh(), SECRET, "k")
+    check("the entry carries no counter", "hits" not in entry, str(entry))
+    check("it carries what a human needs", sorted(entry) == ["hash", "label", "state"],
+          str(sorted(entry)))
+
+
+def test_the_list_warns_when_a_baseline_canary_is_already_firing():
+    with tempfile.TemporaryDirectory() as w:
+        path, ev = os.path.join(w, "c.json"), os.path.join(w, "evidence.jsonl")
+        canary_cli.main(["add", "--label", "noisy", "--file", path],
+                        out=io.StringIO(), stream=io.StringIO(SECRET + "\n"))
+        canary_cli.main(["add", "--label", "quiet", "--file", path],
+                        out=io.StringIO(), stream=io.StringIO(OTHER + "\n"))
+        with open(ev, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"patterns": ["GP-0020"], "action": "flagged",
+                                "detail": {"canary": "noisy"}}) + "\n")
+        out = io.StringIO()
+        canary_cli.main(["list", "--file", path, "--evidence", ev], out=out)
+        text = out.getvalue()
+        check("the firing canary shows a real count", "noisy" in text and " 1" in text, text)
+        check("it is named as already firing", "already firing: noisy" in text, text)
+        check("and the operator is told to move it rather than arm it",
+              "Move the canary rather than arming it" in text, text)
+        check("the quiet one is named as ready to consider arming",
+              "quiet so far: quiet" in text, text)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

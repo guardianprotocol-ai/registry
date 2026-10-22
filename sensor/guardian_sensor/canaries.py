@@ -124,7 +124,12 @@ def add(store, value, label, state=BASELINE):
         if hmac.compare_digest(existing["hash"], digest):
             raise CanaryError("that value is already registered as %r" % existing["label"])
 
-    entry = {"label": label.strip(), "hash": digest, "state": state, "hits": 0}
+    # No hit counter is stored here. A count in this file would have to be written by the
+    # sensor on every detection, which means the component holding digests of the
+    # operator's secrets gains a write path on a hot code path, for a number that is already
+    # recorded in the evidence log. `hits_by_label` derives it from there instead, so there
+    # is one source of truth and this file stays something only the operator writes.
+    entry = {"label": label.strip(), "hash": digest, "state": state}
     store["canaries"].append(entry)
     return entry
 
@@ -166,6 +171,35 @@ def matches(store, text):
         if entry is not None and entry not in found:
             found.append(entry)
     return found
+
+
+def hits_by_label(evidence_path):
+    """How many times each canary has fired, read from the evidence log.
+
+    This is what the baseline period is for. An operator is told to watch a canary through a
+    few days of ordinary work and arm it if it never fires, so the count has to be real: a
+    counter that always reads zero would have them arm a canary that had been firing all
+    week, which is the opposite of what baseline is for.
+    """
+    counts = {}
+    try:
+        with open(evidence_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError:
+                    continue
+                if "GP-0020" not in record.get("patterns", []):
+                    continue
+                label = (record.get("detail") or {}).get("canary")
+                if label:
+                    counts[label] = counts.get(label, 0) + 1
+    except OSError:
+        return {}
+    return counts
 
 
 def redacted(entry):

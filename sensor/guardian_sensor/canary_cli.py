@@ -71,6 +71,8 @@ def add(argv, out=sys.stdout, stream=None):
 def list_(argv, out=sys.stdout):
     ap = argparse.ArgumentParser(prog="guardian_sensor canary list")
     ap.add_argument("--file", default=canaries.DEFAULT_PATH)
+    ap.add_argument("--evidence", default=os.path.join(".guardian", "evidence.jsonl"),
+                    help="where hit counts are read from")
     a = ap.parse_args(argv)
     store = canaries.load(a.file)
     rows = store.get("canaries", [])
@@ -78,11 +80,31 @@ def list_(argv, out=sys.stdout):
         out.write("No canaries registered. The sensor is watching for its own test tokens "
                   "only, not for\nanything of yours.\n")
         return 0
-    width = max(len(c["label"]) for c in rows)
+
+    hits = canaries.hits_by_label(a.evidence)
+    width = max(max(len(c["label"]) for c in rows), len("LABEL"))
     out.write("%-*s  %-9s %s\n" % (width, "LABEL", "STATE", "HITS"))
     for c in sorted(rows, key=lambda c: c["label"]):
-        out.write("%-*s  %-9s %s\n" % (width, c["label"], c["state"], c.get("hits", 0)))
+        out.write("%-*s  %-9s %s\n" % (width, c["label"], c["state"],
+                                        hits.get(c["label"], 0)))
     out.write("\nValues are stored as salted digests and are not recoverable from this file.\n")
+
+    # A canary that fires during its baseline is in the wrong place, and an operator reading
+    # a list of zeros would arm it. Saying so here is the difference between the baseline
+    # period working and being a formality.
+    fired = [c["label"] for c in rows
+             if c["state"] == canaries.BASELINE and hits.get(c["label"], 0)]
+    if fired:
+        out.write("\nStill in baseline and already firing: %s.\n"
+                  % ", ".join(sorted(fired)))
+        out.write("Something legitimate is touching those values. Move the canary rather "
+                  "than arming it.\n")
+    quiet = [c["label"] for c in rows
+             if c["state"] == canaries.BASELINE and not hits.get(c["label"], 0)]
+    if quiet:
+        out.write("\nIn baseline and quiet so far: %s.\n" % ", ".join(sorted(quiet)))
+        out.write("Arm one once a few days of ordinary work have gone by without it "
+                  "firing.\n")
     return 0
 
 
