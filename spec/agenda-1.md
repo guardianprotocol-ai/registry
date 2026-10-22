@@ -70,6 +70,24 @@ say.
 `exercise_id` names a file on disk, so it may not be a path and may not contain separators or
 whitespace.
 
+## Reaching some participants and not others
+
+There is no addressing in an agenda and there is deliberately no participant list anywhere.
+A document that named who should run what would need to know who the participants are, and
+the whole format is built so that nobody has to.
+
+Cohorts are done with separate agendas instead. An operator publishes more than one, at
+different paths, and each participant is told at install time which one to poll.
+
+```
+<base>/cohort-a/agenda.json     block mode
+<base>/cohort-b/agenda.json     monitor mode
+```
+
+So a split test is two files, and a participant can read the agenda they are polling and see
+exactly what their machine will be asked to do. Neither property survives a design where one
+document addresses many machines.
+
 ## Behaviour
 
 An implementation polls at an interval its operator chooses, and:
