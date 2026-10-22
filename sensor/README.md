@@ -32,11 +32,54 @@ claude mcp add files-guarded -- python3 /path/to/sensor/run.py --config /path/to
 
 Copy `guardian.example.json` to `guardian.json` and list the domains your agents may send data to. Set `"mode": "monitor"` to log without blocking.
 
+## Fire drill
+
+The fastest way to see the sensor work, and the way to join the exchange without waiting to
+be attacked.
+
+```bash
+python3 -m guardian_sensor drill --org <your-member-id>
+```
+
+A lab server runs locally and attacks you: a tool whose definition changes after you
+approved it, a tool that appears after approval, and a tool result carrying a canary that
+tries to leave. The sensor in front is yours, with your config, and every detection is real.
+It takes about a second.
+
+```
+GP-0003   a tool definition changes after the operator approved it       caught
+GP-0019   a tool appears on the server after approval                    caught
+GP-0002   a canary read from a local file tries to leave in a tool call  caught
+
+3 of 3 exercises caught in 0.3 seconds.
+```
+
+An exercise that does not fire prints `MISSED`, the command exits non-zero and the sensor's
+own log is printed underneath. A drill that reports a clean run while the sensor is broken
+would manufacture confidence, which is worse than having no drill.
+
+Nothing is shared. The drill writes to `.guardian/drill` and refuses to run in a directory
+holding a real `evidence.jsonl` or `pins.json`, because overwriting pins would reset your
+approval baseline and the next listing would re-approve whatever the server offered.
+
+Afterwards, to see what a sighting would look like and share nothing:
+
+```bash
+python3 -m guardian_sensor report --org <your-member-id> \
+  --evidence .guardian/drill/evidence.jsonl --preview
+```
+
+Drill detections are marked `source: drill` in every sighting, so nobody downstream can
+count an exercise you ran on yourself as a real incident. See decision 21.
+
+Pick a member id that is not your company name. It is a pseudonym and it is the only
+identifier that travels with your sightings.
+
 ## Sharing hub, reference implementation
 
 `python3 -m guardian_sensor report --preview` and `python3 -m guardian_sensor update` are the
 reference implementation of the sharing hub, used in the Season 2 distributed experiments.
-Nothing in Season 1 depends on them: a sightings file is built from an allow-list of seven
+Nothing in Season 1 depends on them: a sightings file is built from an allow-list of eight
 fields and leaves your machine only if you share it. See `ARCHITECTURE.md` for what v0 does
 and does not do.
 
@@ -45,6 +88,8 @@ and does not do.
 ```bash
 python3 tests/test_sensor.py
 python3 tests/test_rules.py
+python3 tests/test_pinning.py
+python3 tests/test_drill.py
 ```
 
 `test_rules.py` covers the draft rules GP-0004 to GP-0012 directly, each with an attack that must be caught and ordinary work that must not be. The benign half is the point: a rule that blocks real work gets turned off, and a rule that is turned off protects nobody.

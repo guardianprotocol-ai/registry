@@ -17,7 +17,11 @@ import json
 import os
 import re
 
-SCHEMA_VERSION = "0.1"
+# 0.2 adds `source`. Additive, so a 0.1 file is still a valid file and still reads: a
+# missing source means live. Bumped anyway, for the same reason the result schema was,
+# because a reader needs to be able to tell whether absence means live or means old.
+SCHEMA_VERSION = "0.2"
+READABLE_SCHEMA_VERSIONS = ("0.1", "0.2")
 SENSOR_VERSION = "guardian-sensor v0"
 
 # The only keys a sightings entry may ever have.
