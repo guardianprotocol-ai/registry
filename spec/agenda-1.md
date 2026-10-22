@@ -109,6 +109,35 @@ entire blast radius, and it is why this is a static file rather than a service.
 
 They cannot cause any other action, because no other action is expressible.
 
+## What a participant is trusting
+
+An agenda is the only thing on a participant's machine that takes input from outside it, so
+it is the whole remote attack surface and the claim about it should be narrow and checkable.
+
+**Nothing listens.** No socket is opened and no port is bound anywhere in the implementation.
+A participant's machine reaches out and nothing reaches in, so there is no service to find and
+no endpoint to attack. This is checked by reading the source, not inferred from the design,
+because importing a server later is an easy thing to do without noticing what it changes.
+
+**The vocabulary is closed.** A document carrying any field this version does not define is
+refused rather than ignored, and a known setting with an unexpected value is refused with the
+list of what is allowed.
+
+**The refusal path cannot itself fail.** A hostile document may not be an object at all, so
+nothing that handles a refusal may assume its shape. An implementation that crashes while
+refusing has stopped participating, and a participant who has stopped participating silently
+is worse for a study than one who never started.
+
+**A note may not contain control characters.** It is attacker controlled text printed to a
+person's terminal, where escape sequences can rewrite the title bar, clear the screen, or in
+some terminals do considerably more. A control character is refused rather than stripped, so
+the attempt is visible rather than quietly tidied away.
+
+**The worst outcome is bounded and nameable.** An attacker who controls the publishing point
+can make a participant's machine run, at most, a local exercise that participant installed and
+consented to, against a lab server on their own machine, which shares nothing. They cannot
+cause any other action, because no other action is expressible in the format.
+
 ## Not in this version
 
 No signature. The agenda is fetched over HTTPS and its shape is checked, which means a

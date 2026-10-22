@@ -139,6 +139,17 @@ def parse(document):
     note = document.get("note", "")
     if not isinstance(note, str) or len(note) > 200:
         raise hub.HubError("note must be a string of at most 200 characters")
+    # The note is attacker controlled text printed to a participant's terminal. Escape
+    # sequences there can clear their screen, rewrite the title bar, or in some terminals do
+    # considerably worse, so a control character is a refusal rather than something to strip.
+    # Stripping would let a hostile publisher decide what a human reads and get away with it
+    # quietly; refusing makes the attempt visible.
+    bad = sorted({c for c in note if ord(c) < 0x20 or ord(c) == 0x7f})
+    if bad:
+        raise hub.HubError(
+            "note contains control characters (%s), which can rewrite a terminal. A note is "
+            "read by a person, so it may only contain printable text."
+            % ", ".join("0x%02x" % ord(c) for c in bad))
     return exercise_id, run_after, settings, note
 
 
@@ -205,7 +216,17 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
         exercise_id, run_after, settings, note = parse(document)
     except hub.HubError as e:
         out.write("refusing this agenda: %s\n" % e)
-        record(a.log, str(document.get("exercise_id", "unparsed"))[:64], "refused", str(e))
+        # The document is hostile input and may not be an object at all, so nothing here may
+        # assume its shape. An earlier version called .get on it while recording the refusal
+        # and crashed on a JSON array, which stopped the poller: the machine would have left
+        # the exercise silently and nobody would have noticed for a month. A refusal path
+        # that can itself fail is not a refusal path.
+        named = "unparsed"
+        if isinstance(document, dict):
+            candidate = document.get("exercise_id")
+            if isinstance(candidate, str) and candidate.strip():
+                named = candidate[:64]
+        record(a.log, named, "refused", str(e)[:300])
         return 1
 
     if at < run_after:
