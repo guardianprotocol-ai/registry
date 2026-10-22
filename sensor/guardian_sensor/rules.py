@@ -48,6 +48,22 @@ def load_signatures(path: str = SIGNATURES_PATH) -> dict:
 SIGNATURES = load_signatures()
 _S = SIGNATURES
 
+
+def signatures_fingerprint(path: str = None) -> str:
+    """A short digest of the rule bundle actually in use.
+
+    Recorded on every detection so a sighting cannot claim a rule set it was not running.
+    Without it, a sensor pointed at a stripped bundle produces evidence indistinguishable
+    from a fully armed one, and `rules_version` is whatever the member types at report time.
+    The specification requires that an entry's rule set be knowable; this is what makes that
+    true rather than asserted.
+    """
+    try:
+        with open(path or SIGNATURES_PATH, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()[:12]
+    except OSError:
+        return "unreadable"
+
 # ---------- Content checks ----------
 
 INSTRUCTION_PATTERNS = [e["pattern"] for e in _S["instruction"]]

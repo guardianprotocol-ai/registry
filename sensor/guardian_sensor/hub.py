@@ -115,6 +115,12 @@ def read_evidence(paths, since=None):
     return out
 
 
+def fingerprints_in(records):
+    """Every distinct rule bundle the evidence was produced under."""
+    return sorted({r.get("rules_fingerprint") for r in records
+                   if r.get("rules_fingerprint")})
+
+
 def _source_of(record):
     """Where a detection came from. Anything not marked as a drill counts as live.
 
@@ -149,6 +155,17 @@ def build_sightings(records, org, rules_version, sensor_version=SENSOR_VERSION):
             f"sensor_version {sensor_version!r} is not a version. Up to 40 characters, letters, "
             "digits, spaces, dots, hyphens and underscores. It is shared with every entry, so "
             "it may not carry free text.")
+
+    # Evidence from more than one rule bundle cannot be summarized under a single
+    # rules_version, and saying otherwise would be a claim the sensor's own records
+    # contradict. This is the case a drill produces on purpose, and the case a quietly
+    # downgraded sensor produces by accident.
+    seen = fingerprints_in(records)
+    if len(seen) > 1:
+        raise HubError(
+            "these records were produced under %d different rule bundles (%s), so no single "
+            "rules_version describes them. Report each period separately, or pass --evidence "
+            "for one bundle's log at a time." % (len(seen), ", ".join(seen)))
 
     counts = {}
     for record in records:

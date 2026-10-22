@@ -71,7 +71,11 @@ class Sensor:
 
     def evidence(self, pattern_ids, action, detail):
         rec = {"time": now(), "patterns": pattern_ids, "reasons": [rules.RULES[p] for p in pattern_ids],
-               "action": action, "detail": detail, "sensor": "guardian-sensor v0 (prototype)"}
+               "action": action, "detail": detail, "sensor": "guardian-sensor v0 (prototype)",
+               # Which rule bundle was actually loaded, so a sighting cannot claim a rule
+               # set the sensor was not running. A sensor pointed at a stripped bundle
+               # otherwise produces evidence that looks fully armed.
+               "rules_fingerprint": rules.signatures_fingerprint()}
         # Marked here, at the moment of detection, because this is the only place that knows
         # for certain. Anything deciding later would be guessing, and a drill mistaken for an
         # incident is the one error this whole project cannot afford to publish.

@@ -404,6 +404,37 @@ def test_the_preview_shows_the_value_of_every_field_it_shares():
                   f"{field}={entry[field]!r} missing from the preview")
 
 
+def test_a_report_refuses_to_span_two_rule_bundles():
+    """A single rules_version cannot describe evidence from two different rule sets.
+
+    This is what a response drill produces deliberately, and what a quietly downgraded
+    sensor produces by accident. Summarizing across them would put a rules_version on
+    entries the sensor's own records contradict.
+    """
+    mixed = [
+        {"time": "2026-10-22T13:04:11+00:00", "patterns": ["GP-0001"], "action": "blocked",
+         "detail": {}, "rules_fingerprint": "aaaaaaaaaaaa"},
+        {"time": "2026-10-22T13:05:11+00:00", "patterns": ["GP-0003"], "action": "blocked",
+         "detail": {}, "rules_fingerprint": "bbbbbbbbbbbb"},
+    ]
+    try:
+        hub.build_sightings(mixed, "acme-labs", "r2026.10.08")
+        check("a report spanning two rule bundles is refused", False, "it was allowed")
+    except hub.HubError as e:
+        check("a report spanning two rule bundles is refused", True)
+        check("the error names both bundles",
+              "aaaaaaaaaaaa" in str(e) and "bbbbbbbbbbbb" in str(e), str(e))
+        check("the error says what to do instead", "separately" in str(e), str(e))
+
+    same = [dict(r, rules_fingerprint="aaaaaaaaaaaa") for r in mixed]
+    doc = hub.build_sightings(same, "acme-labs", "r2026.10.08")
+    check("one bundle reports normally", len(doc["sightings"]) == 2, str(doc))
+
+    older = [{k: v for k, v in r.items() if k != "rules_fingerprint"} for r in mixed]
+    doc = hub.build_sightings(older, "acme-labs", "r2026.10.08")
+    check("evidence predating the field still reports", len(doc["sightings"]) == 2, str(doc))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
