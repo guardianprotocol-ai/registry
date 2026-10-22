@@ -27,6 +27,7 @@ import subprocess
 import sys
 import threading
 
+from . import canaries
 from . import rules
 
 DEFAULT_CONFIG = {
@@ -35,6 +36,7 @@ DEFAULT_CONFIG = {
     "pins_path": ".guardian/pins.json",
     "evidence_path": ".guardian/evidence.jsonl",
     "max_repeat": 10,                # identical calls allowed per session (GP-0011)
+    "canaries_path": ".guardian/canaries.json",
 }
 
 
@@ -49,6 +51,16 @@ class Sensor:
         self.pending = {}            # request id -> (method, params)
         self.blocked_tools = set()
         self.pins = self._load_json(self.cfg["pins_path"], {})
+        # Loaded once. A canary list that changed mid-session would make the evidence
+        # ambiguous about what was being watched for at the moment of a detection.
+        try:
+            self.canaries = canaries.load(self.cfg["canaries_path"])
+        except canaries.CanaryError as e:
+            # A broken canary file must not silently mean "watch for nothing". The sensor
+            # keeps running, because its other checks still protect, and says so loudly.
+            sys.stderr.write("[guardian] canary file unusable, registered canaries are NOT "
+                             "being watched for: %s\n" % e)
+            self.canaries = {"canaries": []}
         # Whether a baseline exists. The first listing is the operator approving the server
         # as it stands, so every tool in it is pinned. Every listing after that is compared
         # against the baseline, which is the only moment a tool appearing can be seen as an
@@ -100,6 +112,14 @@ class Sensor:
         found = rules.check_call(name, args, self.state, self.cfg)
         if name in self.blocked_tools:
             found.append(("GP-0003", {"reason": "tool definition changed since approval"}))
+
+        # A canary the operator registered, found in what is about to leave. Checked here,
+        # before the call is forwarded, because afterwards the value has already gone.
+        hit_canaries = canaries.matches(self.canaries, rules.text_of(args))
+        armed = [c for c in hit_canaries if c["state"] == canaries.ARMED]
+        for c in hit_canaries:
+            found.append(("GP-0020", canaries.redacted(c)))
+
         for pid, d in found:
             detail.update(d)
         hits = [pid for pid, _ in found]
@@ -107,6 +127,17 @@ class Sensor:
         if not hits:
             return None
         action = "blocked" if self.cfg["mode"] == "block" else "flagged"
+        # A canary still in baseline reports and does not block, whatever the mode. It has
+        # not yet been shown that ordinary work leaves it alone, and the first thing an
+        # operator learns from a badly placed canary should not be that their agent stopped
+        # working. A canary the operator armed blocks like anything else.
+        #
+        # Compared as a set. An earlier version compared the list, so two canaries firing at
+        # once produced ["GP-0020", "GP-0020"], missed the comparison and blocked. Baseline
+        # quietly stopped being baseline on the day an operator registered a second canary,
+        # which is precisely the surprise this is here to prevent.
+        if set(hits) == {"GP-0020"} and not armed:
+            action = "flagged"
         self.evidence(sorted(set(hits)), action, detail)
         if action == "flagged":
             return None
@@ -190,6 +221,7 @@ def pump(src, dst, handler, sensor, reply_to=None):
 # been started keeps working unchanged.
 HUB_COMMANDS = ("report", "update")
 DRILL_COMMAND = "drill"
+CANARY_COMMAND = "canary"
 
 
 def main(argv=None):
@@ -200,6 +232,9 @@ def main(argv=None):
     if args[:1] == [DRILL_COMMAND]:
         from . import drill
         return drill.main(args[1:])
+    if args[:1] == [CANARY_COMMAND]:
+        from . import canary_cli
+        return canary_cli.main(args[1:])
 
     ap = argparse.ArgumentParser(prog="guardian_sensor")
     ap.add_argument("--config", default=None)

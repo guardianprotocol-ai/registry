@@ -22,7 +22,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 7 |
 
-The benign corpus holds 18 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
+The benign corpus holds 19 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
 
 ## What the columns mean
 
@@ -80,7 +80,7 @@ The benign corpus holds 18 cases of ordinary work that no rule may flag. It is s
 | `AML.T0084.003` | Discover AI Agent Configuration: Call Chains |  | no | no | no | open |
 | `AML.T0085.000` | Data from AI Services: RAG Databases |  | no | no | no | open |
 | `AML.T0085.001` | Data from AI Services: AI Agent Tools |  | no | no | no | open |
-| `AML.T0086` | Exfiltration via AI Agent Tool Invocation | GP-0002 | yes | yes | yes | covered |
+| `AML.T0086` | Exfiltration via AI Agent Tool Invocation | GP-0002, GP-0020 | yes | yes | yes | covered |
 | `AML.T0092` | Manipulate User LLM Chat History |  | no | no | no | open |
 | `AML.T0093` | Prompt Infiltration via Public-Facing Application |  | no | no | no | open |
 | `AML.T0094` | Delay Execution of LLM Instructions |  | no | no | no | open |

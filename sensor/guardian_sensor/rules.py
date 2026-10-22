@@ -198,6 +198,7 @@ RULES = {
     "GP-0011": "Runaway tool use: the same call repeated beyond the session budget",
     "GP-0012": "Outbound content contains the agent's own system prompt canary",
     "GP-0019": "A tool appeared on an approved server, or its input schema changed, after approval",
+    "GP-0020": "A canary the operator registered appeared in outbound tool arguments",
 }
 
 
