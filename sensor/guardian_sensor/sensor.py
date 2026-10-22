@@ -180,6 +180,7 @@ def pump(src, dst, handler, sensor, reply_to=None):
 # The sharing hub commands. Anything else is the proxy, so the way the sensor has always
 # been started keeps working unchanged.
 HUB_COMMANDS = ("report", "update")
+DRILL_COMMAND = "drill"
 
 
 def main(argv=None):
@@ -187,6 +188,9 @@ def main(argv=None):
     if args[:1] and args[0] in HUB_COMMANDS:
         from . import hub_cli
         return hub_cli.main(args)
+    if args[:1] == [DRILL_COMMAND]:
+        from . import drill
+        return drill.main(args[1:])
 
     ap = argparse.ArgumentParser(prog="guardian_sensor")
     ap.add_argument("--config", default=None)

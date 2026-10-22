@@ -1,0 +1,142 @@
+"""Tests for the fire drill.
+
+The drill's job is to give someone real evidence in twenty minutes instead of a week of
+waiting to be attacked. Its risk is the opposite of a normal test's: a drill that reports a
+clean run when the sensor is broken is worse than no drill, because it manufactures
+confidence. So most of these check that it reports a miss rather than reporting around it.
+
+Run from the sensor folder:  python3 tests/test_drill.py
+"""
+import io
+import json
+import os
+import sys
+import tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from guardian_sensor import drill  # noqa: E402
+
+failures = []
+
+
+def check(name, condition, detail=""):
+    print(f"{'ok  ' if condition else 'FAIL'} {name}{'' if condition else '  <- ' + detail}")
+    if not condition:
+        failures.append(name)
+
+
+def record(*patterns):
+    return {"patterns": list(patterns), "action": "blocked", "detail": {}}
+
+
+def test_the_exercise_list_is_fixed_and_named():
+    """A reader must be able to see what the drill provokes without running it."""
+    ex = drill.exercises()
+    check("the drill has exercises", len(ex) >= 3, str(ex))
+    check("every exercise names a pattern",
+          all(p.startswith("GP-") for p, _ in ex), str(ex))
+    check("every exercise explains itself in plain words",
+          all(len(reason) > 20 and reason[0].islower() for _, reason in ex), str(ex))
+    check("GP-0019 is exercised, since the sensor was once open to it",
+          "GP-0019" in [p for p, _ in ex], str(ex))
+
+
+def test_a_missed_exercise_is_reported_as_missed():
+    """The failure that matters. A broken sensor must not produce a clean looking drill."""
+    rows = drill.summarize([record("GP-0003"), record("GP-0002")])
+    fired = {p: f for p, _, f in rows}
+    check("a caught exercise says caught", fired.get("GP-0003") is True, str(rows))
+    check("a missed exercise says missed", fired.get("GP-0019") is False, str(rows))
+    check("every exercise appears whether or not it fired",
+          len(rows) == len(drill.exercises()), str(rows))
+
+
+def test_no_evidence_at_all_misses_everything():
+    rows = drill.summarize([])
+    check("an empty evidence file misses every exercise",
+          all(not fired for _, _, fired in rows), str(rows))
+
+
+def test_evidence_with_unrelated_patterns_does_not_count():
+    """Otherwise any detection at all would look like the drill succeeding."""
+    rows = drill.summarize([record("GP-0011"), record("GP-0007")])
+    check("unrelated detections do not satisfy an exercise",
+          all(not fired for _, _, fired in rows), str(rows))
+
+
+def test_the_config_is_written_where_the_operator_can_read_it():
+    with tempfile.TemporaryDirectory() as w:
+        path = drill.write_config(w, "monitor")
+        cfg = json.load(open(path))
+        check("the config is on disk and readable", os.path.exists(path))
+        check("the mode is honoured", cfg["mode"] == "monitor", str(cfg))
+        check("evidence goes in the drill directory",
+              cfg["evidence_path"].startswith(w), str(cfg))
+        check("pins go in the drill directory", cfg["pins_path"].startswith(w), str(cfg))
+
+
+def test_reading_evidence_survives_a_missing_or_ragged_file():
+    with tempfile.TemporaryDirectory() as w:
+        check("a missing evidence file reads as empty", drill.read_evidence(w) == [])
+        with open(os.path.join(w, "evidence.jsonl"), "w") as f:
+            f.write(json.dumps(record("GP-0003")) + "\n\n")
+        check("a blank line does not break the read", len(drill.read_evidence(w)) == 1,
+              str(drill.read_evidence(w)))
+
+
+def test_the_whole_drill_runs_and_catches_everything():
+    """End to end, against the real lab server through the real sensor."""
+    with tempfile.TemporaryDirectory() as w:
+        out = io.StringIO()
+        code = drill.main(["--dir", w, "--org", "test-member"], out=out)
+        text = out.getvalue()
+        check("the drill exits clean", code == 0, text[-400:])
+        check("it reports three of three", "3 of 3 exercises caught" in text, text[-400:])
+        check("it says nothing was shared", "Nothing has been shared" in text, text[-300:])
+        check("it points at the preview before the write",
+              text.index("--preview") < text.index("--out"), "order of instructions")
+        ev = drill.read_evidence(w)
+        check("real evidence was written", len(ev) >= 3, str(len(ev)))
+        check("the evidence is the ordinary format, not a special case",
+              all("patterns" in r and "action" in r for r in ev), str(ev[:1]))
+
+
+def test_a_member_id_is_asked_for_when_missing():
+    with tempfile.TemporaryDirectory() as w:
+        out = io.StringIO()
+        drill.main(["--dir", w], out=out)
+        text = out.getvalue()
+        check("a missing member id is asked for", "member-id" in text, text[-300:])
+        check("and it says not to use a company name", "not your company name" in text,
+              text[-300:])
+
+
+def test_a_rerun_starts_clean_unless_told_otherwise():
+    """Pins persist by design, so a second drill in the same folder would see no approval."""
+    with tempfile.TemporaryDirectory() as w:
+        out = io.StringIO()
+        drill.main(["--dir", w, "--org", "a"], out=out)
+        first = len(drill.read_evidence(w))
+        out2 = io.StringIO()
+        code = drill.main(["--dir", w, "--org", "a"], out=out2)
+        check("a second run still catches everything", code == 0, out2.getvalue()[-300:])
+        check("the evidence does not pile up across runs",
+              len(drill.read_evidence(w)) == first, str(len(drill.read_evidence(w))))
+        out3 = io.StringIO()
+        drill.main(["--dir", w, "--org", "a", "--keep"], out=out3)
+        check("--keep appends instead",
+              len(drill.read_evidence(w)) > first, str(len(drill.read_evidence(w))))
+
+
+def main():
+    for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
+        fn()
+    print()
+    if failures:
+        print(f"FAIL ({len(failures)}): {', '.join(failures)}")
+        sys.exit(1)
+    print("PASS")
+
+
+if __name__ == "__main__":
+    main()
