@@ -305,8 +305,13 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
     ap = argparse.ArgumentParser(
         prog="guardian_sensor agenda",
         description="Run a published exercise when its time has come. Safe to run hourly.")
-    ap.add_argument("--base", required=True,
-                    help="base URL holding agenda.json")
+    ap.add_argument("--base", default=None,
+                    help="base URL holding agenda.json. Omit with --offline")
+    ap.add_argument("--offline", action="store_true",
+                    help="run on a local schedule and fetch nothing. The control arm for the "
+                         "network: what a sensor is worth on its own")
+    ap.add_argument("--every-hours", type=int, default=24,
+                    help="with --offline, how often to run the exercise. Default 24")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"))
     ap.add_argument("--dir", default=DEFAULT_DIR)
     ap.add_argument("--log", default=DEFAULT_LOG)
@@ -314,6 +319,10 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
                     help="say what would happen and run nothing")
     a = ap.parse_args([] if argv is None else argv)
     at = now or _now()
+
+    if not a.offline and not a.base:
+        out.write("Give --base, or --offline to run on a local schedule and fetch nothing.\n")
+        return 2
 
     lock_path = os.path.join(os.path.dirname(os.path.abspath(a.log)) or ".", LOCK_NAME)
     try:
@@ -337,7 +346,42 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
         return 1
 
 
+def _offline(a, at, out):
+    """Run the exercise on a local cadence, reaching out to nothing.
+
+    This is the control arm for the whole network claim. The thesis is that value grows as
+    more organizations take part, and that cannot be argued without measuring what a sensor
+    is worth alone. Without this arm, "sharing helps" is unfalsifiable and a reviewer will
+    say so.
+
+    It also widens who can take part. Somebody behind an egress proxy that will not reach an
+    agenda URL can still run the sensor and hand over a file, and until now that person was
+    excluded by a design decision nobody made on purpose.
+    """
+    previous = last_record(a.log)
+    if previous is not None:
+        try:
+            when = datetime.datetime.fromisoformat(previous["time"])
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=datetime.timezone.utc)
+            if (at - when) < datetime.timedelta(hours=a.every_hours):
+                return 0
+        except (KeyError, TypeError, ValueError):
+            pass
+
+    exercise_id = "offline-%s" % at.strftime("%Y-%m-%dT%H")
+    out.write("Running the local exercise %s. Nothing was fetched and nothing is shared.\n"
+              % exercise_id)
+    argv_for_drill = ["--dir", a.dir] + (["--org", a.org] if a.org else [])
+    code = drill.main(argv_for_drill, out=out)
+    record(a.log, exercise_id, "ran" if code == 0 else "failed",
+           "offline, drill exit %d" % code, settings={"offline": True})
+    return code
+
+
 def _poll(a, at, out, opener):
+    if a.offline:
+        return _offline(a, at, out)
     url = a.base.rstrip("/") + "/" + AGENDA_NAME
     try:
         document = json.loads(_fetch(url, opener).decode("utf-8"))

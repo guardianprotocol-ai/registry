@@ -431,6 +431,41 @@ def test_an_unwritable_state_directory_refuses_rather_than_crashing():
             os.chmod(locked, 0o700)
 
 
+def test_the_offline_arm_fetches_nothing_and_still_runs():
+    """The control arm for the whole network claim. Without measuring what a sensor is worth
+    alone, "sharing helps" is unfalsifiable."""
+    class Forbidden:
+        def __call__(self, url, timeout=None):
+            raise AssertionError("the offline arm fetched %s" % url)
+
+    with tempfile.TemporaryDirectory() as w:
+        log = os.path.join(w, "a.jsonl")
+        args = ["--offline", "--org", "a-lab", "--log", log, "--dir", os.path.join(w, "d")]
+        out = io.StringIO()
+        code = agenda.main(args, out=out, opener=Forbidden())
+        check("it runs", code == 0, out.getvalue()[-200:])
+        check("it says nothing was fetched", "Nothing was fetched" in out.getvalue(),
+              out.getvalue()[:200])
+        check("the exercise ran", "3 of 3" in out.getvalue(), out.getvalue()[-200:])
+        record = json.loads(open(log).read().strip().splitlines()[-1])
+        check("the run is marked offline", record["settings"] == {"offline": True},
+              str(record))
+        check("the exercise id says which arm it was",
+              record["exercise_id"].startswith("offline-"), str(record))
+
+        quiet = io.StringIO()
+        agenda.main(args, out=quiet, opener=Forbidden())
+        check("a second run inside the window does nothing", quiet.getvalue() == "",
+              repr(quiet.getvalue()))
+
+
+def test_offline_or_a_base_is_required():
+    out = io.StringIO()
+    code = agenda.main(["--log", "x.jsonl"], out=out, opener=Fake(due()))
+    check("neither flag is refused", code == 2, str(code))
+    check("and both are offered", "--offline" in out.getvalue(), out.getvalue())
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

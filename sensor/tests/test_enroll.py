@@ -239,6 +239,39 @@ def test_the_service_carries_absolute_paths_into_the_override():
           pairs["--dir"].startswith("/somewhere/writable"), pairs["--dir"])
 
 
+def test_the_offline_service_carries_no_url():
+    """A participant behind an egress proxy that will not reach an agenda can still take
+    part. Until this arm existed they were excluded by a decision nobody made on purpose."""
+    args = enroll.agenda_args(None, "a-lab", "/w", offline=True, every_hours=12)
+    check("it is offline", "--offline" in args, str(args))
+    check("it carries the cadence", "--every-hours" in args and "12" in args, str(args))
+    check("there is no base url at all", "--base" not in args, str(args))
+    check("no url appears anywhere in the arguments",
+          not any("http" in str(x) for x in args), str(args))
+    plist = enroll.launchd_plist("/usr/bin/python3", "/m", None, "a-lab", 60, "/w", "/w",
+                                 offline=True)
+    check("and none in the installed service",
+          not any("http" in str(x) for x in plist["ProgramArguments"]),
+          str(plist["ProgramArguments"]))
+
+
+def test_enrolling_offline_says_which_arm_it_is():
+    out = io.StringIO()
+    code = enroll.main(["--offline", "--org", "a-lab", "--print-only"], out=out,
+                       platform="darwin", runner=Runner())
+    text = out.getvalue()
+    check("it enrols", code == 0, text[-200:])
+    check("it says it reaches out to nothing", "reaches out to nothing" in text, text)
+    check("and names it as the control arm", "control arm" in text, text)
+
+
+def test_a_base_or_offline_is_required_to_enrol():
+    out = io.StringIO()
+    code = enroll.main(["--org", "a-lab"], out=out, platform="darwin", runner=Runner())
+    check("neither is refused", code == 2, str(code))
+    check("and both are offered", "--offline" in out.getvalue(), out.getvalue())
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

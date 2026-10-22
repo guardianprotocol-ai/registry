@@ -163,6 +163,27 @@ The number is the adoption step only, with the rule already in hand. It leaves o
 else seeing the attack first and the report reaching you, which is what the exchange is for
 and what is still unmeasured. The command says so itself rather than leaving it to a reader.
 
+## Taking part without reaching out to anything
+
+The control arm, and the way to take part from a machine that cannot reach an external URL.
+
+```bash
+python3 -m guardian_sensor enroll --offline --org <your-member-id>
+```
+
+Fetches nothing, listens to nothing, shares nothing. It runs the exercise locally on its own
+cadence and records what the sensor caught. There is no url anywhere in the installed
+service.
+
+This exists for two reasons. It is the baseline the network claim is measured against: the
+argument is that value grows as more organizations take part, and that cannot be argued
+without knowing what a sensor is worth alone. And it includes anybody behind an egress proxy
+that will not reach a published agenda, who was previously excluded by a design decision
+nobody made on purpose.
+
+Both arms can run on the same machine one after the other, which is how the difference
+between them gets measured per participant rather than across participants.
+
 ## Taking part in a scheduled exercise
 
 Install once, leave it running, and the exercise happens without you being available for it.

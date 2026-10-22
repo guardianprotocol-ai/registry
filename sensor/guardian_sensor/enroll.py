@@ -37,7 +37,7 @@ def data_dir(home=None):
     return os.path.join(home or os.path.expanduser("~"), ".guardian")
 
 
-def agenda_args(base, org, work_dir):
+def agenda_args(base, org, work_dir, offline=False, every_hours=24):
     """The poll, with every path absolute.
 
     Relative defaults are resolved against the working directory, so a relative
@@ -45,17 +45,21 @@ def agenda_args(base, org, work_dir):
     `~/.guardian/.guardian/agenda.jsonl`. A service runs unattended for months, so a path it
     gets slightly wrong is a path nobody notices is wrong.
     """
-    return (["-m", "guardian_sensor", "agenda", "--base", base,
-             "--log", os.path.join(work_dir, "agenda.jsonl"),
-             "--dir", os.path.join(work_dir, "drill")]
+    where = (["--offline", "--every-hours", str(every_hours)] if offline
+             else ["--base", base])
+    return (["-m", "guardian_sensor", "agenda"] + where
+            + ["--log", os.path.join(work_dir, "agenda.jsonl"),
+               "--dir", os.path.join(work_dir, "drill")]
             + (["--org", org] if org else []))
 
 
-def launchd_plist(python, module_dir, base, org, interval, log_dir, work_dir):
+def launchd_plist(python, module_dir, base, org, interval, log_dir, work_dir,
+                  offline=False, every_hours=24):
     """A launchd agent that runs the poll on an interval and keeps running."""
     return {
         "Label": LABEL,
-        "ProgramArguments": [python] + agenda_args(base, org, work_dir),
+        "ProgramArguments": [python] + agenda_args(base, org, work_dir, offline,
+                                                  every_hours),
         "WorkingDirectory": work_dir,
         "EnvironmentVariables": {"PYTHONPATH": module_dir},
         "StartInterval": interval,
@@ -65,9 +69,10 @@ def launchd_plist(python, module_dir, base, org, interval, log_dir, work_dir):
     }
 
 
-def systemd_units(python, module_dir, base, org, interval, log_dir, work_dir):
+def systemd_units(python, module_dir, base, org, interval, log_dir, work_dir,
+                  offline=False, every_hours=24):
     """A systemd timer and service. Returns (service_text, timer_text)."""
-    args = " ".join(agenda_args(base, org, work_dir))
+    args = " ".join(agenda_args(base, org, work_dir, offline, every_hours))
     service = (
         "[Unit]\n"
         "Description=Guardian Protocol exercise agenda\n"
@@ -115,7 +120,13 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
     ap = argparse.ArgumentParser(
         prog="guardian_sensor enroll",
         description="Take part in scheduled exercises. Installs once, then does nothing.")
-    ap.add_argument("--base", required=True, help="where the agenda is published")
+    ap.add_argument("--base", default=None,
+                    help="where the agenda is published. Omit with --offline")
+    ap.add_argument("--offline", action="store_true",
+                    help="take part without reaching out to anything. Runs the exercise on a "
+                         "local schedule, fetches nothing, shares nothing")
+    ap.add_argument("--every-hours", type=int, default=24,
+                    help="with --offline, how often to run. Default 24")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"),
                     help="your pseudonymous member id, never a company name")
     ap.add_argument("--interval", type=int, default=DEFAULT_INTERVAL,
@@ -125,6 +136,10 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
     ap.add_argument("--remove", action="store_true", help="stop taking part")
     a = ap.parse_args([] if argv is None else argv)
     run = runner or _run
+    if not a.offline and not a.base and not a.remove:
+        out.write("Give --base, or --offline to take part without reaching out to "
+                  "anything.\n")
+        return 2
 
     kind, path = paths(platform)
     if kind is None:
@@ -181,12 +196,13 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
 
     if kind == "launchd":
         body = plistlib.dumps(launchd_plist(python, module_dir, a.base, a.org,
-                                            a.interval, log_dir,
-                                            work_dir)).decode("utf-8")
+                                            a.interval, log_dir, work_dir,
+                                            a.offline, a.every_hours)).decode("utf-8")
         files = [(path, body)]
     else:
         service, timer = systemd_units(python, module_dir, a.base, a.org,
-                                       a.interval, log_dir, work_dir)
+                                       a.interval, log_dir, work_dir,
+                                       a.offline, a.every_hours)
         files = [(path.replace(".timer", ".service"), service), (path, timer)]
 
     # Shown before it is written. Installing something that runs forever on somebody's
@@ -197,8 +213,13 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
         for line in body.strip().splitlines():
             out.write("    %s\n" % line)
         out.write("\n")
-    out.write("It polls %s every %d seconds. It never listens, and nothing can reach in.\n"
-              % (a.base.rstrip("/") + "/agenda.json", a.interval))
+    if a.offline:
+        out.write("It reaches out to nothing at all. It runs the exercise locally every %d "
+                  "hours and shares\nnothing. This is the control arm: what the sensor is "
+                  "worth on its own.\n" % a.every_hours)
+    else:
+        out.write("It polls %s every %d seconds. It never listens, and nothing can reach "
+                  "in.\n" % (a.base.rstrip("/") + "/agenda.json", a.interval))
     out.write("Everything it writes stays in %s, not in the repository, so updating the "
               "code\nnever touches your records.\n" % work_dir)
     # The service points at this checkout. Moving it is the one thing a participant can do
