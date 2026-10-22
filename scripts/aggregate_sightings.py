@@ -42,6 +42,12 @@ class Suppressed:
 
 WITHHELD = Suppressed()
 
+# Fields added after the format was first published. An older file predates them and is
+# still a valid file, so each one needs a default that cannot overstate what it claims.
+# `source` defaults to live: a drill marks itself at the moment of detection, so the only
+# way to be unmarked is to be a record no drill ever touched.
+OPTIONAL_FIELDS = {"source"}
+
 
 def load_folder(folder):
     """[(org, entry)] from <folder>/<org>/*.json, skipping anything malformed."""
@@ -63,18 +69,34 @@ def load_folder(folder):
             for entry in (doc or {}).get("sightings", []):
                 if not isinstance(entry, dict):
                     continue
-                if tuple(sorted(entry)) != tuple(sorted(hub.ALLOWED_FIELDS)):
-                    # A file with extra fields is not one of ours. Refuse the entry rather
-                    # than aggregating something whose shape we do not know.
+                extra = set(entry) - set(hub.ALLOWED_FIELDS)
+                missing = set(hub.ALLOWED_FIELDS) - set(entry) - OPTIONAL_FIELDS
+                if extra or missing:
+                    # An entry with a field we do not know is refused rather than
+                    # aggregated, because we cannot say what it carries. A field we added
+                    # after someone wrote their file is a different case: refusing those
+                    # would make every new field a breaking change to a format other
+                    # organizations have already written to disk.
                     continue
+                entry = {"source": "live", **entry}
                 out.append((entry["org"], entry))
     return out
 
 
-def aggregate(pairs, min_orgs=MIN_ORGS):
-    """Counts by pattern, rules version and hour, with per-pattern organization counts."""
+def aggregate(pairs, min_orgs=MIN_ORGS, source=None):
+    """Counts by pattern, rules version and hour, with per-pattern organization counts.
+
+    `source` keeps only entries from live traffic or only from fire drills. An entry that
+    predates the field counts as live, which is the safe default for old files and the
+    reason the drill marks its own records at the moment of detection rather than later.
+
+    Mixing the two in one total would let an exercise somebody ran against their own
+    machine be reported as an observed incident. The aggregate says which it is counting.
+    """
     by_pattern = {}
     for org, entry in pairs:
+        if source and entry.get("source", "live") != source:
+            continue
         p = by_pattern.setdefault(entry["pattern"], {"orgs": set(), "total": 0, "cells": {}})
         p["orgs"].add(org)
         p["total"] += entry["count"]
@@ -124,9 +146,17 @@ def main(argv=None):
     ap.add_argument("folder", help="a folder of <org>/ directories holding sightings files")
     ap.add_argument("--json", dest="json_out", default=None)
     ap.add_argument("--min-orgs", type=int, default=MIN_ORGS)
+    ap.add_argument("--source", choices=("live", "drill"), default=None,
+                    help="count only live traffic, or only fire drills. Mixing them would "
+                         "report an exercise as an incident")
     a = ap.parse_args(argv)
 
-    rows = aggregate(load_folder(a.folder), min_orgs=a.min_orgs)
+    rows = aggregate(load_folder(a.folder), min_orgs=a.min_orgs, source=a.source)
+    if a.source:
+        print(f"Counting {a.source} entries only.\n")
+    else:
+        print("Counting live traffic and fire drills together. Pass --source to separate "
+              "them before quoting any of this.\n")
     print(text(rows, a.min_orgs))
     if a.json_out:
         with open(a.json_out, "w", encoding="utf-8") as f:

@@ -24,7 +24,13 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SENSOR_ROOT = os.path.dirname(HERE)
 LAB_SERVER = os.path.join(SENSOR_ROOT, "tests", "fake_server.py")
-DEFAULT_DIR = ".guardian"
+# Deliberately not ".guardian". That is where a real sensor keeps its evidence and its
+# pins, and an earlier version of this defaulted there and deleted both. Losing evidence is
+# bad; overwriting pins is worse, because it resets the approval baseline and the next
+# listing re-approves whatever the server offers. A drill must never disarm the sensor it
+# exists to demonstrate.
+DEFAULT_DIR = os.path.join(".guardian", "drill")
+PROTECTED_NAMES = ("evidence.jsonl", "pins.json")
 
 
 class _Client:
@@ -104,10 +110,39 @@ def run_once(workdir, config_path, python=None):
     return c.close()
 
 
+def is_drill_dir(path):
+    """True if a previous drill made this directory.
+
+    Decided by the config the drill writes, not by the directory's name. A name is a guess
+    and an operator may call it anything; the config says what it is.
+    """
+    try:
+        with open(os.path.join(path, "guardian.json")) as f:
+            return json.load(f).get("drill") is True
+    except (OSError, ValueError):
+        return False
+
+
+def real_state_in(path):
+    """Files in `path` that belong to a working sensor rather than to a drill.
+
+    Checked before anything is removed. The operator chose the directory and may well have
+    chosen the one their sensor already uses, where evidence.jsonl is the only record of
+    what it has seen and pins.json is the only record of what they approved.
+    """
+    if is_drill_dir(path):
+        return []
+    return [n for n in PROTECTED_NAMES if os.path.exists(os.path.join(path, n))]
+
+
 def write_config(workdir, mode="block"):
     path = os.path.join(workdir, "guardian.json")
     with open(path, "w") as f:
         json.dump({"mode": mode, "allowlist": ["example.com"],
+                   # Every record this sensor writes is marked as a drill. The attack is one
+                   # the member ran against themselves, and it must never be counted as an
+                   # incident by anyone downstream.
+                   "drill": True,
                    "pins_path": os.path.join(workdir, "pins.json"),
                    "evidence_path": os.path.join(workdir, "evidence.jsonl")}, f, indent=2)
     return path
@@ -148,8 +183,22 @@ def main(argv=None, out=sys.stdout):
 
     workdir = os.path.abspath(a.dir)
     os.makedirs(workdir, exist_ok=True)
+
+    # Refuse rather than overwrite. This is the operator's own machine and these two files
+    # are the only record of what their sensor has seen and approved.
+    occupied = real_state_in(workdir)
+    if occupied:
+        out.write("Refusing to run here. %s already holds %s, which belongs to a working "
+                  "sensor.\n" % (a.dir, " and ".join(occupied)))
+        out.write("Overwriting pins.json would reset the approval baseline, and the next "
+                  "listing would re-approve\nwhatever the server offers. Run the drill "
+                  "somewhere else:\n\n")
+        out.write("  python3 -m guardian_sensor drill --dir %s --org %s\n"
+                  % (DEFAULT_DIR, a.org or "<your-member-id>"))
+        return 2
+
     if not a.keep:
-        for name in ("evidence.jsonl", "pins.json"):
+        for name in PROTECTED_NAMES:
             try:
                 os.remove(os.path.join(workdir, name))
             except OSError:

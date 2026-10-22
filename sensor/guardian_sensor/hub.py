@@ -21,7 +21,15 @@ SCHEMA_VERSION = "0.1"
 SENSOR_VERSION = "guardian-sensor v0"
 
 # The only keys a sightings entry may ever have.
-ALLOWED_FIELDS = ("org", "sensor_version", "rules_version", "pattern", "action", "hour", "count")
+#
+# `source` says whether the detection came from real traffic or from a fire drill, where the
+# attack is one the member ran against themselves. Without it a drill is indistinguishable
+# from an incident once it reaches an aggregate, and a paper counting drill traffic as
+# observed incidents would be the exact overclaim the measurement rules exist to prevent.
+# It is a fixed vocabulary, never free text, and it does not describe the member.
+ALLOWED_FIELDS = ("org", "sensor_version", "rules_version", "pattern", "action", "hour",
+                  "count", "source")
+SOURCES = ("live", "drill")
 
 # The only values those fields may hold, besides the counts and the ones the member sets.
 PATTERN_RE = re.compile(r"^GP-\d{4}$")
@@ -103,6 +111,16 @@ def read_evidence(paths, since=None):
     return out
 
 
+def _source_of(record):
+    """Where a detection came from. Anything not marked as a drill counts as live.
+
+    Defaulting to live is the safe direction: an unmarked drill record showing up as live
+    would be an overclaim, but the mark is written by the drill itself at the moment of
+    detection, so the only way to be unmarked is to be a record the drill never touched.
+    """
+    return "drill" if record.get("drill") is True else "live"
+
+
 def build_sightings(records, org, rules_version, sensor_version=SENSOR_VERSION):
     """Counts by pattern, action and hour. Built from the allow-list, never copied.
 
@@ -134,11 +152,13 @@ def build_sightings(records, org, rules_version, sensor_version=SENSOR_VERSION):
         hour = _hour_of(record.get("time"))
         if not action or not hour:
             continue
+        source = _source_of(record)
         for pattern in _patterns_of(record):
-            counts[(pattern, action, hour)] = counts.get((pattern, action, hour), 0) + 1
+            key = (pattern, action, hour, source)
+            counts[key] = counts.get(key, 0) + 1
 
     entries = []
-    for (pattern, action, hour), count in sorted(counts.items()):
+    for (pattern, action, hour, source), count in sorted(counts.items()):
         entry = {
             "org": org,
             "sensor_version": sensor_version,
@@ -147,6 +167,7 @@ def build_sightings(records, org, rules_version, sensor_version=SENSOR_VERSION):
             "action": action,
             "hour": hour,
             "count": count,
+            "source": source,
         }
         # A last gate, so a future edit cannot widen the output by accident.
         if tuple(entry) != ALLOWED_FIELDS:
@@ -175,11 +196,17 @@ def preview_text(document):
     if not entries:
         lines.append("Nothing to share for that period.")
         return "\n".join(lines)
-    lines.append(f"{'pattern':<10} {'action':<9} {'hour':<15} {'rules':<12} count")
-    lines.append("-" * 56)
+    lines.append(f"{'pattern':<10} {'action':<9} {'hour':<15} {'rules':<12} {'source':<7} count")
+    lines.append("-" * 64)
     for e in entries:
         lines.append(f"{e['pattern']:<10} {e['action']:<9} {e['hour']:<15} "
-                     f"{e['rules_version']:<12} {e['count']}")
+                     f"{e['rules_version']:<12} {e['source']:<7} {e['count']}")
+    drills = sum(e["count"] for e in entries if e["source"] == "drill")
+    if drills:
+        lines += ["",
+                  f"{drills} of these came from a fire drill, meaning you attacked your own "
+                  "machine on purpose.",
+                  "They are marked so nobody downstream can count them as a real incident."]
     lines += [
         "",
         "Fields shared: " + ", ".join(ALLOWED_FIELDS) + ".",

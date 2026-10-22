@@ -72,6 +72,11 @@ class Sensor:
     def evidence(self, pattern_ids, action, detail):
         rec = {"time": now(), "patterns": pattern_ids, "reasons": [rules.RULES[p] for p in pattern_ids],
                "action": action, "detail": detail, "sensor": "guardian-sensor v0 (prototype)"}
+        # Marked here, at the moment of detection, because this is the only place that knows
+        # for certain. Anything deciding later would be guessing, and a drill mistaken for an
+        # incident is the one error this whole project cannot afford to publish.
+        if self.cfg.get("drill"):
+            rec["drill"] = True
         os.makedirs(os.path.dirname(self.cfg["evidence_path"]) or ".", exist_ok=True)
         with open(self.cfg["evidence_path"], "a") as f:
             f.write(json.dumps(rec) + "\n")

@@ -111,6 +111,66 @@ def test_a_member_id_is_asked_for_when_missing():
               text[-300:])
 
 
+def test_it_refuses_to_run_over_a_working_sensors_state():
+    """The defect this guard exists for, and the worst one shipped in this feature.
+
+    The default directory used to be .guardian, which is where a real sensor keeps its
+    evidence and its pins. Running the drill there deleted the evidence and overwrote the
+    pins with the lab server's tools, which resets the approval baseline. The next listing
+    then re-approves whatever the server offers, including a tool an attacker just added.
+    A drill that disarms the sensor is worse than no drill.
+    """
+    with tempfile.TemporaryDirectory() as w:
+        real_evidence = os.path.join(w, "evidence.jsonl")
+        real_pins = os.path.join(w, "pins.json")
+        with open(real_evidence, "w") as f:
+            f.write(json.dumps({"time": "2026-10-01T09:00:00Z", "patterns": ["GP-0002"],
+                                "action": "blocked", "detail": {}}) + "\n")
+        with open(real_pins, "w") as f:
+            json.dump({"weather": "abc123"}, f)
+
+        out = io.StringIO()
+        code = drill.main(["--dir", w, "--org", "a"], out=out)
+        text = out.getvalue()
+        check("it refuses rather than running", code == 2, str(code))
+        check("it says why", "belongs to a working sensor" in text, text[:200])
+        check("it explains the approval consequence", "approval baseline" in text, text[:300])
+        check("it suggests somewhere else to run", "--dir" in text, text[:300])
+        check("the real evidence is untouched",
+              "2026-10-01" in open(real_evidence).read())
+        check("the real pins are untouched",
+              json.load(open(real_pins)) == {"weather": "abc123"})
+
+
+def test_a_directory_the_drill_made_is_reused_not_refused():
+    """The guard must not lock the drill out of its own working directory."""
+    with tempfile.TemporaryDirectory() as w:
+        drill.write_config(w)
+        check("a config written by the drill marks the directory", drill.is_drill_dir(w))
+        with open(os.path.join(w, "pins.json"), "w") as f:
+            json.dump({"weather": "x"}, f)
+        check("so a rerun is allowed", drill.real_state_in(w) == [], str(drill.real_state_in(w)))
+        plain = os.path.join(w, "plain")
+        os.makedirs(plain)
+        with open(os.path.join(plain, "pins.json"), "w") as f:
+            json.dump({}, f)
+        check("a directory with no drill config is still protected",
+              drill.real_state_in(plain) == ["pins.json"], str(drill.real_state_in(plain)))
+
+
+def test_every_drill_record_is_marked_at_the_moment_of_detection():
+    """Defect two. An unmarked drill record would be counted as a real incident."""
+    with tempfile.TemporaryDirectory() as w:
+        cfg = json.load(open(drill.write_config(w)))
+        check("the drill config turns the mark on", cfg.get("drill") is True, str(cfg))
+        out = io.StringIO()
+        drill.main(["--dir", w, "--org", "a"], out=out)
+        ev = drill.read_evidence(w)
+        check("every record carries the mark",
+              ev and all(r.get("drill") is True for r in ev),
+              str([r.get("drill") for r in ev]))
+
+
 def test_a_rerun_starts_clean_unless_told_otherwise():
     """Pins persist by design, so a second drill in the same folder would see no approval."""
     with tempfile.TemporaryDirectory() as w:
