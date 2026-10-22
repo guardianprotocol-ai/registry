@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guardianprotocol.network/spec/sightings-0.2.schema.json",
+  "title": "Guardian Protocol sightings document, version 0.2",
+  "description": "What one organization's sensor saw, as counts with no content in them. See spec/sightings-0.2.md for the reasoning behind each constraint. This file is normative for shape; the prose is normative for meaning.",
+  "type": "object",
+  "required": ["schema_version", "org", "sightings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "description": "Readers must also accept 0.1, where source is absent and means live.",
+      "enum": ["0.1", "0.2"]
+    },
+    "org": {"$ref": "#/$defs/org"},
+    "sightings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/entry"}
+    }
+  },
+  "$defs": {
+    "org": {
+      "description": "A pseudonym the member chooses. Never a company name or a domain.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$"
+    },
+    "entry": {
+      "type": "object",
+      "required": ["org", "sensor_version", "rules_version", "pattern", "action", "hour", "count"],
+      "additionalProperties": false,
+      "properties": {
+        "org": {"$ref": "#/$defs/org"},
+        "sensor_version": {
+          "description": "Constrained because a caller supplies it, so without a shape it is a free text channel.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$"
+        },
+        "rules_version": {
+          "description": "Which rule set was running. Required, and never a placeholder.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$"
+        },
+        "pattern": {
+          "description": "Registry pattern identifier. An unrecognised one is kept and counted.",
+          "type": "string",
+          "pattern": "^GP-[0-9]{4}$"
+        },
+        "action": {
+          "description": "What the sensor did. Not a severity.",
+          "enum": ["flagged", "blocked"]
+        },
+        "hour": {
+          "description": "UTC hour, truncated. Anything finer is close to a unique identifier.",
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}$"
+        },
+        "count": {
+          "description": "Detections of that pattern, action, hour and source.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "source": {
+          "description": "Real traffic, or a fire drill the member ran against themselves. Absent in 0.1, where it means live.",
+          "enum": ["live", "drill"]
+        }
+      }
+    }
+  }
+}

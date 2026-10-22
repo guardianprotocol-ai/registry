@@ -24,6 +24,11 @@ SCHEMA_VERSION = "0.2"
 READABLE_SCHEMA_VERSIONS = ("0.1", "0.2")
 SENSOR_VERSION = "guardian-sensor v0"
 
+# Defined by spec/sightings-0.2.md, which is the normative document, and checked against
+# spec/sightings-0.2.schema.json by spec/tests/test_conformance.py. This file is one
+# implementation of that specification rather than the definition of it: a second
+# implementation in another language should be written from the spec, not from here.
+#
 # The only keys a sightings entry may ever have.
 #
 # `source` says whether the detection came from real traffic or from a fire drill, where the
