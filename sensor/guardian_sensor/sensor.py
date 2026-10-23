@@ -253,6 +253,7 @@ ENROLL_COMMAND = "enroll"
 CREDIT_COMMAND = "credit"
 STATUS_COMMAND = "status"
 SETUP_COMMAND = "setup"
+SHARE_COMMAND = "share"
 
 
 COMMANDS = (
@@ -262,6 +263,7 @@ COMMANDS = (
     ("enroll", "take part in scheduled exercises. Installs once, then nothing"),
     ("agenda", "run a published exercise when its time has come. Safe to run often"),
     ("report", "build an anonymized sightings file, previewing it first"),
+    ("share", "agree to send sightings automatically, or stop: on, off, now"),
     ("update", "fetch and verify a published rule set"),
     ("credit", "record how you want to be credited in the research"),
     ("status", "what this machine has done. Reads local files and nothing else"),
@@ -336,6 +338,9 @@ def main(argv=None):
     if args[:1] == [SETUP_COMMAND]:
         from . import setup_cli
         return setup_cli.main(args[1:])
+    if args[:1] == [SHARE_COMMAND]:
+        from . import share_cli
+        return share_cli.main(args[1:])
 
     # A word that is not a command and not a flag, with no -- anywhere, is a mistyped
     # command rather than a server to launch. Without this it falls through to the proxy and

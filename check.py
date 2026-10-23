@@ -36,6 +36,7 @@ CHECKS = [
     ("Status and packaging tests", "sensor", ["tests/test_status.py"]),
     ("Guided setup tests", "sensor", ["tests/test_setup.py"]),
     ("Banner tests", "sensor", ["tests/test_banner.py"]),
+    ("Alerts and sharing tests", "sensor", ["tests/test_alerts.py"]),
     ("Hostile agenda tests", "sensor", ["tests/test_agenda_hostile.py"]),
     ("Registered canaries end to end", "sensor", ["tests/test_canary_sensor.py"]),
     ("Sightings spec conformance", ".", ["spec/tests/test_conformance.py"]),

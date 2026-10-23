@@ -397,18 +397,56 @@ def _offline(a, at, out):
             pass
 
     exercise_id = "offline-%s" % at.strftime("%Y-%m-%dT%H")
-    out.write("Running the local exercise %s. Nothing was fetched and nothing is shared.\n"
-              % exercise_id)
+    out.write("Running the local exercise %s. Nothing was fetched.\n" % exercise_id)
     argv_for_drill = ["--dir", a.dir] + (["--org", a.org] if a.org else [])
     code = drill.main(argv_for_drill, out=out)
     record(a.log, exercise_id, "ran" if code == 0 else "failed",
            "offline, drill exit %d" % code, settings={"offline": True})
+    # The offline arm fetches nothing. Whether it sends is a separate decision the member
+    # made, and an earlier version reached this only on the networked path, so somebody who
+    # chose the control arm and agreed to share would never have sent anything.
+    _share_if_agreed(a, out)
     return code
+
+
+def _read_alerts(a, out, opener=None):
+    """What the network has seen, if anything new. Read, never obeyed.
+
+    This is the last link in the loop. Until it existed a sighting reached an aggregate and
+    stopped, so a member's machine had no way to learn what anybody else had seen and "the
+    network told me" was a description rather than a mechanism.
+    """
+    from . import alerts as alerts_module
+    root = os.path.dirname(os.path.abspath(a.log)) or "."
+    try:
+        document = alerts_module.fetch(a.base, opener=opener)
+    except Exception:
+        # No alerts published is the ordinary case, and a poll that complains about it every
+        # minute gets switched off.
+        return
+    try:
+        published = alerts_module.parse(document)
+    except alerts_module.AlertError as e:
+        out.write("Refusing the published alerts: %s\n" % e)
+        return
+    fresh = alerts_module.unseen(root, published)
+    if not fresh:
+        return
+    out.write("\nThe network has seen %d pattern%s this machine had not been told about:\n"
+              % (len(fresh), "" if len(fresh) == 1 else "s"))
+    for alert in fresh:
+        out.write("  %-9s seen by %d organizations\n"
+                  % (alert["pattern"], alert["organizations"]))
+    out.write("Counts only. Nothing here says who saw it, or what to do about it.\n")
+    alerts_module.remember(root, fresh, document.get("published", ""))
 
 
 def _poll(a, at, out, opener):
     if a.offline:
         return _offline(a, at, out)
+    # Read before the exercise, so a machine that has nothing scheduled still learns what
+    # everybody else has seen. Learning is the part that does not need an exercise.
+    _read_alerts(a, out, opener=None)
     url = a.base.rstrip("/") + "/" + AGENDA_NAME
     skew = None
     try:
@@ -492,6 +530,38 @@ def _poll(a, at, out, opener):
            "drill exit %d%s" % (code, "" if skew is None else ", clock skew %ds" % round(skew)),
            settings=settings)
 
-    out.write("\nRecorded in %s. Nothing has been shared: build and read a report when you "
-              "are ready.\n" % a.log)
+    out.write("\nRecorded in %s.\n" % a.log)
+    _share_if_agreed(a, out)
     return code
+
+
+def _share_if_agreed(a, out):
+    """Send the sightings, if and only if the member said to.
+
+    Consent is read from their disk every time rather than remembered, so revoking it takes
+    effect on the next poll without anything else happening. A member who has not agreed is
+    told nothing was shared, because silence about it would be the wrong kind of quiet.
+    """
+    from . import share, share_cli
+    root = os.path.dirname(os.path.abspath(a.log)) or "."
+    agreed = share.consent(root)
+    if not agreed:
+        out.write("Nothing has been shared: build and read a report when you are ready.\n")
+        return
+    try:
+        document = share_cli._document(root, agreed["org"])
+    except Exception as e:  # noqa: BLE001
+        out.write("Could not build a report to send: %s\n" % e)
+        return
+    ok, message = share.send(document, agreed["endpoint"])
+    share.note_sent(root, document, ok, message)
+    entries = len(document.get("sightings", []))
+    if ok:
+        out.write("Shared %d entr%s with %s: %s\n"
+                  % (entries, "y" if entries == 1 else "ies", agreed["endpoint"], message))
+    else:
+        # A receiver that is down is a delay, not a loss. The evidence stays on disk and the
+        # next poll sends it, so this must not read like something went wrong with their
+        # machine.
+        out.write("Not shared this time (%s). The evidence is still here and the next poll "
+                  "will send it.\n" % message)
