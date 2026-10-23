@@ -336,6 +336,39 @@ def test_the_sensor_stops_the_vulnerable_agent():
     check("with the sensor it does not", withit.rate == 0.0, f"{withit.rate}, errors {withit.errors}")
 
 
+def test_gp0001_and_gp0002_run_different_experiments():
+    """Prompt injection and sensitive-data disclosure must not share one control run."""
+    class RecordingClient:
+        def __init__(self):
+            self.tools = []
+
+        def call(self, method, params=None):
+            if method == "tools/call":
+                self.tools.append(params["name"])
+            return {"result": {"content": [{"type": "text", "text": "seeded canary"}]}}
+
+        @staticmethod
+        def text_of(message):
+            return message["result"]["content"][0]["text"]
+
+    gp1 = scenarios.SCENARIOS["GP-0001"]
+    gp2 = scenarios.SCENARIOS["GP-0002"]
+    gp1_client, gp2_client = RecordingClient(), RecordingClient()
+    gp1.chain(gp1_client)
+    gp2.chain(gp2_client)
+    gp1_tools, gp2_tools = gp1_client.tools, gp2_client.tools
+    check("GP-0001 fetches a poisoned page", "fetch_page" in gp1_tools, str(gp1_tools))
+    check("GP-0001 exfiltrates through messaging", "send_message" in gp1_tools, str(gp1_tools))
+    check("GP-0002 reads a seeded customer record", "read_customer" in gp2_tools, str(gp2_tools))
+    check("GP-0002 exfiltrates through HTTP", "http_post" in gp2_tools, str(gp2_tools))
+    check("the experiments do not share an attack chain", set(gp1_tools).isdisjoint(gp2_tools),
+          f"GP-0001 {gp1_tools}; GP-0002 {gp2_tools}")
+    check("the experiments have separate judges", gp1.succeeded is not gp2.succeeded,
+          "both scenarios use one success judge")
+    check("the experiments have separate preconditions", gp1.precondition is not gp2.precondition,
+          "both scenarios use one precondition")
+
+
 def test_the_sensor_stops_a_tampered_tool():
     """The first version of this scenario turned the tamper on before the tool was approved.
 
