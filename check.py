@@ -32,6 +32,7 @@ CHECKS = [
     ("Registered canary tests", "sensor", ["tests/test_canaries.py"]),
     ("Scheduled agenda tests", "sensor", ["tests/test_agenda.py"]),
     ("Enrolment tests", "sensor", ["tests/test_enroll.py"]),
+    ("Credit tests", "sensor", ["tests/test_credit.py"]),
     ("Hostile agenda tests", "sensor", ["tests/test_agenda_hostile.py"]),
     ("Registered canaries end to end", "sensor", ["tests/test_canary_sensor.py"]),
     ("Sightings spec conformance", ".", ["spec/tests/test_conformance.py"]),

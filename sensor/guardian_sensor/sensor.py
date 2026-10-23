@@ -250,10 +250,47 @@ DRILL_COMMAND = "drill"
 CANARY_COMMAND = "canary"
 AGENDA_COMMAND = "agenda"
 ENROLL_COMMAND = "enroll"
+CREDIT_COMMAND = "credit"
+
+
+COMMANDS = (
+    ("drill", "attack your own machine through your own sensor, and see what it caught"),
+    ("canary", "register values the sensor should watch for: add, list, arm, remove"),
+    ("enroll", "take part in scheduled exercises. Installs once, then nothing"),
+    ("agenda", "run a published exercise when its time has come. Safe to run often"),
+    ("report", "build an anonymized sightings file, previewing it first"),
+    ("update", "fetch and verify a published rule set"),
+    ("credit", "record how you want to be credited in the research"),
+)
+
+
+def usage(out=sys.stdout):
+    """What this can do, which was previously findable only by reading the source.
+
+    argparse showed the proxy's own options and nothing else, so a participant running
+    --help saw no mention of any of the commands below. For a tool being handed to people
+    who have not read the repository, that is the difference between usable and not.
+    """
+    width = max(len(name) for name, _ in COMMANDS)
+    out.write("Guardian sensor. An MCP proxy, and the commands around it.\n\n")
+    out.write("  python3 -m guardian_sensor <command> [options]\n\n")
+    for name, what in COMMANDS:
+        out.write("  %-*s  %s\n" % (width, name, what))
+    out.write("\nEach command explains itself with --help.\n")
+    out.write("\nAs a proxy, with the real server after a double dash:\n\n")
+    out.write("  python3 -m guardian_sensor --config guardian.json -- <server command>\n")
+    out.write("\nStart here if you are new:\n\n")
+    out.write("  python3 -m guardian_sensor drill --org <a-pseudonym-you-choose>\n")
+    return 0
 
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else list(argv)
+    # Before argparse, because argparse would answer --help with the proxy's options and
+    # never mention a command. A bare invocation asks for help rather than erroring.
+    if not args or args[0] in ("help", "--help", "-h", "commands"):
+        if not args or args[0] in ("help", "commands") or len(args) == 1:
+            return usage()
     if args[:1] and args[0] in HUB_COMMANDS:
         from . import hub_cli
         return hub_cli.main(args)
@@ -269,6 +306,9 @@ def main(argv=None):
     if args[:1] == [ENROLL_COMMAND]:
         from . import enroll
         return enroll.main(args[1:])
+    if args[:1] == [CREDIT_COMMAND]:
+        from . import credit
+        return credit.main(args[1:])
 
     ap = argparse.ArgumentParser(prog="guardian_sensor")
     ap.add_argument("--config", default=None)

@@ -32,6 +32,24 @@ never touches a participant's records.
 
 A member id is a pseudonym they choose. Never a company name.
 
+### Being credited
+
+Optional, and a separate file on purpose:
+
+```bash
+python3 -m guardian_sensor credit --name "Your Name" --github your-handle
+```
+
+The pseudonym goes into sightings, which are shared. The name goes here, and goes nowhere
+until the participant sends it. One file would have been more convenient and would have
+quietly undone the privacy argument the format rests on.
+
+Authorship under `docs/RESEARCH.md` needs a substantive contribution, approval of the final
+draft, and willingness to answer for your part. Somebody who ran an exercise may want none
+of that, so `--acknowledge-only` asks to be thanked rather than listed. Being acknowledged
+is not a lesser thing and assuming otherwise is how people end up as authors of papers they
+never read.
+
 ## What the operator does, per exercise
 
 ### 1. Publish an agenda
