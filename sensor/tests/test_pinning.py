@@ -177,6 +177,60 @@ def test_every_detection_records_the_rule_bundle_it_ran_under():
               str({r["rules_fingerprint"] for r in records}))
 
 
+def test_an_unknown_command_says_so_rather_than_trying_to_run_it():
+    """A word that is not a command fell through to the proxy, which tried to execute it.
+    Somebody typing "scan" was told their MCP server could not be started, which is true and
+    useless."""
+    import io
+    import contextlib
+    from guardian_sensor import sensor as module
+
+    for typo, suggestion in (("scan", None), ("canaries", "canary"), ("drills", "drill")):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = module.main([typo])
+        text = err.getvalue()
+        check(f"{typo!r} is refused", code == 2, str(code))
+        check(f"{typo!r} is named in the error", repr(typo) in text, text[:120])
+        check(f"{typo!r} gets the command list", "drill" in text and "canary" in text,
+              text[:200])
+        if suggestion:
+            check(f"{typo!r} suggests {suggestion!r}", suggestion in text, text[:160])
+        check(f"{typo!r} is not treated as a program",
+              "cannot start the MCP server" not in text, text[:160])
+
+
+def test_a_broken_config_is_explained_rather_than_raised():
+    """Hand edited by whoever set this up, so a typo in it is the common case."""
+    import contextlib
+    import io
+    from guardian_sensor import sensor as module
+
+    with tempfile.TemporaryDirectory() as w:
+        cases = [("not json at all", "not valid JSON"),
+                 ("[1, 2]", "should be a JSON object")]
+        for body, expect in cases:
+            path = os.path.join(w, "guardian.json")
+            with open(path, "w") as f:
+                f.write(body)
+            err = io.StringIO()
+            try:
+                with contextlib.redirect_stderr(err):
+                    module.main(["--config", path, "--", "echo", "hi"])
+                check(f"a config that is {body[:12]!r} is refused", False, "it was accepted")
+            except SystemExit as e:
+                check(f"a config that is {body[:12]!r} is refused", expect in str(e), str(e))
+                check("no traceback reaches the operator", "Traceback" not in str(e), str(e))
+        err = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(err):
+                module.main(["--config", os.path.join(w, "absent.json"), "--", "echo", "hi"])
+            check("a missing config is refused", False, "it was accepted")
+        except SystemExit as e:
+            check("a missing config is refused", "cannot read the config" in str(e), str(e))
+            check("and says what to do", "leave it out" in str(e), str(e))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

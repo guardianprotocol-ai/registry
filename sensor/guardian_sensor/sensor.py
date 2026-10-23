@@ -310,6 +310,21 @@ def main(argv=None):
         from . import credit
         return credit.main(args[1:])
 
+    # A word that is not a command and not a flag, with no -- anywhere, is a mistyped
+    # command rather than a server to launch. Without this it falls through to the proxy and
+    # the person is told their MCP server could not be started, which is true and useless:
+    # they typed "scan" and got an error about executables.
+    known = {name for name, _ in COMMANDS}
+    if (args and not args[0].startswith("-") and args[0] not in known
+            and "--" not in args and "/" not in args[0] and os.sep not in args[0]):
+        sys.stderr.write("There is no %r command.\n\n" % args[0])
+        close = [name for name in sorted(known)
+                 if name.startswith(args[0][:2]) or args[0][:2] in name]
+        if close:
+            sys.stderr.write("Did you mean: %s\n\n" % ", ".join(close))
+        usage(sys.stderr)
+        return 2
+
     ap = argparse.ArgumentParser(prog="guardian_sensor")
     ap.add_argument("--config", default=None)
     ap.add_argument("server", nargs=argparse.REMAINDER)
@@ -317,7 +332,23 @@ def main(argv=None):
     server_cmd = a.server[1:] if a.server[:1] == ["--"] else a.server
     if not server_cmd:
         ap.error("give the real MCP server command after --")
-    cfg = json.load(open(a.config)) if a.config else {}
+    # Hand edited by whoever set this up, so a typo in it is the common case rather than the
+    # exotic one. A JSONDecodeError traceback tells somebody their config is broken in the
+    # least useful way available.
+    cfg = {}
+    if a.config:
+        try:
+            with open(a.config) as f:
+                cfg = json.load(f)
+        except OSError as e:
+            raise SystemExit("cannot read the config %s: %s. Point --config at a file that "
+                             "exists, or leave it out to use the defaults." % (a.config, e))
+        except ValueError as e:
+            raise SystemExit("the config %s is not valid JSON: %s. A trailing comma or a "
+                             "missing quote is the usual cause." % (a.config, e))
+        if not isinstance(cfg, dict):
+            raise SystemExit("the config %s should be a JSON object, like "
+                             '{"mode": "block"}.' % a.config)
     sensor = Sensor(cfg)
 
     try:

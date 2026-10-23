@@ -280,6 +280,20 @@ def main(argv=None, out=sys.stdout):
                          "the difference")
     a = ap.parse_args([] if argv is None else argv)
 
+    # Asked for rather than defaulted. A pseudonym that travels with somebody's sightings
+    # should be a deliberate choice, and a flag they have to look up is a worse way to get a
+    # deliberate choice than a question they can answer.
+    if not a.org and sys.stdin.isatty() and sys.stdout.isatty():
+        out.write("Pick a member id: a pseudonym, lowercase letters, digits and hyphens.\n")
+        out.write("Never a company name. It is the only identifier that travels with your "
+                  "sightings.\n\n")
+        try:
+            a.org = input("  member id: ").strip() or None
+        except (EOFError, KeyboardInterrupt):
+            out.write("\n")
+            a.org = None
+        out.write("\n")
+
     workdir = os.path.abspath(a.dir)
     os.makedirs(workdir, exist_ok=True)
 
