@@ -21,6 +21,7 @@ import subprocess
 import sys
 import time
 
+from . import called
 from . import paint
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -313,8 +314,8 @@ def main(argv=None, out=sys.stdout):
         out.write("Overwriting pins.json would reset the approval baseline, and the next "
                   "listing would re-approve\nwhatever the server offers. Run the drill "
                   "somewhere else:\n\n")
-        out.write("  python3 -m guardian_sensor drill --dir %s --org %s\n"
-                  % (DEFAULT_DIR, a.org or "<your-member-id>"))
+        out.write("  %s drill --dir %s --org %s\n"
+                  % (called.invocation(), DEFAULT_DIR, a.org or "<your-member-id>"))
         return 2
 
     if not a.keep:
@@ -374,11 +375,12 @@ def main(argv=None, out=sys.stdout):
     if a.no_next_steps:
         return 0
     out.write("\nTo see exactly what would be shared, and share nothing:\n")
-    out.write("  python3 -m guardian_sensor report --org %s --preview\n"
-              % (a.org or "<your-member-id>"))
+    out.write("  %s report --org %s --preview\n"
+              % (called.invocation(), a.org or "<your-member-id>"))
     out.write("\nTo write the file once you are happy with it:\n")
-    out.write("  python3 -m guardian_sensor report --org %s --out sightings-%s.json\n"
-              % (a.org or "<your-member-id>", time.strftime("%Y-%m-%d")))
+    out.write("  %s report --org %s --out sightings-%s.json\n"
+              % (called.invocation(), a.org or "<your-member-id>",
+                 time.strftime("%Y-%m-%d")))
     if not a.org:
         out.write("\nPick a member id that is not your company name. It is a pseudonym and\n"
                   "it is the only identifier that travels with your sightings.\n")

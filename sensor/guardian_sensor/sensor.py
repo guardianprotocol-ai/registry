@@ -269,14 +269,9 @@ COMMANDS = (
 
 
 def _invocation():
-    """How this was invoked, so examples match what the reader typed.
-
-    Somebody who installed the package types `guardian`; somebody running from a clone types
-    the module form. Printing the other one is a small thing that makes a tool feel like it
-    was written for somebody else.
-    """
-    return "guardian" if os.path.basename(sys.argv[0]) == "guardian" else \
-        "python3 -m guardian_sensor"
+    """Kept as a name here; the answer lives in one place now."""
+    from . import called
+    return called.invocation()
 
 
 def usage(out=sys.stdout):

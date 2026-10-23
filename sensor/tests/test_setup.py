@@ -33,7 +33,7 @@ def test_it_needs_a_terminal_and_says_what_to_do_without_one():
     check("it refuses without a terminal", code == 2, str(code))
     check("it says why", "needs a terminal" in text, text)
     check("and gives the two commands that do the same thing",
-          "guardian drill --org" in text and "guardian enroll --offline" in text, text)
+          "drill --org" in text and "enroll --offline" in text, text)
 
 
 def test_the_member_id_is_validated_the_same_way_the_format_does():
@@ -107,6 +107,43 @@ def test_the_removal_hint_is_a_command_that_works():
                 platform="darwin")
     check("a networked install keeps its base in the hint",
           "--remove --base https://x.test" in out.getvalue(), out.getvalue()[-400:])
+
+
+def test_networked_is_the_default_arm():
+    """It is the arm the research needs most, and a default is the answer most people give."""
+    body = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "guardian_sensor", "setup_cli.py"), encoding="utf-8").read()
+    check("the default is networked", 'default="networked"' in body, "default not networked")
+    check("offline is still one word away",
+          '"offline", "networked", "neither"' in body, "offline not offered")
+    check("and is named as the control arm rather than the lesser option",
+          "control arm" in body, "offline framed as lesser")
+
+
+def test_an_empty_publish_point_sets_expectations_rather_than_refusing():
+    """A networked install before anything is published polls into silence, which is correct
+    and looks broken."""
+    class Nothing:
+        def __call__(self, url, timeout=None):
+            raise OSError("404")
+
+    class Something:
+        def __call__(self, url, timeout=None):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b'{"exercise_id": "x", "run_after": "2026-10-27T14:00:00Z"}'
+
+    check("an unreachable agenda reads as nothing published",
+          setup_cli._agenda_reachable("https://x.test", Nothing()) is False)
+    check("a published agenda reads as something",
+          setup_cli._agenda_reachable("https://x.test", Something()) is True)
 
 
 def main():

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Short command, straight from a clone, with nothing installed.
+#
+# `pip install -e sensor/` gives the same thing on PATH, and asking somebody to install a
+# package before they have decided whether they trust the thing is the wrong order. This
+# needs only the clone they already have.
+#
+#   ./guardian setup
+#
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+python="${GUARDIAN_PYTHON:-}"
+if [ -z "$python" ]; then
+  for candidate in python3 python3.13 python3.12 python3.11 python3.10 python3.9; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      python="$candidate"
+      break
+    fi
+  done
+fi
+if [ -z "$python" ]; then
+  echo "No python3 found. This needs Python 3.9 or newer and nothing else." >&2
+  exit 1
+fi
+
+# Checked here rather than left to fail halfway through, because the error Python gives for
+# a version that is too old is about syntax and says nothing about what to do.
+if ! "$python" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)'; then
+  echo "$($python -V) is too old. This needs Python 3.9 or newer." >&2
+  echo "Point GUARDIAN_PYTHON at a newer one if you have it." >&2
+  exit 1
+fi
+
+export PYTHONPATH="$here/sensor${PYTHONPATH:+:$PYTHONPATH}"
+# So printed examples match what the reader typed. Running `./guardian` and being shown
+# `python3 -m guardian_sensor` is a small way of telling somebody the tool was written for
+# a different person.
+export GUARDIAN_INVOCATION="${GUARDIAN_INVOCATION:-./guardian}"
+exec "$python" -m guardian_sensor "$@"

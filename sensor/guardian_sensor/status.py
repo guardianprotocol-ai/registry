@@ -15,7 +15,7 @@ import json
 import os
 import sys
 
-from . import canaries, credit, paint
+from . import called, canaries, credit, paint
 
 DEFAULT_HOME = os.path.join(".guardian")
 
@@ -83,7 +83,7 @@ def render(state, out=sys.stdout):
     if not state["exists"]:
         out.write("Not taking part. Nothing has been installed in %s.\n\n" % state["root"])
         out.write("To try the sensor without installing anything:\n\n")
-        out.write("  guardian drill\n")
+        out.write("  %s drill\n" % called.invocation())
         return 1
 
     out.write("Records in %s\n\n" % state["root"])
@@ -125,14 +125,15 @@ def render(state, out=sys.stdout):
     # and leaves the reader to work out the implication has done half the job.
     if not runs:
         out.write("Nothing has run yet. If you enrolled, it runs on its own when an "
-                  "exercise is due.\nTo run one now:  guardian drill\n")
+                  "exercise is due.\nTo run one now:  %s drill\n"
+                  % called.invocation())
     elif not state["credit"]:
         out.write("You have taken part and are not credited anywhere. If you want to be "
-                  "named in the\nresearch:  guardian credit --name \"Your Name\" --github "
-                  "your-handle\n")
+                  "named in the research:\n\n  %s credit --name \"Your Name\" --github "
+                  "your-handle\n" % called.invocation())
     else:
-        out.write("Nothing needs doing. To see what you would share:  guardian report "
-                  "--preview\n")
+        out.write("Nothing needs doing. To see what you would share:\n  %s report "
+                  "--preview\n" % called.invocation())
     return 0
 
 

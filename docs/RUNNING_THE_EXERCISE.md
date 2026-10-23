@@ -11,13 +11,13 @@ acts on its own, which is why there is no channel into anybody's laptop.
 ```bash
 git clone https://github.com/guardianprotocol-ai/registry.git
 cd registry/sensor
-python3 -m guardian_sensor setup
+./guardian setup
 ```
 
 That runs the drill by hand and proves it works. Then one command to take part:
 
 ```bash
-python3 -m guardian_sensor enroll \
+./guardian enroll \
   --base https://guardianprotocol.network/season1 --org <your-member-id>
 ```
 
@@ -37,7 +37,7 @@ A member id is a pseudonym they choose. Never a company name.
 Optional, and a separate file on purpose:
 
 ```bash
-python3 -m guardian_sensor credit --name "Your Name" --github your-handle
+./guardian credit --name "Your Name" --github your-handle
 ```
 
 The pseudonym goes into sightings, which are shared. The name goes here, and goes nowhere
@@ -82,8 +82,8 @@ Participants do this themselves, because nothing leaves a machine without its ow
 at it first:
 
 ```bash
-python3 -m guardian_sensor report --org <id> --evidence .guardian/drill/evidence.jsonl --preview
-python3 -m guardian_sensor report --org <id> --evidence .guardian/drill/evidence.jsonl \
+./guardian report --org <id> --evidence .guardian/drill/evidence.jsonl --preview
+./guardian report --org <id> --evidence .guardian/drill/evidence.jsonl \
   --out sightings-2026-10-27.json
 ```
 

@@ -20,6 +20,8 @@ import os
 import re
 import sys
 
+from . import called
+
 SCHEMA_VERSION = 1
 DEFAULT_PATH = os.path.join(".guardian", "credit.json")
 
@@ -106,8 +108,8 @@ def main(argv=None, out=sys.stdout):
         existing = load(a.file)
         if existing is None:
             out.write("Nothing recorded. To be credited in the research:\n\n")
-            out.write("  python3 -m guardian_sensor credit --name \"Your Name\" "
-                      "--github your-handle\n\n")
+            out.write("  %s credit --name \"Your Name\" --github your-handle\n\n"
+                      % called.invocation())
             out.write("This is optional, and it is kept in a separate file from your "
                       "sightings.\nYour sightings carry a pseudonym and never your name.\n")
             return 0 if a.show else 1

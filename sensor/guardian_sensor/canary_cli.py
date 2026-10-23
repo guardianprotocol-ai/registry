@@ -11,6 +11,7 @@ import getpass
 import os
 import sys
 
+from . import called
 from . import canaries
 
 COMMANDS = ("add", "list", "arm", "remove")
@@ -59,7 +60,8 @@ def add(argv, out=sys.stdout, stream=None):
     if entry["state"] == canaries.BASELINE:
         out.write("\nIt is in baseline, so a hit is reported and nothing is blocked. Watch it "
                   "for a few days\nof ordinary work. If it never fires, arm it:\n\n")
-        out.write("  python3 -m guardian_sensor canary arm --label %r\n\n" % entry["label"])
+        out.write("  %s canary arm --label %r\n\n"
+                  % (called.invocation(), entry["label"]))
         out.write("If it does fire during baseline, the canary is in the wrong place. Move it "
                   "rather than\nraising the threshold.\n")
     else:
@@ -138,7 +140,7 @@ def remove(argv, out=sys.stdout):
 
 def main(argv, out=sys.stdout, stream=None):
     if not argv or argv[0] not in COMMANDS:
-        out.write("Usage: python3 -m guardian_sensor canary {%s}\n" % "|".join(COMMANDS))
+        out.write("Usage: %s canary {%s}\n" % (called.invocation(), "|".join(COMMANDS)))
         return 2
     command, rest = argv[0], argv[1:]
     try:

@@ -6,21 +6,24 @@ An MCP proxy that sits between an agent and any MCP server, relays every message
 
 ## Install
 
-From a clone, nothing needed:
+From a clone, nothing installed, run from the repository root:
 
 ```bash
-python3 -m guardian_sensor setup
+./guardian setup
 ```
 
 That asks four questions, runs the drill so you see it work before anything is installed,
 and fills in every argument the other commands would have wanted. Nothing is installed or
 sent until you have seen what it is.
 
-Or install it, which shortens every command to `guardian` and adds no dependency:
+`./guardian` finds a Python 3.9 or newer, refuses clearly if it cannot, and needs nothing
+installed. Every message it prints uses the form you typed, so anything it suggests can be
+copied.
+
+Installing it puts the same thing on your PATH as `guardian`, and adds no dependency:
 
 ```bash
 pip install -e sensor/
-guardian
 ```
 
 `guardian` with no arguments lists every command. `guardian status` says what this machine
@@ -63,7 +66,7 @@ describe an attack. It fires because a specific value moved, whatever moved it.
 The sensor already watches for its own test tokens. These are yours.
 
 ```bash
-python3 -m guardian_sensor canary add --label "staging payment key"
+./guardian canary add --label "staging payment key"
 ```
 
 The value is read from a prompt, or piped in, and never passed as an argument, because an
@@ -123,7 +126,7 @@ The fastest way to see the sensor work, and the way to join the exchange without
 be attacked.
 
 ```bash
-python3 -m guardian_sensor drill --org <your-member-id>
+./guardian drill --org <your-member-id>
 ```
 
 A lab server runs locally and attacks you: a tool whose definition changes after you
@@ -150,7 +153,7 @@ approval baseline and the next listing would re-approve whatever the server offe
 Afterwards, to see what a sighting would look like and share nothing:
 
 ```bash
-python3 -m guardian_sensor report --org <your-member-id> \
+./guardian report --org <your-member-id> \
   --evidence .guardian/drill/evidence.jsonl --preview
 ```
 
@@ -163,7 +166,7 @@ identifier that travels with your sightings.
 ### The response half
 
 ```bash
-python3 -m guardian_sensor drill --org <your-member-id> --respond
+./guardian drill --org <your-member-id> --respond
 ```
 
 Runs the same attack twice, with a rule update in between.
@@ -190,7 +193,7 @@ and what is still unmeasured. The command says so itself rather than leaving it 
 The control arm, and the way to take part from a machine that cannot reach an external URL.
 
 ```bash
-python3 -m guardian_sensor enroll --offline --org <your-member-id>
+./guardian enroll --offline --org <your-member-id>
 ```
 
 Fetches nothing, listens to nothing, shares nothing. It runs the exercise locally on its own
@@ -211,7 +214,7 @@ between them gets measured per participant rather than across participants.
 Install once, leave it running, and the exercise happens without you being available for it.
 
 ```bash
-python3 -m guardian_sensor agenda --base https://guardianprotocol.network/season1 --org <your-member-id>
+./guardian agenda --base https://guardianprotocol.network/season1 --org <your-member-id>
 ```
 
 Safe to run hourly from cron or launchd. It fetches a published agenda, runs the local drill
@@ -219,7 +222,7 @@ once when its time has come, and does nothing the rest of the time. A missing ag
 ordinary case between exercises and is quiet on purpose.
 
 ```
-0 * * * * cd ~/guardian && python3 -m guardian_sensor agenda \
+0 * * * * cd ~/guardian && ./guardian agenda \
             --base https://guardianprotocol.network/season1 --org <your-member-id>
 ```
 
@@ -255,7 +258,7 @@ If your machine keeps your home directory locked down, which is normal on a mana
 say where to keep records instead:
 
 ```bash
-GUARDIAN_HOME=/path/you/can/write python3 -m guardian_sensor enroll \
+GUARDIAN_HOME=/path/you/can/write ./guardian enroll \
   --base https://guardianprotocol.network/season1 --org <your-member-id>
 ```
 
@@ -263,7 +266,7 @@ Nothing is shared by this. Building and sending a report stays a separate, delib
 
 ## Sharing hub, reference implementation
 
-`python3 -m guardian_sensor report --preview` and `python3 -m guardian_sensor update` are the
+`./guardian report --preview` and `./guardian update` are the
 reference implementation of the sharing hub, used in the Season 2 distributed experiments.
 Nothing in Season 1 depends on them: a sightings file is built from an allow-list of eight
 fields and leaves your machine only if you share it. See `ARCHITECTURE.md` for what v0 does

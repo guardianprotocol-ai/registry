@@ -61,7 +61,7 @@ def test_it_says_so_when_nothing_is_installed():
         code = status.main(["--home", os.path.join(w, "absent")], out=out)
         check("it exits non zero", code == 1, str(code))
         check("it says not taking part", "Not taking part" in out.getvalue(), out.getvalue())
-        check("and offers the drill", "guardian drill" in out.getvalue(), out.getvalue())
+        check("and offers the drill", " drill" in out.getvalue(), out.getvalue())
 
 
 def test_it_reports_what_the_machine_has_done():
@@ -87,7 +87,7 @@ def test_it_says_what_to_do_next():
         out = io.StringIO()
         status.main(["--home", w], out=out)
         check("an uncredited participant is told how to be credited",
-              "guardian credit --name" in out.getvalue(), out.getvalue()[-300:])
+              "credit --name" in out.getvalue(), out.getvalue()[-300:])
 
     with tempfile.TemporaryDirectory() as w:
         populated(w, with_credit=True)
@@ -177,6 +177,34 @@ def test_packaging_adds_no_dependency():
     check("the oldest supported Python is declared",
           'requires-python = ">=3.9"' in body, body[:300])
     check("signatures ship with the package", "signatures.json" in body, body[:600])
+
+
+def test_printed_commands_match_how_the_tool_was_invoked():
+    """Printing a form somebody did not type is a small way of telling them the tool was
+    written for a different person, and these messages exist to be copied."""
+    from guardian_sensor import called
+    saved = os.environ.get("GUARDIAN_INVOCATION")
+    try:
+        os.environ["GUARDIAN_INVOCATION"] = "./guardian"
+        check("the wrapper's name is honoured", called.invocation() == "./guardian",
+              called.invocation())
+        with tempfile.TemporaryDirectory() as w:
+            populated(w)
+            out = io.StringIO()
+            status.main(["--home", w], out=out)
+            check("and reaches the advice it prints",
+                  "./guardian credit" in out.getvalue(), out.getvalue()[-300:])
+            check("with no trace of the other form",
+                  "python3 -m guardian_sensor" not in out.getvalue(),
+                  out.getvalue()[-300:])
+        os.environ.pop("GUARDIAN_INVOCATION")
+        check("and falls back to the module form",
+              called.invocation() == "python3 -m guardian_sensor", called.invocation())
+    finally:
+        if saved is None:
+            os.environ.pop("GUARDIAN_INVOCATION", None)
+        else:
+            os.environ["GUARDIAN_INVOCATION"] = saved
 
 
 def main():

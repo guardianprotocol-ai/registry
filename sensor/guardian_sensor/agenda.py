@@ -27,6 +27,7 @@ import os
 import sys
 import urllib.request
 
+from . import called
 from . import drill, hub
 
 AGENDA_NAME = "agenda.json"
@@ -367,8 +368,8 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
         out.write("Nothing ran, because without a record there is no way to tell an "
                   "exercise from a repeat of it.\n")
         out.write("Point it somewhere writable with --log and --dir, then enrol again:\n\n")
-        out.write("  python3 -m guardian_sensor agenda --base %s --log <path> --dir <path>\n"
-                  % a.base)
+        out.write("  %s agenda --base %s --log <path> --dir <path>\n"
+                  % (called.invocation(), a.base))
         return 1
 
 

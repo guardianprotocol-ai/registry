@@ -20,6 +20,8 @@ import plistlib
 import subprocess
 import sys
 
+from . import called
+
 LABEL = "network.guardianprotocol.agenda"
 DEFAULT_INTERVAL = 60
 
@@ -147,8 +149,8 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
     if kind is None:
         out.write("No service manager known for this platform (%s).\n" % (platform or sys.platform))
         out.write("Run the poll from whatever scheduler you use:\n\n")
-        out.write("  python3 -m guardian_sensor agenda --base %s --org %s\n"
-                  % (a.base, a.org or "<your-member-id>"))
+        out.write("  %s agenda --base %s --org %s\n"
+                  % (called.invocation(), a.base, a.org or "<your-member-id>"))
         return 1
 
     if a.remove:
@@ -191,8 +193,9 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
         out.write("This needs somewhere to keep its own records, and that is the usual "
                   "place. If your machine\nkeeps that directory locked down, say where "
                   "instead:\n\n")
-        out.write("  GUARDIAN_HOME=/path/you/can/write python3 -m guardian_sensor enroll "
-                  "--base %s --org %s\n\n" % (a.base, a.org or "<your-member-id>"))
+        out.write("  GUARDIAN_HOME=/path/you/can/write %s enroll "
+                  "--base %s --org %s\n\n"
+                  % (called.invocation(), a.base, a.org or "<your-member-id>"))
         out.write("Nothing was installed.\n")
         return 1
 
@@ -243,8 +246,8 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
               "will not tell you, so run enroll again afterwards.\n" % module_dir)
     # --base is meaningless offline and printing "--base None" in the one line somebody
     # copies to undo this makes the escape hatch look broken.
-    out.write("Stop at any time with: python3 -m guardian_sensor enroll --remove%s\n\n"
-              % ("" if a.offline else " --base %s" % a.base))
+    out.write("Stop at any time with: %s enroll --remove%s\n\n"
+              % (called.invocation(), "" if a.offline else " --base %s" % a.base))
 
     if a.print_only:
         out.write("Nothing was installed.\n")

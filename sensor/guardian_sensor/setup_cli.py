@@ -16,7 +16,7 @@ import argparse
 import os
 import sys
 
-from . import canaries, credit, drill, enroll, hub, paint
+from . import called, canaries, credit, drill, enroll, hub, paint
 
 PUBLISH_BASE = "https://guardianprotocol.network/season1"
 
@@ -60,6 +60,22 @@ def _yes(prompt, out, default=True):
     return answer.startswith("y")
 
 
+def _agenda_reachable(base, opener=None):
+    """Whether anything is published yet. Used to set expectations, never to refuse.
+
+    A participant who installs the networked arm before an exercise exists sees nothing
+    happen, checks status, sees nothing happen, and concludes it is broken. It is not: there
+    is nothing to run. Saying so costs one request and saves that conversation.
+    """
+    import urllib.request
+    opener = opener or urllib.request.urlopen
+    try:
+        with opener(base.rstrip("/") + "/agenda.json", timeout=10) as response:
+            return bool(response.read())
+    except Exception:
+        return False
+
+
 def _bad_org(value):
     if not hub.ORG_RE.match(value):
         return ("Three to thirty two characters, lowercase letters, digits and hyphens. "
@@ -78,8 +94,8 @@ def main(argv=None, out=sys.stdout):
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         out.write("This asks questions, so it needs a terminal.\n\n")
         out.write("Without one, the same thing in two commands:\n\n")
-        out.write("  guardian drill --org YOUR-ID\n")
-        out.write("  guardian enroll --offline --org YOUR-ID\n")
+        out.write("  %s drill --org YOUR-ID\n" % called.invocation())
+        out.write("  %s enroll --offline --org YOUR-ID\n" % called.invocation())
         return 2
 
     where = enroll.data_dir(a.home) if a.home is None else os.path.abspath(a.home)
@@ -109,15 +125,30 @@ def main(argv=None, out=sys.stdout):
     # 3. Which arm. Both are valid and the comparison between them is the research, so the
     # question is put as a choice rather than as a default with an escape hatch.
     out.write("\nTwo ways to take part, both useful:\n\n")
-    out.write("  offline    reaches out to nothing. runs on its own schedule.\n")
     out.write("  networked  polls a published schedule, so an exercise can run without\n")
     out.write("             you being available for it. Never listens, nothing inbound.\n")
+    out.write("  offline    reaches out to nothing at all. runs on its own schedule.\n")
+    out.write("             the control arm: what the sensor is worth alone.\n")
     out.write("  neither    stop here. the drill above already told you something.\n\n")
-    arm = _ask("which", out, default="offline",
+    # Networked by default, because it is the arm the research needs most and a default is
+    # the answer most people give. Offline stays one word away and is named as the control
+    # arm rather than as the lesser option.
+    arm = _ask("which", out, default="networked",
                validate=lambda v: None if v in ("offline", "networked", "neither")
-               else "One of: offline, networked, neither.")
+               else "One of: networked, offline, neither.")
     if not arm:
         arm = "neither"
+
+    # Checked before installing, not after. A networked install against a base with nothing
+    # published polls into silence, which is correct and looks broken, and somebody who
+    # checks status and sees nothing concludes it did not work.
+    if arm == "networked":
+        nothing_yet = not _agenda_reachable(a.base)
+        if nothing_yet:
+            out.write("\nNothing is scheduled at %s yet.\n" % a.base)
+            out.write("That is expected before an exercise is published. This will sit "
+                      "quietly and run one\nwhen it appears, so there is nothing to see "
+                      "until then.\n")
 
     installed = False
     if arm != "neither":
@@ -156,9 +187,11 @@ def main(argv=None, out=sys.stdout):
     out.write("  taking part %s\n" % (arm if installed else "not installed"))
     out.write("  records in  %s\n\n" % where)
     out.write("To see what you would share, and share nothing:\n")
-    out.write("  guardian report --org %s --evidence %s --preview\n\n"
-              % (org, os.path.join(where, "drill", "evidence.jsonl")))
-    out.write("To check on it later:\n  guardian status\n")
+    out.write("  %s report --org %s --evidence %s --preview\n\n"
+              % (called.invocation(), org,
+                 os.path.join(where, "drill", "evidence.jsonl")))
+    out.write("To check on it later:\n  %s status\n" % called.invocation())
     if arm == "neither" or not installed:
-        out.write("\nNothing is running. To take part later:\n  guardian setup\n")
+        out.write("\nNothing is running. To take part later:\n  %s setup\n"
+                  % called.invocation())
     return 0
