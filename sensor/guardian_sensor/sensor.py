@@ -251,6 +251,7 @@ CANARY_COMMAND = "canary"
 AGENDA_COMMAND = "agenda"
 ENROLL_COMMAND = "enroll"
 CREDIT_COMMAND = "credit"
+STATUS_COMMAND = "status"
 
 
 COMMANDS = (
@@ -261,7 +262,19 @@ COMMANDS = (
     ("report", "build an anonymized sightings file, previewing it first"),
     ("update", "fetch and verify a published rule set"),
     ("credit", "record how you want to be credited in the research"),
+    ("status", "what this machine has done. Reads local files and nothing else"),
 )
+
+
+def _invocation():
+    """How this was invoked, so examples match what the reader typed.
+
+    Somebody who installed the package types `guardian`; somebody running from a clone types
+    the module form. Printing the other one is a small thing that makes a tool feel like it
+    was written for somebody else.
+    """
+    return "guardian" if os.path.basename(sys.argv[0]) == "guardian" else \
+        "python3 -m guardian_sensor"
 
 
 def usage(out=sys.stdout):
@@ -273,15 +286,24 @@ def usage(out=sys.stdout):
     """
     width = max(len(name) for name, _ in COMMANDS)
     out.write("Guardian sensor. An MCP proxy, and the commands around it.\n\n")
-    out.write("  python3 -m guardian_sensor <command> [options]\n\n")
+    out.write("  %s <command> [options]\n\n" % _invocation())
     for name, what in COMMANDS:
         out.write("  %-*s  %s\n" % (width, name, what))
     out.write("\nEach command explains itself with --help.\n")
     out.write("\nAs a proxy, with the real server after a double dash:\n\n")
-    out.write("  python3 -m guardian_sensor --config guardian.json -- <server command>\n")
+    out.write("  %s --config guardian.json -- <server command>\n" % _invocation())
     out.write("\nStart here if you are new:\n\n")
-    out.write("  python3 -m guardian_sensor drill --org <a-pseudonym-you-choose>\n")
+    out.write("  %s drill --org <a-pseudonym-you-choose>\n" % _invocation())
     return 0
+
+
+def cli():
+    """Entry point for the installed `guardian` command.
+
+    Separate from main so the module form and the installed form are the same code path,
+    rather than two things that drift until one of them is wrong.
+    """
+    sys.exit(main())
 
 
 def main(argv=None):
@@ -309,6 +331,9 @@ def main(argv=None):
     if args[:1] == [CREDIT_COMMAND]:
         from . import credit
         return credit.main(args[1:])
+    if args[:1] == [STATUS_COMMAND]:
+        from . import status
+        return status.main(args[1:])
 
     # A word that is not a command and not a flag, with no -- anywhere, is a mistyped
     # command rather than a server to launch. Without this it falls through to the proxy and

@@ -4,6 +4,24 @@ An MCP proxy that sits between an agent and any MCP server, relays every message
 
 **Prototype. Not for production data yet.** No dependencies beyond Python 3.9+.
 
+## Install
+
+From a clone, nothing needed:
+
+```bash
+python3 -m guardian_sensor drill
+```
+
+Or install it, which shortens every command to `guardian` and adds no dependency:
+
+```bash
+pip install -e sensor/
+guardian
+```
+
+`guardian` with no arguments lists every command. `guardian status` says what this machine
+has done, reading local files and reaching out to nothing.
+
 ## What it catches today
 
 | Pattern | What the sensor does |

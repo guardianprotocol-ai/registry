@@ -1,0 +1,42 @@
+# Packaging exists for one reason: so the command is `guardian` and not forty eight
+# characters of module invocation. Nothing here adds a runtime dependency, and the core
+# stays Python 3.9+ standard library only, which decision row for OSPS-QA-02.01 asserts and
+# a test checks.
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guardian-sensor"
+version = "0.2.0"
+description = "Reference sensor and tools for Guardian Protocol: an open exchange for AI agent incidents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "Guardian Protocol Research Group"}]
+keywords = ["mcp", "ai-agents", "security", "canary", "threat-intelligence"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.9",
+  "Topic :: Security",
+]
+# Deliberately empty, and a test asserts it stays that way. A protocol people are asked to
+# run in front of their agents should be readable in an afternoon, and every dependency is
+# something else they have to trust.
+dependencies = []
+
+[project.urls]
+Homepage = "https://guardianprotocol.network"
+Repository = "https://github.com/guardianprotocol-ai/registry"
+
+[project.scripts]
+guardian = "guardian_sensor.sensor:cli"
+
+[tool.setuptools]
+packages = ["guardian_sensor"]
+
+[tool.setuptools.package-data]
+guardian_sensor = ["signatures.json"]

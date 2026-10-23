@@ -21,6 +21,8 @@ import subprocess
 import sys
 import time
 
+from . import paint
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SENSOR_ROOT = os.path.dirname(HERE)
 LAB_SERVER = os.path.join(SENSOR_ROOT, "tests", "fake_server.py")
@@ -236,14 +238,16 @@ def respond(workdir, org, out, python=None):
              extra_env={"GUARDIAN_SIGNATURES": stale, "GUARDIAN_NOVEL": "1"})
     caught_before = exfiltration_blocked(read_evidence(before_dir))
     out.write("  before the update   GP-0001  %s\n"
-              % ("blocked" if caught_before else "got through"))
+              % (paint.paint("blocked", "good", out) if caught_before
+                 else paint.paint("got through", "bad", out)))
 
     run_once(after_dir, write_config(after_dir), python,
              extra_env={"GUARDIAN_NOVEL": "1"})
     caught_after = exfiltration_blocked(read_evidence(after_dir))
     elapsed = time.time() - started
     out.write("  after the update    GP-0001  %s\n"
-              % ("blocked" if caught_after else "got through"))
+              % (paint.paint("blocked", "good", out) if caught_after
+                 else paint.paint("got through", "bad", out)))
 
     if caught_before or not caught_after:
         out.write("\nThis proves nothing. The two runs have to differ, and they did not: "
@@ -330,7 +334,9 @@ def main(argv=None, out=sys.stdout):
     rows = summarize(read_evidence(workdir))
     width = max(len(r[1]) for r in rows)
     for pid, reason, fired in rows:
-        out.write("%-9s %-*s  %s\n" % (pid, width, reason, "caught" if fired else "MISSED"))
+        verdict = (paint.paint("caught", "good", out) if fired
+                   else paint.paint("MISSED", "bad", out))
+        out.write("%-9s %-*s  %s\n" % (pid, width, reason, verdict))
     missed = [pid for pid, _, fired in rows if not fired]
     out.write("\n%d of %d exercises caught in %.1f seconds.\n"
               % (len(rows) - len(missed), len(rows), seconds))
