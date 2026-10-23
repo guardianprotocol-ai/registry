@@ -252,9 +252,11 @@ AGENDA_COMMAND = "agenda"
 ENROLL_COMMAND = "enroll"
 CREDIT_COMMAND = "credit"
 STATUS_COMMAND = "status"
+SETUP_COMMAND = "setup"
 
 
 COMMANDS = (
+    ("setup", "take part, one question at a time. Start here"),
     ("drill", "attack your own machine through your own sensor, and see what it caught"),
     ("canary", "register values the sensor should watch for: add, list, arm, remove"),
     ("enroll", "take part in scheduled exercises. Installs once, then nothing"),
@@ -293,7 +295,7 @@ def usage(out=sys.stdout):
     out.write("\nAs a proxy, with the real server after a double dash:\n\n")
     out.write("  %s --config guardian.json -- <server command>\n" % _invocation())
     out.write("\nStart here if you are new:\n\n")
-    out.write("  %s drill --org <a-pseudonym-you-choose>\n" % _invocation())
+    out.write("  %s setup\n" % _invocation())
     return 0
 
 
@@ -334,6 +336,9 @@ def main(argv=None):
     if args[:1] == [STATUS_COMMAND]:
         from . import status
         return status.main(args[1:])
+    if args[:1] == [SETUP_COMMAND]:
+        from . import setup_cli
+        return setup_cli.main(args[1:])
 
     # A word that is not a command and not a flag, with no -- anywhere, is a mistyped
     # command rather than a server to launch. Without this it falls through to the proxy and

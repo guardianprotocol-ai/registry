@@ -11,7 +11,7 @@ acts on its own, which is why there is no channel into anybody's laptop.
 ```bash
 git clone https://github.com/guardianprotocol-ai/registry.git
 cd registry/sensor
-python3 -m guardian_sensor drill --org <your-member-id>
+python3 -m guardian_sensor setup
 ```
 
 That runs the drill by hand and proves it works. Then one command to take part:

@@ -279,6 +279,9 @@ def main(argv=None, out=sys.stdout):
     ap.add_argument("--unprotected", action="store_true",
                     help="run the same attack with no sensor in front. The control arm: every "
                          "exercise is expected to get through, and that is the result")
+    ap.add_argument("--no-next-steps", action="store_true",
+                    help="print the result and stop. Used when a caller is going to say what "
+                         "comes next itself, so the advice is not given twice")
     ap.add_argument("--respond", action="store_true",
                     help="also run the same attack before and after a rule update, and time "
                          "the difference")
@@ -365,6 +368,11 @@ def main(argv=None, out=sys.stdout):
             return 1
 
     out.write("\nEvidence is in %s. Nothing has been shared.\n" % os.path.join(a.dir, "evidence.jsonl"))
+    # The claim above is the point and always prints. What follows is navigation, and a tool
+    # that repeats directions somebody has already been given is lecturing rather than
+    # helping.
+    if a.no_next_steps:
+        return 0
     out.write("\nTo see exactly what would be shared, and share nothing:\n")
     out.write("  python3 -m guardian_sensor report --org %s --preview\n"
               % (a.org or "<your-member-id>"))

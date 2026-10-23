@@ -133,6 +133,8 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
                     help="seconds between polls. Default %d" % DEFAULT_INTERVAL)
     ap.add_argument("--print-only", action="store_true",
                     help="print the service that would be installed and install nothing")
+    ap.add_argument("--brief", action="store_true",
+                    help="summarize the service rather than printing all of it")
     ap.add_argument("--remove", action="store_true", help="stop taking part")
     a = ap.parse_args([] if argv is None else argv)
     run = runner or _run
@@ -207,12 +209,25 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
 
     # Shown before it is written. Installing something that runs forever on somebody's
     # machine without showing them what it is would be a poor way to ask for their trust.
-    out.write("This is what will be installed, and nothing else:\n\n")
-    for where, body in files:
-        out.write("  %s\n" % where)
-        for line in body.strip().splitlines():
-            out.write("    %s\n" % line)
-        out.write("\n")
+    # Printed in full by default, because installing something that runs forever on
+    # somebody's machine without showing them what it is would be a poor way to ask for
+    # their trust. Summarized when asked, because thirty lines of plist in the middle of a
+    # question means nobody reads either.
+    if a.brief:
+        out.write("This is what will be installed:\n\n")
+        for where, _ in files:
+            out.write("  %s\n" % where)
+        out.write("\n  it runs   %s -m guardian_sensor agenda ...\n" % python)
+        out.write("  as        a %s job owned by you, not the system\n"
+                  % ("launchd" if kind == "launchd" else "systemd user"))
+        out.write("\nSee all of it with --print-only.\n\n")
+    else:
+        out.write("This is what will be installed, and nothing else:\n\n")
+        for where, body in files:
+            out.write("  %s\n" % where)
+            for line in body.strip().splitlines():
+                out.write("    %s\n" % line)
+            out.write("\n")
     if a.offline:
         out.write("It reaches out to nothing at all. It runs the exercise locally every %d "
                   "hours and shares\nnothing. This is the control arm: what the sensor is "
@@ -226,8 +241,10 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
     # that breaks participation silently, since the failure lands in a log nobody reads.
     out.write("\nIt runs the code in %s. If you move or delete that, this stops working and\n"
               "will not tell you, so run enroll again afterwards.\n" % module_dir)
-    out.write("Stop at any time with: python3 -m guardian_sensor enroll --remove "
-              "--base %s\n\n" % a.base)
+    # --base is meaningless offline and printing "--base None" in the one line somebody
+    # copies to undo this makes the escape hatch look broken.
+    out.write("Stop at any time with: python3 -m guardian_sensor enroll --remove%s\n\n"
+              % ("" if a.offline else " --base %s" % a.base))
 
     if a.print_only:
         out.write("Nothing was installed.\n")

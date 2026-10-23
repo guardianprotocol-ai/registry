@@ -9,8 +9,12 @@ An MCP proxy that sits between an agent and any MCP server, relays every message
 From a clone, nothing needed:
 
 ```bash
-python3 -m guardian_sensor drill
+python3 -m guardian_sensor setup
 ```
+
+That asks four questions, runs the drill so you see it work before anything is installed,
+and fills in every argument the other commands would have wanted. Nothing is installed or
+sent until you have seen what it is.
 
 Or install it, which shortens every command to `guardian` and adds no dependency:
 
