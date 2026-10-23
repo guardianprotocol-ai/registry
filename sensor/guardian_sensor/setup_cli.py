@@ -100,7 +100,8 @@ def main(argv=None, out=sys.stdout):
 
     where = enroll.data_dir(a.home) if a.home is None else os.path.abspath(a.home)
 
-    out.write("\nTaking part in Guardian Protocol.\n")
+    from . import banner
+    banner.show(out)
     out.write("Four questions. Nothing is installed or sent until you have seen it.\n\n")
 
     # 1. The pseudonym. Asked first because everything else carries it.

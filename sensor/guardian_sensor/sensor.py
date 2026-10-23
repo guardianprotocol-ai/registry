@@ -281,8 +281,10 @@ def usage(out=sys.stdout):
     --help saw no mention of any of the commands below. For a tool being handed to people
     who have not read the repository, that is the difference between usable and not.
     """
+    from . import banner
+    banner.show(out)
     width = max(len(name) for name, _ in COMMANDS)
-    out.write("Guardian sensor. An MCP proxy, and the commands around it.\n\n")
+    out.write("An MCP proxy, and the commands around it.\n\n")
     out.write("  %s <command> [options]\n\n" % _invocation())
     for name, what in COMMANDS:
         out.write("  %-*s  %s\n" % (width, name, what))
