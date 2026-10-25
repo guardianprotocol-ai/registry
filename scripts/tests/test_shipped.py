@@ -125,9 +125,22 @@ def test_an_empty_window_says_so():
 
 
 def test_the_real_repository_reports_something():
+    """Checks the shape of the summary, not who is in it.
+
+    This used to assert that a named person appeared in the author list, which made the test
+    fail on exactly the contributions the project wants. On a pull request from somebody
+    else, the authors in the window are them, so a correct contribution showed red because of
+    a test about whose name was in git history. That is the worst first experience available
+    to a new contributor and it was ours to cause.
+
+    What is worth checking is that the summary is well formed and reports the commits that
+    are there. Who wrote them is not a property of the code.
+    """
     text = shipped.markdown(shipped.commits("2026-09-01"), "2026-09-01")
     check("the real repository has shipped something", "Shipped since" in text, text[:80])
-    check("the founding maintainer appears", "Frank Albanese" in text, text[:200])
+    check("it names at least one author", "by " in text or "Nothing has landed" in text,
+          text[:200])
+    check("it is markdown with a heading", text.lstrip().startswith("#"), text[:80])
 
 
 def main():
