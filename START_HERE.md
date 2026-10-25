@@ -87,13 +87,16 @@ maintained by hand. The credit list is generated from the `Signed-off-by` lines 
 history, joined with `CONTRIBUTORS.md` and the `credits` in pattern files, and it is
 ordered by the date of each person's first contribution.
 
-Add yourself to [CONTRIBUTORS.md](CONTRIBUTORS.md) in your first pull request. That is
-where you say how you want to be shown: your display name, your GitHub handle if you want
-one, and your organization if you want it listed. Leave the organization blank and none is
-listed for you. Nothing reads your commit email domain.
+You do not have to add yourself to [CONTRIBUTORS.md](CONTRIBUTORS.md). Signing off is what
+credits you, and your name and handle are already known: the name from your own sign-off, the
+handle from the account that opened the pull request. Whoever merges fills those in.
+
+That file is where you change how you are shown, name an organization if you want one listed,
+or ask for your row to be removed. Leave the organization blank and none is listed for you.
+Nothing reads your commit email domain and nothing infers where you work.
 
 - **Patterns:** add yourself to the `credits` field of any pattern you write or substantially improve, with your name and organization.
-- **[CONTRIBUTORS.md](CONTRIBUTORS.md):** add yourself in your first pull request.
+- **[CONTRIBUTORS.md](CONTRIBUTORS.md):** nothing to do. Signing off credits you, and whoever merges fills in your name and handle from the pull request. Correct your row or ask for it to be removed any time.
 - **Releases:** every release's notes name the people who contributed to it, starting with v0.1.
 
 ## Roles

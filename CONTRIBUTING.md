@@ -63,7 +63,7 @@ Contributors may use any tools, including AI assistants. Every contribution is r
 
 ## Credit
 
-Add yourself to `CONTRIBUTORS.md` in your first pull request, and to the `credits` field of any pattern you write or substantially improve. Release notes name everyone who contributed to each release.
+Signing off credits you. You do not have to add yourself to `CONTRIBUTORS.md`: your name comes from your own sign-off and your handle is the account that opened the pull request, so whoever merges fills those in. Correct your row, or ask for it to be removed, any time. Do add yourself to the `credits` field of any pattern you write or substantially improve, because that one is a claim about the work rather than about you. Release notes name everyone who contributed to each release.
 
 ## Conduct
 
