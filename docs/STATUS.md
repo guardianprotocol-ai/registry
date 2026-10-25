@@ -18,7 +18,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Map | Covered by a pattern | 20 |
 | Map | Marked not testable at runtime | 0 |
 | Map | Still open | 43 |
-| Prove | With a runnable test | 9 |
+| Prove | With a runnable test | 10 |
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 7 |
 
@@ -96,7 +96,7 @@ The benign corpus holds 19 cases of ordinary work that no rule may flag. It is s
 | `AML.T0110.002` | AI Agent Tool Poisoning: Runtime Response |  | no | no | no | open |
 | `AML.T0112.000` | Machine Compromise: Local AI Agent |  | no | no | no | open |
 | `AML.T0118` | Autonomous AI Agent Communication | GP-0008, GP-0013 | yes | yes | yes | covered |
-| `AML.T0118.000` | Autonomous AI Agent Communication: Communication via Shared Artifacts | GP-0009, GP-0016 | no | yes | no | covered |
+| `AML.T0118.000` | Autonomous AI Agent Communication: Communication via Shared Artifacts | GP-0009, GP-0016 | yes | yes | no | covered |
 | `AML.T0118.001` | Autonomous AI Agent Communication: Direct Agent Communication | GP-0008, GP-0014, GP-0015, GP-0017 | yes | yes | yes | covered |
 | `AML.T0121` | AI Agent Environment Reconstruction |  | no | no | no | open |
 | `AML.T0130` | AI Agent Response Biasing | GP-0010 | no | yes | no | covered |
