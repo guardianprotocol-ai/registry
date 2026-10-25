@@ -33,6 +33,11 @@ NOT_AN_ORGANIZATION = {"founding maintainer", "individual", "none", "independent
                        "your organization"}
 # Template text someone forgot to replace. Not a person, so not a contributor.
 PLACEHOLDER_NAMES = {"your name"}
+# Automation that signs its own commits. A bot in a credit list is wrong twice over: it
+# takes a line from somebody who did the work, and it reads as padding to anyone counting.
+# Matched on the address rather than the name, because the name is whatever the bot sets.
+BOT_EMAIL = re.compile(r"(\[bot\]|^bot@|noreply@github\.com$|actions@github\.com$)", re.I)
+BOT_NAME = re.compile(r"\[bot\]$|^github-actions$|^dependabot$", re.I)
 
 
 def _git(args):
@@ -51,6 +56,8 @@ def from_history(ref="HEAD"):
         body = body.split("\x03")[0]
         for name, email in SIGNOFF.findall(body):
             key = email.strip().lower()
+            if BOT_EMAIL.search(key) or BOT_NAME.search(name.strip()):
+                continue
             if key not in people:
                 people[key] = {"name": name.strip(), "email": key, "first": date.strip()}
     return people
@@ -108,6 +115,10 @@ def build(ref="HEAD"):
 
     people = []
     by_name = {}
+    # Table rows that matched nobody in the history. The join is by display name, so a table
+    # entry spelled differently from somebody's sign-off silently produces a credited person
+    # with no link, which is somebody who opted in and did not get what they asked for.
+    matched_rows = set()
     for row in sorted(history.values(), key=lambda r: (r["first"], r["name"].lower())):
         person = {"name": row["name"], "first_contribution": row["first"],
                   "github": None, "organization": None, "patterns": []}
@@ -122,6 +133,8 @@ def build(ref="HEAD"):
                 person["organization"] = pattern_row["organization"]
         people.append(person)
         by_name[row["name"].lower()] = person
+        if extra:
+            matched_rows.add(row["name"].lower())
 
     # Anyone credited on a pattern but not in the history yet, for example a pattern
     # contributed on someone else's behalf.
@@ -130,6 +143,8 @@ def build(ref="HEAD"):
             continue
         people.append({"name": row["name"], "first_contribution": None, "github": None,
                        "organization": row["organization"], "patterns": sorted(row["patterns"])})
+
+    unmatched = sorted(set(opted_in) - matched_rows)
 
     organizations = []
     seen = set()
@@ -147,6 +162,7 @@ def build(ref="HEAD"):
                  "listed says someone contributed, not that anyone endorses anything."),
         "people": people,
         "organizations": organizations,
+        "unmatched_table_rows": unmatched,
     }
 
 
@@ -165,6 +181,16 @@ def main(argv=None):
             f.write(text)
         print(f"Wrote {os.path.relpath(args.out, ROOT)}: "
               f"{len(data['people'])} people, {len(data['organizations'])} organizations.")
+    # Said every run, because somebody who opted in and got no link will not notice and the
+    # person who could fix it is reading this output.
+    if data["unmatched_table_rows"]:
+        print()
+        print("These CONTRIBUTORS.md rows matched nobody in the history: %s."
+              % ", ".join(data["unmatched_table_rows"]))
+        print("The join is by name, so a row spelled differently from that person's "
+              "sign-off leaves them")
+        print("credited without the link they asked for. Ask them which spelling they want "
+              "and use it in both.")
     return 0
 
 

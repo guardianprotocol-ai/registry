@@ -232,6 +232,88 @@ def test_the_real_repository_builds():
           "not partners" in data["note"], data["note"])
 
 
+def test_automation_is_not_a_contributor():
+    """A bot in a credit list takes a line from somebody who did the work, and reads as
+    padding to anyone counting. dependabot was in the real list until this was written."""
+    folder = tempfile.mkdtemp()
+
+    def commit(message):
+        subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", message],
+                       cwd=folder, capture_output=True, text=True, env=git_env())
+
+    try:
+        subprocess.run(["git", "init", "-q", "-b", "main"], cwd=folder, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Setup"], cwd=folder,
+                       capture_output=True)
+        subprocess.run(["git", "config", "user.email", "setup@example.test"], cwd=folder,
+                       capture_output=True)
+        commit("one\n\nSigned-off-by: Ada Lovelace <ada@example.test>")
+        commit("two\n\nSigned-off-by: dependabot[bot] "
+               "<49699333+dependabot[bot]@users.noreply.github.com>")
+        commit("three\n\nSigned-off-by: github-actions[bot] <actions@github.com>")
+        commit("four\n\nSigned-off-by: GitHub <noreply@github.com>")
+
+        old_root = builder.ROOT
+        builder.ROOT = folder
+        try:
+            found = {row["name"] for row in builder.from_history().values()}
+        finally:
+            builder.ROOT = old_root
+
+        check("a person is credited", "Ada Lovelace" in found, str(found))
+        for bot in ("dependabot[bot]", "github-actions[bot]", "GitHub"):
+            check(f"{bot} is not credited", bot not in found, str(found))
+        check("only the person remains", found == {"Ada Lovelace"}, str(found))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_real_name_containing_bot_is_kept():
+    """The exclusion matches an address or a trailing [bot], not the letters anywhere."""
+    folder = tempfile.mkdtemp()
+    try:
+        subprocess.run(["git", "init", "-q", "-b", "main"], cwd=folder, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Setup"], cwd=folder,
+                       capture_output=True)
+        subprocess.run(["git", "config", "user.email", "setup@example.test"], cwd=folder,
+                       capture_output=True)
+        for signoff in ("Robot Fernandez <robot.fernandez@example.test>",
+                        "Abbott Lee <abbott@example.test>"):
+            subprocess.run(["git", "commit", "-q", "--allow-empty", "-m",
+                            "c\n\nSigned-off-by: " + signoff],
+                           cwd=folder, capture_output=True, env=git_env())
+        old_root = builder.ROOT
+        builder.ROOT = folder
+        try:
+            found = {row["name"] for row in builder.from_history().values()}
+        finally:
+            builder.ROOT = old_root
+        check("a name containing robot is kept", "Robot Fernandez" in found, str(found))
+        check("a name containing bott is kept", "Abbott Lee" in found, str(found))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_table_row_matching_nobody_is_reported():
+    """Silently leaving somebody uncredited is worse than them never opting in: they asked
+    and did not get it. The real list had this for 'Vamsi' against 'Vamsi-1' in the history."""
+    folder = repo_with_history()
+    try:
+        data = build_in(folder, contributors_md=(
+            "| Name | GitHub | Organization | Contributions |\n"
+            "| --- | --- | --- | --- |\n"
+            "| Dana Reed | [@dana](https://github.com/dana) | Individual | patterns |\n"
+            "| Someone Else | [@nobody](https://github.com/nobody) | Individual | none |\n"))
+        check("the mismatch is reported",
+              data["unmatched_table_rows"] == ["someone else"],
+              str(data["unmatched_table_rows"]))
+        matched = [p for p in data["people"] if p["name"] == "Dana Reed"]
+        check("the row that did match still gets its link",
+              matched and matched[0]["github"] == "dana", str(matched))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
