@@ -311,6 +311,32 @@ def test_an_unsigned_first_contact_is_allowed_and_said_so():
     check("and it says the report was not signed", "unsigned" in note, note)
 
 
+def test_identified_rows_expire_and_counts_do_not():
+    """Collecting little in transit and keeping everything at rest is half a promise.
+
+    A member id is in a sighting because the threshold has to count distinct
+    organizations. Once the window is aggregated it has done its work, and keeping it
+    after that is keeping a record of who was attacked rather than what was seen.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import datetime
+    import retention
+
+    e = entry()
+    cell = retention.aggregate_key(e)
+    check("the surviving cell holds no member id", e["org"] not in cell, cell)
+    for field in ("pattern", "action", "hour"):
+        check("but it still answers about %s" % field, str(e[field]) in cell, cell)
+
+    now = datetime.datetime(2026, 10, 26, tzinfo=datetime.timezone.utc)
+    when = retention.expires_at(now)
+    check("an identified row expires", when > now, str(when))
+    check("and not so soon a late report misses its window",
+          (when - now).days >= 14, (when - now).days)
+    check("the promise is stated in words a member reads",
+          "deleted after" in retention.describe(), retention.describe())
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

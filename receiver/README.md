@@ -53,6 +53,35 @@ Publish automatically. This endpoint is the inbound half only. Turning sightings
 alerts other machines will read is a separate step, run deliberately by a person, because
 anything published becomes something other people's agents act on.
 
+## What a receiver keeps, and for how long
+
+Collecting little in transit and keeping everything at rest is half a promise.
+
+A sighting arrives with a member id because the threshold has to count distinct
+organizations. Once the window it belongs to has been aggregated that id has done its
+work: the aggregate says four organizations saw a pattern, and which four stops being
+needed.
+
+| | |
+| --- | --- |
+| Rows carrying a member id | Deleted after 30 days |
+| The counts they contributed to | Kept, and carry no member id |
+| A member's own data, on request | Deleted immediately |
+
+```
+DELETE <endpoint>
+X-Guardian-Org: <member id>
+X-Guardian-Signature: <signature over the empty body>
+```
+
+Signed with the key the member reports with, so only they can ask. The counts stay,
+because they identify nobody and removing them would silently rewrite results other
+people are relying on.
+
+A protocol that asks organizations to send data somewhere they cannot leave is asking
+for something a security team is not allowed to agree to. This is the part that makes
+the answer yes.
+
 ## Threat model for Season 1
 
 The endpoint is unauthenticated. Anyone who finds the URL can file sightings under an

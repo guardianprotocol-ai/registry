@@ -24,6 +24,7 @@ from google.cloud import firestore
 
 import membership
 import participation
+import retention
 import validate
 
 COLLECTION = os.environ.get("GUARDIAN_COLLECTION", "sightings")
@@ -91,7 +92,12 @@ def store(entries, store_at=None):
         # The key is the document id, which is what makes a repeat idempotent. Firestore
         # ids cannot contain a slash, and no field in the allow-list can produce one: the
         # patterns in validate.py admit none.
-        batch.set(writer.collection(COLLECTION).document(key), dict(entry))
+        row = dict(entry)
+        # When this row stops existing. The member id in it has done its work once the
+        # window is aggregated, and keeping it after that is keeping a record of who was
+        # attacked rather than what was seen.
+        row["expires_at"] = retention.expires_at()
+        batch.set(writer.collection(COLLECTION).document(key), row)
         written += 1
         if written % 400 == 0:
             batch.commit()
@@ -100,10 +106,46 @@ def store(entries, store_at=None):
     return written
 
 
+def forget(org, signature, body, store_at=None):
+    """Delete everything identifying this member. Signed, so only they can ask.
+
+    The counts their reports contributed to stay, because they carry no member id and
+    removing them would silently rewrite results other people are relying on. What goes
+    is everything that says this member saw anything.
+    """
+    writer = store_at or db()
+    known = membership_key_for(org, store_at=writer)
+    if not known:
+        raise membership.Refused("%r has not reported here, so there is nothing to "
+                                 "delete." % org)
+    if not membership.check(known, body, signature):
+        raise membership.Refused("this request is not signed with the key %r reports "
+                                 "with." % org)
+    removed = 0
+    for document in writer.collection(COLLECTION).stream():
+        if (document.to_dict() or {}).get("org") == org:
+            document.reference.delete()
+            removed += 1
+    writer.collection(PARTICIPANTS).document(org).delete()
+    return removed
+
+
 @functions_framework.http
 def sightings(request):
+    if request.method == "DELETE":
+        raw = request.get_data(cache=False)
+        org = request.headers.get("X-Guardian-Org") or ""
+        try:
+            removed = forget(org, request.headers.get(membership.SIGNATURE_HEADER), raw)
+        except membership.Refused as e:
+            return _json({"error": str(e)}, 403)
+        except Exception as e:  # noqa: BLE001
+            print("delete failed: %s: %s" % (type(e).__name__, e))
+            return _json({"error": "the receiver could not complete this"}, 503)
+        return _json({"deleted": removed, "org": org}, 200)
     if request.method != "POST":
-        return _json({"error": "this endpoint accepts POST"}, 405)
+        return _json({"error": "this endpoint accepts POST, or DELETE to remove your "
+                               "own data"}, 405)
     raw = request.get_data(cache=False)
     if len(raw) > validate.MAX_BYTES:
         return _json({"error": "the body is larger than %d bytes" % validate.MAX_BYTES}, 413)
