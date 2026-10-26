@@ -6,6 +6,7 @@ API key, a mangled file, a second run undoing the first, no way back.
 
 Run from the sensor folder:  python3 tests/test_protect.py
 """
+import inspect
 import io
 import json
 import os
@@ -41,13 +42,21 @@ def nested_config():
 
 
 def with_config(document, name=".claude.json", nested=("projects",)):
+    """A throwaway config, with every real one put out of reach.
+
+    HOOK_CLIENTS is replaced as well as CLIENTS, and that is not tidiness. When hook
+    support was added, these tests kept isolating only CLIENTS and the suite wrote
+    guardian hooks into the real ~/.claude/settings.json of whoever ran it. A test that
+    can reach a person's own configuration will eventually change it.
+    """
     folder = tempfile.mkdtemp()
     path = os.path.join(folder, name)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(document, f, indent=2)
-    previous = clients.CLIENTS
+    previous = (clients.CLIENTS, clients.HOOK_CLIENTS)
     clients.CLIENTS = ({"name": "test-client", "path": path, "nested": nested,
                         "key": "mcpServers", "note": ""},)
+    clients.HOOK_CLIENTS = ()
     return folder, path, previous
 
 
@@ -66,7 +75,7 @@ def test_wrapping_keeps_everything_it_is_not_changing():
         check("a project with no servers is untouched",
               after["projects"]["/work/beta"]["mcpServers"] == {})
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -81,7 +90,7 @@ def test_a_copy_is_made_before_anything_is_written():
               not clients.is_wrapped(
                   original["projects"]["/work/alpha"]["mcpServers"]["files"]))
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -99,7 +108,7 @@ def test_running_it_twice_does_nothing_the_first_run_did_not():
         check("and it says so", "already protected" in out.getvalue().lower(),
               out.getvalue()[:160])
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -114,7 +123,7 @@ def test_there_is_a_way_back():
               after["projects"]["/work/alpha"]["mcpServers"]["files"] == before,
               str(after["projects"]["/work/alpha"]["mcpServers"]["files"]))
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -128,7 +137,7 @@ def test_nothing_is_written_when_only_asked_to_look():
         check("and it says nothing was written",
               "Nothing was written" in out.getvalue(), out.getvalue()[-200:])
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -144,7 +153,7 @@ def test_a_secret_is_never_printed():
         check("but the person is told it is kept",
               "environment variable" in shown, shown[:400])
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -160,16 +169,17 @@ def test_a_flat_config_works_too():
         check("and unwraps to what it was",
               clients.unwrap(entry)["command"] == "uvx", str(clients.unwrap(entry)))
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
         shutil.rmtree(folder, ignore_errors=True)
 
 
 def test_no_servers_says_where_it_looked():
     """Somebody with nothing configured should be told that, and where, rather than
     being shown an empty success."""
-    previous = clients.CLIENTS
+    previous = (clients.CLIENTS, clients.HOOK_CLIENTS)
     clients.CLIENTS = ({"name": "nowhere", "path": "/does/not/exist.json",
                         "nested": (), "key": "mcpServers", "note": ""},)
+    clients.HOOK_CLIENTS = ()
     try:
         out = io.StringIO()
         code = protect_cli.main([], out=out)
@@ -179,7 +189,7 @@ def test_no_servers_says_where_it_looked():
         check("and lists where it looked",
               "/does/not/exist.json" in out.getvalue(), out.getvalue()[:400])
     finally:
-        clients.CLIENTS = previous
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
 
 
 def test_it_starts_in_monitor_mode():
@@ -196,6 +206,37 @@ def test_it_starts_in_monitor_mode():
         check("and are not overwritten on a later run", not again)
     finally:
         shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_no_test_can_reach_a_real_configuration():
+    """The guard on the mistake these tests already made once.
+
+    When hook support was added, every test here isolated CLIENTS and none isolated
+    HOOK_CLIENTS, so running the suite wrote guardian hooks into the real
+    ~/.claude/settings.json of whoever ran it. It was caught because the file was backed
+    up first and the change was visible, which is luck rather than design.
+
+    A test that can reach somebody's own configuration will eventually change it, so
+    this asserts the helper puts both out of reach.
+    """
+    source = inspect.getsource(with_config)
+    check("the helper isolates the server clients", "clients.CLIENTS =" in source,
+          source[:0])
+    check("and the hook clients too", "clients.HOOK_CLIENTS = ()" in source, source[:0])
+
+    folder, path, previous = with_config(nested_config())
+    try:
+        check("no hook client is reachable during a test",
+              clients.HOOK_CLIENTS == (), str(clients.HOOK_CLIENTS))
+        import protect_helpers_probe  # noqa: F401
+    except ImportError:
+        pass
+    finally:
+        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        shutil.rmtree(folder, ignore_errors=True)
+
+    check("and the real ones are put back afterwards",
+          clients.HOOK_CLIENTS and clients.CLIENTS, "they were not restored")
 
 
 def main():

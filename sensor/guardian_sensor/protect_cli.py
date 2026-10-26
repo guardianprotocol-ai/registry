@@ -71,6 +71,37 @@ def _apply(document, client, where, name, entry):
         document[client["key"]][name] = entry
 
 
+def hook_plan(remove=False):
+    """[(client, path, settings, after, events)] for clients whose own tools can be covered.
+
+    Separate from the server plan because it answers a different question. A proxy
+    covers tools that arrive over MCP; this covers the client's own shell, file and web
+    tools, which never do. Most people running a client have no MCP servers at all, so
+    without this the common case gets no live coverage at all.
+    """
+    out = []
+    for client in clients.HOOK_CLIENTS:
+        if not os.path.exists(os.path.dirname(client["path"])):
+            continue
+        settings = clients.read(client["path"])
+        if settings is None and os.path.exists(client["path"]):
+            continue                   # unreadable, so left alone rather than replaced
+        settings = settings or {}
+        present = clients.hooks_present(settings, client["events"])
+        if remove:
+            if not present:
+                continue
+            after = clients.remove_hooks(settings, client["events"])
+        else:
+            if len(present) == len(client["events"]):
+                continue
+            after = clients.add_hooks(
+                settings, client["events"],
+                clients.hook_command(sys.executable, config_path()))
+        out.append((client, client["path"], settings, after, present))
+    return out
+
+
 def plan(remove=False):
     """[(client, path, where, name, before, after)] for everything that would change."""
     python = sys.executable
@@ -100,24 +131,30 @@ def main(argv=None, out=sys.stdout):
     a = ap.parse_args(argv)
 
     found = clients.discover()
-    if not found:
+    hooks = hook_plan(remove=a.remove)
+    if not found and not hooks:
         out.write("No MCP servers found on this machine.\n\n")
         out.write("Looked in:\n")
         for client in clients.CLIENTS:
             mark = "found" if os.path.exists(client["path"]) else "not there"
             out.write("  %-16s %-10s %s\n" % (client["name"], mark, client["path"]))
         out.write("\nA client with no servers configured has nothing for the sensor to "
-                  "sit in front of.\nAdd a server to your client first, then run this "
-                  "again.\n")
+                  "sit in front of,\nand no client here offers a way to reach its own "
+                  "tools.\n")
         return 0
 
     changes = plan(remove=a.remove)
     protected = [f for f in found if clients.is_wrapped(f[4])]
 
-    out.write("%d MCP server%s on this machine, %d already behind the sensor.\n\n"
+    out.write("%d MCP server%s on this machine, %d already behind the sensor.\n"
               % (len(found), "" if len(found) == 1 else "s", len(protected)))
+    if hooks and not a.remove:
+        out.write("%d client%s can also have the rules run over its own shell, file and "
+                  "web tools,\nwhich never pass through MCP and are invisible to a "
+                  "proxy.\n" % (len(hooks), "" if len(hooks) == 1 else "s"))
+    out.write("\n")
 
-    if not changes:
+    if not changes and not hooks:
         if a.remove:
             out.write("Nothing to take out. No server here runs behind the sensor.\n")
         else:
@@ -128,8 +165,9 @@ def main(argv=None, out=sys.stdout):
         return 0
 
     verb = "take the sensor out of" if a.remove else "put the sensor in front of"
-    out.write("About to %s %d server%s:\n\n"
-              % (verb, len(changes), "" if len(changes) == 1 else "s"))
+    if changes:
+        out.write("About to %s %d server%s:\n\n"
+                  % (verb, len(changes), "" if len(changes) == 1 else "s"))
     by_file = {}
     for client, path, where, name, before, after in changes:
         by_file.setdefault(path, []).append((client, where, name, before, after))
@@ -142,8 +180,21 @@ def main(argv=None, out=sys.stdout):
             out.write("      then: %s\n" % clients.describe(after))
         out.write("\n")
 
-    out.write("Environment variables are carried across untouched and are never printed "
-              "here.\n")
+    if hooks:
+        out.write("And %s the rules over the client's own tools:\n\n"
+                  % ("stop running" if a.remove else "run"))
+        for client, path, _, _, present in hooks:
+            out.write("  %s\n" % path)
+            out.write("    %-14s %s\n" % (client["name"], client["note"]))
+            if present and not a.remove:
+                out.write("      already on: %s\n" % ", ".join(present))
+        out.write("\n    Anything already in that file stays. Somebody's own hooks are "
+                  "theirs, and\n    replacing them to install a security tool would be "
+                  "its own kind of attack.\n\n")
+
+    if changes:
+        out.write("Environment variables are carried across untouched and are never "
+                  "printed here.\n")
     if not a.remove:
         settings, made = ensure_config()
         out.write("Settings: %s%s\n"
@@ -187,7 +238,17 @@ def main(argv=None, out=sys.stdout):
         written += len(entries)
         out.write("  %s  (copy at %s)\n" % (path, os.path.basename(copy)))
 
-    out.write("\n%s %d server%s.\n"
+    for client, path, _, after, _ in hooks:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        copy = _backup(path) if os.path.exists(path) else None
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(after, f, indent=2, sort_keys=True)
+            f.write("\n")
+        written += 1
+        out.write("  %s%s\n" % (path, "  (copy at %s)" % os.path.basename(copy)
+                                 if copy else "  (created)"))
+
+    out.write("\n%s %d change%s.\n"
               % (paint.paint("Done." if a.remove else "Protected.", "good", out),
                  written, "" if written == 1 else "s"))
     if not a.remove:

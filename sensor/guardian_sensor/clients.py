@@ -157,3 +157,87 @@ def discover():
                 if isinstance(entry, dict):
                     out.append((client, client["path"], where, name, entry))
     return out
+
+
+# ---------- The client's own tools ----------
+#
+# An MCP proxy sees tools that come from MCP servers. A client's own shell, file reads
+# and writes and web fetches never pass through MCP, and most people running Claude Code
+# have no MCP servers at all, so wrapping servers alone leaves the common case with no
+# live coverage whatsoever.
+#
+# A client that offers hooks can run the same rule engine over its own tools. That is
+# where a client is named here: not as another place to find servers, but as a place the
+# detection can reach tools the proxy cannot.
+
+HOOK_PY = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "hooks", "claude_code", "guardian_hook.py")
+
+HOOK_CLIENTS = (
+    {"name": "claude-code", "path": _home(".claude", "settings.json"),
+     "events": ("PreToolUse", "PostToolUse"),
+     "note": "runs the rules over the client's own shell, file and web tools"},
+)
+
+
+def hook_command(python, config_path, hook_py=None):
+    return "%s %s --config %s" % (python, hook_py or HOOK_PY, config_path)
+
+
+def _is_ours(hook):
+    command = (hook or {}).get("command") or ""
+    return isinstance(command, str) and command.endswith("guardian_hook.py") or \
+        "guardian_hook.py" in command
+
+
+def hooks_present(settings, events):
+    """Which of these events already run this project's hook."""
+    installed = []
+    table = (settings or {}).get("hooks") or {}
+    for event in events:
+        for matcher in table.get(event) or []:
+            if any(_is_ours(h) for h in (matcher or {}).get("hooks") or []):
+                installed.append(event)
+                break
+    return installed
+
+
+def add_hooks(settings, events, command):
+    """The same settings with this project's hook on each event.
+
+    Appended beside whatever is already there. Somebody's existing hooks are theirs and
+    replacing them to install a security tool would be its own kind of attack.
+    """
+    out = json.loads(json.dumps(settings or {}))
+    table = out.setdefault("hooks", {})
+    for event in events:
+        entries = table.setdefault(event, [])
+        if any(any(_is_ours(h) for h in (m or {}).get("hooks") or [])
+               for m in entries):
+            continue
+        entries.append({"matcher": "*",
+                        "hooks": [{"type": "command", "command": command}]})
+    return out
+
+
+def remove_hooks(settings, events):
+    """The same settings with only this project's hook taken out."""
+    out = json.loads(json.dumps(settings or {}))
+    table = out.get("hooks") or {}
+    for event in events:
+        kept = []
+        for matcher in table.get(event) or []:
+            hooks = [h for h in (matcher or {}).get("hooks") or [] if not _is_ours(h)]
+            if hooks:
+                entry = dict(matcher)
+                entry["hooks"] = hooks
+                kept.append(entry)
+            elif not (matcher or {}).get("hooks"):
+                kept.append(matcher)
+        if kept:
+            table[event] = kept
+        else:
+            table.pop(event, None)
+    if not table:
+        out.pop("hooks", None)
+    return out
