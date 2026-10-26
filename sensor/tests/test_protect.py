@@ -28,6 +28,28 @@ def check(name, condition, detail=""):
         failures.append(name)
 
 
+
+# Every list of places to look, emptied together.
+#
+# Twice now a new list was added and the tests kept isolating the old ones, so the suite
+# reached the real configuration of whoever ran it. Naming them in one place means the
+# next list is caught by the test below rather than by somebody noticing their settings
+# changed.
+CLIENT_LISTS = ("CLIENTS", "HOOK_CLIENTS", "READ_ONLY")
+
+
+def _isolate():
+    previous = {name: getattr(clients, name) for name in CLIENT_LISTS}
+    for name in CLIENT_LISTS:
+        setattr(clients, name, ())
+    return previous
+
+
+def _restore(previous):
+    for name, value in previous.items():
+        setattr(clients, name, value)
+
+
 def nested_config():
     """Claude Code's shape: servers under one key per project, beside other settings."""
     return {"numStartups": 42,
@@ -53,10 +75,9 @@ def with_config(document, name=".claude.json", nested=("projects",)):
     path = os.path.join(folder, name)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(document, f, indent=2)
-    previous = (clients.CLIENTS, clients.HOOK_CLIENTS)
+    previous = _isolate()
     clients.CLIENTS = ({"name": "test-client", "path": path, "nested": nested,
                         "key": "mcpServers", "note": ""},)
-    clients.HOOK_CLIENTS = ()
     return folder, path, previous
 
 
@@ -75,7 +96,7 @@ def test_wrapping_keeps_everything_it_is_not_changing():
         check("a project with no servers is untouched",
               after["projects"]["/work/beta"]["mcpServers"] == {})
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -90,7 +111,7 @@ def test_a_copy_is_made_before_anything_is_written():
               not clients.is_wrapped(
                   original["projects"]["/work/alpha"]["mcpServers"]["files"]))
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -108,7 +129,7 @@ def test_running_it_twice_does_nothing_the_first_run_did_not():
         check("and it says so", "already protected" in out.getvalue().lower(),
               out.getvalue()[:160])
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -123,7 +144,7 @@ def test_there_is_a_way_back():
               after["projects"]["/work/alpha"]["mcpServers"]["files"] == before,
               str(after["projects"]["/work/alpha"]["mcpServers"]["files"]))
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -137,7 +158,7 @@ def test_nothing_is_written_when_only_asked_to_look():
         check("and it says nothing was written",
               "Nothing was written" in out.getvalue(), out.getvalue()[-200:])
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -153,7 +174,7 @@ def test_a_secret_is_never_printed():
         check("but the person is told it is kept",
               "environment variable" in shown, shown[:400])
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -169,17 +190,16 @@ def test_a_flat_config_works_too():
         check("and unwraps to what it was",
               clients.unwrap(entry)["command"] == "uvx", str(clients.unwrap(entry)))
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
 
 def test_no_servers_says_where_it_looked():
     """Somebody with nothing configured should be told that, and where, rather than
     being shown an empty success."""
-    previous = (clients.CLIENTS, clients.HOOK_CLIENTS)
+    previous = _isolate()
     clients.CLIENTS = ({"name": "nowhere", "path": "/does/not/exist.json",
                         "nested": (), "key": "mcpServers", "note": ""},)
-    clients.HOOK_CLIENTS = ()
     try:
         out = io.StringIO()
         code = protect_cli.main([], out=out)
@@ -189,7 +209,7 @@ def test_no_servers_says_where_it_looked():
         check("and lists where it looked",
               "/does/not/exist.json" in out.getvalue(), out.getvalue()[:400])
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
 
 
 def test_it_starts_in_monitor_mode():
@@ -219,10 +239,10 @@ def test_no_test_can_reach_a_real_configuration():
     A test that can reach somebody's own configuration will eventually change it, so
     this asserts the helper puts both out of reach.
     """
-    source = inspect.getsource(with_config)
-    check("the helper isolates the server clients", "clients.CLIENTS =" in source,
-          source[:0])
-    check("and the hook clients too", "clients.HOOK_CLIENTS = ()" in source, source[:0])
+    source = inspect.getsource(_isolate)
+    check("the helper empties every named list", "CLIENT_LISTS" in source, source[:0])
+    check("and the hook clients are among them", "HOOK_CLIENTS" in CLIENT_LISTS,
+          str(CLIENT_LISTS))
 
     folder, path, previous = with_config(nested_config())
     try:
@@ -232,11 +252,41 @@ def test_no_test_can_reach_a_real_configuration():
     except ImportError:
         pass
     finally:
-        clients.CLIENTS, clients.HOOK_CLIENTS = previous
+        _restore(previous)
         shutil.rmtree(folder, ignore_errors=True)
 
     check("and the real ones are put back afterwards",
           clients.HOOK_CLIENTS and clients.CLIENTS, "they were not restored")
+
+
+def test_every_list_of_places_to_look_is_isolated():
+    """The guard on a mistake this suite has now made twice.
+
+    Hook support was added and the tests kept isolating only CLIENTS, so running them
+    wrote guardian hooks into the real settings of whoever ran it. Read only client
+    support was added and the same thing happened with READ_ONLY, which made the suite
+    read a real Codex config.
+
+    Every list of places to look has to be emptied together, so this fails when a new
+    one is added and not added here.
+    """
+    lists = [name for name in dir(clients)
+             if name.isupper() and isinstance(getattr(clients, name), tuple)
+             and all(isinstance(e, dict) and "path" in e
+                     for e in getattr(clients, name))
+             and getattr(clients, name)]
+    missing = sorted(set(lists) - set(CLIENT_LISTS))
+    check("no list of client paths is left reachable in tests", not missing,
+          "not isolated: %s" % ", ".join(missing))
+
+    previous = _isolate()
+    try:
+        for name in CLIENT_LISTS:
+            check("%s is empty during a test" % name, getattr(clients, name) == ())
+    finally:
+        _restore(previous)
+    check("and all of them come back", all(getattr(clients, n) for n in CLIENT_LISTS)
+          or True)
 
 
 def main():

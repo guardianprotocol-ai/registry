@@ -50,7 +50,59 @@ CLIENTS = (
      "nested": (), "key": "mcpServers", "note": ""},
     {"name": "vscode", "path": _home(".config", "Code", "User", "mcp.json"),
      "nested": (), "key": "servers", "note": ""},
+    {"name": "gemini-cli", "path": _home(".gemini", "settings.json"),
+     "nested": (), "key": "mcpServers", "note": ""},
 )
+
+# Clients whose configuration can be read and must not be written.
+#
+# Codex keeps its servers in TOML. The standard library reads TOML and does not write it,
+# and rewriting somebody's configuration by editing the text would lose their comments
+# and their formatting and occasionally their file. A tool that mangles a config while
+# installing itself has done more harm than the attack it was there for.
+#
+# So these are found and reported with the exact change to make, and left alone. Being
+# told precisely what to add is worth a great deal more than not being told the server
+# exists.
+READ_ONLY = (
+    {"name": "codex", "path": _home(".codex", "config.toml"),
+     "key": "mcp_servers", "format": "toml",
+     "note": "TOML, so this is shown rather than changed"},
+)
+
+
+def read_toml(path):
+    try:
+        import tomllib
+    except ImportError:                     # Python 3.9 and 3.10
+        return None
+    try:
+        with open(path, "rb") as f:
+            return tomllib.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def discover_read_only():
+    """[(client, path, name, entry)] for servers this cannot safely change."""
+    out = []
+    for client in READ_ONLY:
+        if not os.path.exists(client["path"]):
+            continue
+        document = read_toml(client["path"])
+        table = (document or {}).get(client["key"]) or {}
+        for name, entry in sorted(table.items()):
+            if isinstance(entry, dict):
+                out.append((client, client["path"], name, entry))
+    return out
+
+
+def toml_instruction(entry, python, config_path):
+    """The lines to put in a TOML config, for somebody doing it by hand."""
+    wrapped = wrap(entry, python, config_path)
+    args = ", ".join(json.dumps(a) for a in wrapped.get("args") or [])
+    return ('command = %s\nargs = [%s]'
+            % (json.dumps(wrapped.get("command")), args))
 
 
 def read(path):

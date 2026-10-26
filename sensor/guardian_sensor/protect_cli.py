@@ -132,7 +132,10 @@ def main(argv=None, out=sys.stdout):
 
     found = clients.discover()
     hooks = hook_plan(remove=a.remove)
-    if not found and not hooks:
+    # Servers this cannot safely change, reported so nobody believes a client was
+    # checked and found clean when it was never readable in the first place.
+    manual = [] if a.remove else clients.discover_read_only()
+    if not found and not hooks and not manual:
         out.write("No MCP servers found on this machine.\n\n")
         out.write("Looked in:\n")
         for client in clients.CLIENTS:
@@ -202,6 +205,24 @@ def main(argv=None, out=sys.stdout):
         out.write("It starts in monitor mode, which records and allows. The first thing "
                   "a sensor does\nto somebody's real work should not be to stop it. "
                   "Change one word when you trust it.\n")
+    if manual:
+        settings = config_path()
+        out.write("%d server%s this cannot change for you:\n\n"
+                  % (len(manual), "" if len(manual) == 1 else "s"))
+        for client, path, name, entry in manual:
+            out.write("  %-10s %-16s %s\n"
+                      % (client["name"], name, clients.describe(entry)))
+        out.write("\n    %s\n" % manual[0][1])
+        out.write("    %s\n\n" % manual[0][0]["note"])
+        out.write("    In that file, under the entry for %s, replace the command and "
+                  "args with:\n\n" % manual[0][2])
+        for line in clients.toml_instruction(manual[0][3], sys.executable,
+                                             settings).splitlines():
+            out.write("      %s\n" % line)
+        out.write("\n    Everything else in that entry stays as it is. The same shape "
+                  "works for the\n    others, with their own command and args after "
+                  "the double dash.\n\n")
+
     out.write("Each file is copied before it is written.\n")
     out.write("Undo with: %s protect --remove\n\n" % called.invocation())
 
