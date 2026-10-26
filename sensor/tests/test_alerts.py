@@ -266,6 +266,65 @@ def test_the_digest_follows_the_sightings_only():
           share.document_digest(changed))
 
 
+def _alert_doc(**over):
+    alert = {"pattern": "GP-0003", "organizations": 3, "total": 9}
+    alert.update(over)
+    return {"schema_version": "1", "published": "2026-10-26T03:00:00+00:00",
+            "source": "drill", "alerts": [alert]}
+
+
+def test_a_reader_checks_the_guarantee_it_repeats():
+    """The published note says at least three independent organizations saw this.
+
+    A reader that prints that sentence and accepts an alert claiming one organization has
+    not checked the thing it is telling its operator. The publisher enforces the floor,
+    and so does this, because the publisher runs on somebody else's machine.
+    """
+    try:
+        alerts.parse(_alert_doc())
+        check("three organizations is accepted", True)
+    except alerts.AlertError as e:
+        check("three organizations is accepted", False, e)
+
+    for count in (1, 2):
+        try:
+            alerts.parse(_alert_doc(organizations=count, total=count))
+            check("an alert claiming %d organizations is refused" % count, False,
+                  "it was accepted")
+        except alerts.AlertError as e:
+            check("an alert claiming %d organizations is refused" % count, True, e)
+
+
+def test_an_alert_that_cannot_be_true_is_refused():
+    """Every contributing organization supplies at least one sighting."""
+    try:
+        alerts.parse(_alert_doc(organizations=5, total=1))
+        check("more organizations than sightings is refused", False, "it was accepted")
+    except alerts.AlertError as e:
+        check("more organizations than sightings is refused", True, e)
+
+
+def test_a_clock_moving_backwards_does_not_silence_a_node():
+    """NTP corrections, suspended virtual machines and fixed timezones all do this.
+
+    Treating a negative interval as "too soon" left a node holding new detections silent
+    for the length of the jump, while telling its operator the last send was under an hour
+    ago. Time to protection is the measurement this project reports, so a silent node is a
+    wrong number and not only a late one.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        first = _doc([_entry()])
+        now = datetime.datetime(2026, 10, 22, 14, 0, tzinfo=datetime.timezone.utc)
+        share.note_sent(folder, first, True, "ok", at=now)
+        more = _doc([_entry(), _entry("GP-0001")])
+        due, why = share.should_send(folder, more, at=now - datetime.timedelta(hours=5))
+        check("a backwards clock sends rather than waits", due, why)
+        check("and says why", "backwards" in why, why)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

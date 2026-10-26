@@ -202,6 +202,14 @@ def should_send(root, document, at=None):
     if when.tzinfo is None:
         when = when.replace(tzinfo=datetime.timezone.utc)
     hours = (at - when).total_seconds() / 3600.0
+    # A clock that moved backwards makes the interval meaningless, and the safe direction
+    # is to send. NTP corrections, a suspended virtual machine and a fixed timezone all do
+    # this. Treating it as "too soon" left a node silent for the length of the jump while
+    # it held new detections, and said "under an hour ago" about a send five hours ahead
+    # of it. Time to protection is the measurement this project reports, so a silent node
+    # is a wrong number rather than only a late one.
+    if hours < 0:
+        return True, "the clock moved backwards since the last send"
     changed = previous.get("digest") != document_digest(document)
     if changed and hours >= SEND_MIN_HOURS:
         return True, "there is something new"

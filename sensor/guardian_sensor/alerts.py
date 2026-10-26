@@ -27,6 +27,11 @@ SEEN_NAME = "alerts-seen.json"
 # could carry an instruction would be a command channel with a friendlier name, so the shape
 # is checked rather than trusted and an unknown key is refused rather than ignored.
 DOCUMENT_KEYS = ("schema_version", "published", "source", "alerts", "note")
+# The same floor the aggregator publishes under. Stated here as well, rather than
+# imported, because the sensor depends on nothing outside its own package and a reader
+# must be able to check this without the publisher's code.
+MIN_ORGS = 3
+
 ALERT_KEYS = ("pattern", "organizations", "total")
 
 
@@ -63,9 +68,25 @@ def parse(document):
         if not isinstance(pattern, str) or not pattern.startswith("GP-"):
             raise AlertError("an alert names %r, which is not a pattern" % pattern)
         for key in ("organizations", "total"):
-            if not isinstance(alert.get(key), int) or alert[key] < 1:
-                raise AlertError("an alert's %s is %r, which is not a count"
-                                 % (key, alert.get(key)))
+            if not isinstance(alert.get(key), bool) and isinstance(alert.get(key), int) \
+                    and alert[key] >= 1:
+                continue
+            raise AlertError("an alert's %s is %r, which is not a count"
+                             % (key, alert.get(key)))
+        # The published note says these are patterns at least three independent
+        # organizations saw. A reader that displays that sentence and accepts an alert
+        # claiming one has not checked the guarantee it is repeating. The publisher
+        # enforces the floor; so does this, because the publisher runs somewhere else.
+        if alert["organizations"] < MIN_ORGS:
+            raise AlertError("an alert claims %d organizations, below the floor of %d that "
+                             "makes a published count safe to repeat"
+                             % (alert["organizations"], MIN_ORGS))
+        # Every contributing organization supplies at least one sighting, so a total below
+        # the number of organizations describes something that cannot have happened.
+        if alert["total"] < alert["organizations"]:
+            raise AlertError("an alert claims %d organizations but only %d sightings, which "
+                             "cannot both be true"
+                             % (alert["organizations"], alert["total"]))
         out.append(alert)
     return out
 
