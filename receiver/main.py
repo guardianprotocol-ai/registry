@@ -22,6 +22,7 @@ import os
 import functions_framework
 from google.cloud import firestore
 
+import membership
 import participation
 import validate
 
@@ -46,7 +47,13 @@ def _json(body, code):
     return (json.dumps(body), code, {"Content-Type": "application/json"})
 
 
-def note_participant(org, document, store_at=None, now=None):
+def membership_key_for(org, store_at=None):
+    """The key this member first reported with, or None if nobody has."""
+    found = (store_at or db()).collection(PARTICIPANTS).document(org).get()
+    return (found.to_dict() or {}).get("key") if found and found.exists else None
+
+
+def note_participant(org, document, store_at=None, now=None, key=None, note=None):
     """Record that this member reported, whether or not they had anything to report.
 
     A member who installs, agrees to share and catches nothing sends a document with no
@@ -58,6 +65,14 @@ def note_participant(org, document, store_at=None, now=None):
     found = ref.get()
     existing = found.to_dict() if found and found.exists else None
     record = participation.record_for(org, document, existing, now)
+    if key:
+        # Stored once, on first contact, and never changed afterwards. Letting a later
+        # report replace it would undo the whole point: anybody could take the name by
+        # sending a new key.
+        record.setdefault("key", key)
+        record["key_fingerprint"] = membership.fingerprint(key)
+    if note:
+        record["membership"] = note
     ref.set(record, merge=True)
     return record
 
@@ -96,6 +111,21 @@ def sightings(request):
         document = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError) as e:
         return _json({"error": "the body is not JSON: %s" % e}, 400)
+    # Who holds this member id. Before the sightings are looked at, because a report
+    # from somebody impersonating an established member should not be stored at all.
+    try:
+        known = membership_key_for(document["org"]) if isinstance(document, dict) and \
+            isinstance(document.get("org"), str) else None
+        keep, note = membership.decide(
+            document.get("org") if isinstance(document, dict) else None,
+            known, raw, request.headers.get(membership.SIGNATURE_HEADER),
+            offered_key=request.headers.get("X-Guardian-Key"))
+    except membership.Refused as e:
+        return _json({"error": str(e)}, 403)
+    except Exception as e:  # noqa: BLE001
+        print("membership check failed: %s: %s" % (type(e).__name__, e))
+        return _json({"error": "the receiver could not check this report"}, 503)
+
     try:
         entries = validate.check_document(document)
     except validate.Refused as e:
@@ -105,7 +135,7 @@ def sightings(request):
     try:
         # Before the sightings, so a member with nothing to report is still counted. That
         # case is the whole reason this exists.
-        note_participant(document["org"], document)
+        note_participant(document["org"], document, key=keep, note=note)
         written = store(entries)
     except Exception as e:  # noqa: BLE001
         # The sender keeps its evidence and retries, so a failure here is a delay. The

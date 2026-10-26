@@ -15,7 +15,7 @@ import os
 import sys
 
 from . import home
-from . import called, hub, paint, share
+from . import called, hub, identity, paint, share
 
 COMMANDS = ("on", "off", "now", "status")
 DEFAULT_ENDPOINT = "https://guardianprotocol.network/season1/sightings"
@@ -108,8 +108,15 @@ def now(argv, out=sys.stdout, root=None, opener=None):
         out.write("Cannot build a document: %s\n" % e)
         return 1
 
-    ok, message = share.send(document, agreed["endpoint"], opener=opener)
+    ok, message = share.send(document, agreed["endpoint"], opener=opener,
+                             key=identity.load_or_create(root),
+                             first_contact=not identity.registered_with(
+                                 root, agreed["endpoint"]))
     share.note_sent(root, document, ok, message)
+    if ok:
+        # Recorded only once the receiver accepted it, so a failed first
+        # attempt still sends the key next time.
+        identity.note_registered(root, agreed["endpoint"])
     entries = len(document["sightings"])
     if ok:
         out.write("Sent %d entr%s: %s\n" % (entries, "y" if entries == 1 else "ies", message))

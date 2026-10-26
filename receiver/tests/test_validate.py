@@ -255,6 +255,62 @@ def test_the_report_says_zero_plainly():
     check("the total is stated", "2 organizations reporting" in both, both)
 
 
+def test_a_member_id_in_use_cannot_be_taken():
+    """The k-threshold counts organizations. Counting means nothing if a name can be taken.
+
+    Trust on first use: whoever reports first holds the name, and every report after that
+    must be signed with the same key. Without this, anybody who knew a member id could
+    file sightings in their name, which both poisons that organization's numbers and
+    inflates the count of organizations the research rests on.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import membership
+
+    key = "a" * 64
+    body = b'{"org":"acme","schema_version":"0.2","sightings":[]}'
+    good = membership.sign(key, body)
+
+    keep, note = membership.decide("acme", None, body, good, offered_key=key)
+    check("first contact records the key", keep == key, note)
+
+    _, note = membership.decide("acme", key, body, good)
+    check("the real member is accepted again", note == "known member", note)
+
+    for label, signature, offered in [
+            ("no signature at all", None, None),
+            ("somebody else's signature", membership.sign("b" * 64, body), None),
+            ("their own new key", membership.sign("b" * 64, body), "b" * 64)]:
+        try:
+            membership.decide("acme", key, body, signature, offered_key=offered)
+            check("an impostor with %s is refused" % label, False, "it was accepted")
+        except membership.Refused:
+            check("an impostor with %s is refused" % label, True)
+
+
+def test_a_changed_body_breaks_the_signature():
+    """Signed over the bytes sent, so nothing can be edited in flight."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import membership
+
+    key = "a" * 64
+    body = b'{"count":1}'
+    signature = membership.sign(key, body)
+    check("the original verifies", membership.check(key, body, signature))
+    check("one changed digit does not",
+          not membership.check(key, b'{"count":9}', signature))
+
+
+def test_an_unsigned_first_contact_is_allowed_and_said_so():
+    """A member who has no key yet can still take part, and it is recorded as unsigned
+    rather than quietly treated as proven."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import membership
+
+    keep, note = membership.decide("newcomer", None, b"{}", None)
+    check("they are let in", keep is None, note)
+    check("and it says the report was not signed", "unsigned" in note, note)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

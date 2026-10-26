@@ -29,6 +29,7 @@ import sys
 import urllib.request
 
 from . import home
+from . import identity
 from . import called
 from . import drill, hub
 
@@ -647,8 +648,16 @@ def _share_if_agreed(a, out, quiet=False):
         # minutes have nothing to say. Saying so every time would bury the lines that
         # matter in the member's own log.
         return
-    ok, message = share.send(document, agreed["endpoint"])
+    # Made on first use and never sent again after the first report.
+    ok, message = share.send(document, agreed["endpoint"],
+                             key=identity.load_or_create(root),
+                             first_contact=not identity.registered_with(
+                                 root, agreed["endpoint"]))
     share.note_sent(root, document, ok, message)
+    if ok:
+        # Recorded only once the receiver accepted it, so a failed first
+        # attempt still sends the key next time.
+        identity.note_registered(root, agreed["endpoint"])
     entries = len(document.get("sightings", []))
     if ok:
         out.write("Shared %d entr%s with %s (%s): %s\n"

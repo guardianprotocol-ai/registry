@@ -32,7 +32,7 @@ import sys
 import urllib.error
 import urllib.request
 
-from . import called, hub
+from . import called, hub, identity
 
 CONSENT_NAME = "sharing.json"
 SCHEMA_VERSION = 1
@@ -123,7 +123,8 @@ def check_before_sending(document):
     return True
 
 
-def send(document, endpoint, opener=None, timeout=30):
+def send(document, endpoint, opener=None, timeout=30, key=None,
+         first_contact=False):
     """POST the document. Returns (ok, message). Never raises on a network problem.
 
     A receiver that is down, slow or gone must not block a member's work or lose their
@@ -132,10 +133,20 @@ def send(document, endpoint, opener=None, timeout=30):
     """
     check_before_sending(document)
     body = json.dumps(document, sort_keys=True).encode("utf-8")
+    headers = {"Content-Type": "application/json",
+               "User-Agent": "guardian-sensor/%s" % hub.SENSOR_VERSION}
+    if key:
+        # Signed over the bytes actually being sent. A receiver that has seen this member
+        # before refuses anything that does not match, so a member id cannot be taken by
+        # somebody else once it is in use.
+        headers["X-Guardian-Signature"] = identity.sign(key, body)
+        if first_contact:
+            # The key itself travels exactly once, to establish the name. After that only
+            # signatures travel, so reading a later request tells an eavesdropper nothing
+            # that lets them report as this member.
+            headers["X-Guardian-Key"] = key
     request = urllib.request.Request(
-        endpoint, data=body, method="POST",
-        headers={"Content-Type": "application/json",
-                 "User-Agent": "guardian-sensor/%s" % hub.SENSOR_VERSION})
+        endpoint, data=body, method="POST", headers=headers)
     opener = opener or urllib.request.urlopen
     try:
         with opener(request, timeout=timeout) as response:
