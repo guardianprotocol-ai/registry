@@ -299,6 +299,29 @@ server, 200 messages:
 | Through the sensor | 0.454 ms per message |
 | **Added by the sensor** | **0.290 ms per message** |
 
+Those messages are small, which is the common case and not the whole story. The cost is
+the rules running over text, so it grows with the size of what a tool returns. Measured
+the same way, on the output side where most of the work happens:
+
+| Tool output | Added by the sensor |
+| --- | --- |
+| 200 B, a typical call | 0.08 ms |
+| 2 KB, a short answer | 0.8 ms |
+| 20 KB, a source file | 7.9 ms |
+| 200 KB, a large file | 79 ms |
+| 2 MB, a log dump | 903 ms |
+
+It is linear in the length of the text, and at the top of that table it is slow enough to
+notice. An agent that reads whole log files through a guarded server will feel it. Most of
+the time is the instruction patterns themselves rather than the work around them: 55 ms of
+the 79 at 200 KB.
+
+This is not optimized yet, on purpose. The obvious fix is to scan once for the words every
+pattern needs before running any pattern, which measured about six times faster on text
+that matches nothing. It is not in yet because getting it wrong means the sensor quietly
+stops catching something, which is worse than being slow, and the change wants the attack
+corpus used as an equivalence check rather than a deadline. Tracked in the issues.
+
 The proxy is long lived, so it pays process startup once rather than per call.
 
 Scanning cost is linear in the size of the text, about **365 ms per megabyte**, so a few
