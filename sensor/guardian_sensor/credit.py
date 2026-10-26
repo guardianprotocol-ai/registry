@@ -20,10 +20,15 @@ import os
 import re
 import sys
 
+from . import home
 from . import called
 
 SCHEMA_VERSION = 1
-DEFAULT_PATH = os.path.join(".guardian", "credit.json")
+def default_path():
+    return home.path("credit.json")
+
+
+DEFAULT_PATH = default_path()
 
 # A GitHub handle, for attribution in a contributors list. Shape checked because this ends up
 # in a published document and a typo there is somebody's name spelled wrong in print.
@@ -82,7 +87,7 @@ def save(record, path=DEFAULT_PATH):
 
 def main(argv=None, out=sys.stdout):
     ap = argparse.ArgumentParser(
-        prog="guardian_sensor credit",
+        prog="%s credit" % called.invocation(),
         description="Record how you want to be credited in the research. Kept apart from "
                     "your sightings on purpose.")
     ap.add_argument("--name", default=None, help="how you want to appear")

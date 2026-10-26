@@ -29,7 +29,7 @@ def _document(root, org, since=None):
 
 
 def on(argv, out=sys.stdout, root=None):
-    ap = argparse.ArgumentParser(prog="guardian share on",
+    ap = argparse.ArgumentParser(prog="%s share on" % called.invocation(),
                                  description="Agree to send sightings automatically")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"))
     ap.add_argument("--endpoint", default=DEFAULT_ENDPOINT)
@@ -75,7 +75,7 @@ def on(argv, out=sys.stdout, root=None):
 
 
 def off(argv, out=sys.stdout, root=None):
-    ap = argparse.ArgumentParser(prog="guardian share off")
+    ap = argparse.ArgumentParser(prog="%s share off" % called.invocation())
     ap.add_argument("--home", default=None)
     a = ap.parse_args(argv)
     root = root or _home(a.home)
@@ -89,7 +89,7 @@ def off(argv, out=sys.stdout, root=None):
 
 
 def now(argv, out=sys.stdout, root=None, opener=None):
-    ap = argparse.ArgumentParser(prog="guardian share now",
+    ap = argparse.ArgumentParser(prog="%s share now" % called.invocation(),
                                  description="Send what there is, once")
     ap.add_argument("--home", default=None)
     ap.add_argument("--since", default=None, metavar="YYYY-MM-DD")
@@ -122,7 +122,7 @@ def now(argv, out=sys.stdout, root=None, opener=None):
 
 
 def status(argv, out=sys.stdout, root=None):
-    ap = argparse.ArgumentParser(prog="guardian share")
+    ap = argparse.ArgumentParser(prog="%s share" % called.invocation())
     ap.add_argument("--home", default=None)
     a = ap.parse_args(argv)
     root = root or _home(a.home)

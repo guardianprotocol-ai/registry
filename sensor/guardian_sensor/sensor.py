@@ -28,16 +28,28 @@ import sys
 import threading
 
 from . import canaries
+from . import home
 from . import rules
 
-DEFAULT_CONFIG = {
-    "mode": "block",                 # "block" or "monitor"
-    "allowlist": [],                 # domains data may be sent to
-    "pins_path": ".guardian/pins.json",
-    "evidence_path": ".guardian/evidence.jsonl",
-    "max_repeat": 10,                # identical calls allowed per session (GP-0011)
-    "canaries_path": ".guardian/canaries.json",
-}
+# Under the member's data directory, not relative to wherever an agent happened to start
+# the proxy. A client launches this with the working directory of whatever project is open,
+# so relative defaults scattered a member's evidence across every repository they worked in
+# that week, while `report` and `share` read their home and found none of it. Live
+# detections are the data the exchange exists for and they were the most likely to be
+# stranded. A guardian.json still overrides any of these, so a deployment that wants
+# project-local state can say so.
+def default_config():
+    return {
+        "mode": "block",             # "block" or "monitor"
+        "allowlist": [],             # domains data may be sent to
+        "pins_path": home.path("pins.json"),
+        "evidence_path": home.path("evidence.jsonl"),
+        "max_repeat": 10,            # identical calls allowed per session (GP-0011)
+        "canaries_path": home.path("canaries.json"),
+    }
+
+
+DEFAULT_CONFIG = default_config()
 
 
 # One refusal, the same for every rule. Naming the rule that fired is an oracle: an attacker

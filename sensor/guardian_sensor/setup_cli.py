@@ -88,7 +88,7 @@ def _bad_org(value):
 
 def main(argv=None, out=sys.stdout):
     ap = argparse.ArgumentParser(
-        prog="guardian setup",
+        prog="%s setup" % called.invocation(),
         description="Take part, one question at a time. Asks before it does anything.")
     ap.add_argument("--base", default=PUBLISH_BASE, help="where exercises are published")
     ap.add_argument("--home", default=None, help="where to keep records")

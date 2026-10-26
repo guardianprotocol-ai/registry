@@ -136,7 +136,7 @@ def render(state, out=sys.stdout):
 
 def main(argv=None, out=sys.stdout):
     ap = argparse.ArgumentParser(
-        prog="guardian status",
+        prog="%s status" % called.invocation(),
         description="What this machine has done. Reads local files and nothing else.")
     ap.add_argument("--home", default=None, help="where records are kept")
     ap.add_argument("--json", action="store_true", help="the same, as JSON")

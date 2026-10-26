@@ -302,6 +302,44 @@ def test_the_home_is_read_when_the_command_runs():
             os.environ[home.OVERRIDE] = previous
 
 
+def test_no_default_path_is_relative_to_the_current_directory():
+    """The whole class of bug, caught once rather than one file at a time.
+
+    Six defaults were written as ".guardian/<name>" relative to wherever the command was
+    typed. For the proxy that meant a client launching it inside a project wrote the
+    member's evidence into that project, and a report reading their home found none of
+    it: live detections, the data the exchange exists for, scattered across every
+    repository they opened that week.
+
+    Anything added later with a relative default fails here.
+    """
+    folder = tempfile.mkdtemp()
+    previous = os.environ.get(home.OVERRIDE)
+    os.environ[home.OVERRIDE] = folder
+    try:
+        from guardian_sensor import agenda, canaries, credit, hub_cli, sensor
+        root = home.data_dir()
+        defaults = {
+            "canaries store": canaries.default_path(),
+            "credit record": credit.default_path(),
+            "agenda log": agenda.default_log(),
+            "agenda drill dir": agenda.home.drill_dir(),
+            "rule updates": hub_cli.home.path("updates.jsonl"),
+            "drill dir": drill.default_dir(),
+        }
+        defaults.update({"proxy " + k: v for k, v in sensor.default_config().items()
+                         if k.endswith("_path")})
+        for name, value in sorted(defaults.items()):
+            check("%s is absolute" % name, os.path.isabs(value), value)
+            check("%s is under the member's home" % name, value.startswith(root), value)
+    finally:
+        if previous is None:
+            os.environ.pop(home.OVERRIDE, None)
+        else:
+            os.environ[home.OVERRIDE] = previous
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

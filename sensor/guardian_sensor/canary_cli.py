@@ -11,6 +11,7 @@ import getpass
 import os
 import sys
 
+from . import home
 from . import called
 from . import canaries
 
@@ -29,7 +30,7 @@ def _read_value(stream=None, prompt=True):
 
 def add(argv, out=sys.stdout, stream=None):
     ap = argparse.ArgumentParser(
-        prog="guardian_sensor canary add",
+        prog="%s canary add" % called.invocation(),
         description="Register a value the sensor should watch for in outbound tool calls")
     ap.add_argument("--label", required=True,
                     help="how you will recognise this canary later. Never the value itself")
@@ -37,6 +38,23 @@ def add(argv, out=sys.stdout, stream=None):
     ap.add_argument("--armed", action="store_true",
                     help="skip the baseline period and block immediately. Only do this for a "
                          "value you are certain no legitimate process touches")
+    # Somebody reaching for --value has guessed the obvious interface, and refusing them
+    # with argparse's "unrecognized arguments" reads as a missing feature rather than a
+    # decision. The decision is the point of the whole command, so it is explained here.
+    for argument in argv or []:
+        if argument == "--value" or argument.startswith("--value="):
+            out.write("There is no --value, on purpose.\n\n")
+            out.write("A value passed as an argument is written to your shell history and "
+                      "is visible\nin the process list to anybody else on this machine, "
+                      "which would leak the exact\nsecret you are asking the sensor to "
+                      "watch for.\n\n")
+            out.write("Paste it at the prompt instead:\n")
+            out.write("  %s canary add --label %s\n\n" % (called.invocation(), "NAME"))
+            out.write("Or pipe it in, if something else already holds it:\n")
+            out.write("  cat secret.txt | %s canary add --label %s\n"
+                      % (called.invocation(), "NAME"))
+            return 2
+
     a = ap.parse_args(argv)
 
     value = _read_value(stream)
@@ -71,9 +89,9 @@ def add(argv, out=sys.stdout, stream=None):
 
 
 def list_(argv, out=sys.stdout):
-    ap = argparse.ArgumentParser(prog="guardian_sensor canary list")
+    ap = argparse.ArgumentParser(prog="%s canary list" % called.invocation())
     ap.add_argument("--file", default=canaries.DEFAULT_PATH)
-    ap.add_argument("--evidence", default=os.path.join(".guardian", "evidence.jsonl"),
+    ap.add_argument("--evidence", default=home.path("evidence.jsonl"),
                     help="where hit counts are read from")
     a = ap.parse_args(argv)
     store = canaries.load(a.file)
@@ -111,7 +129,7 @@ def list_(argv, out=sys.stdout):
 
 
 def arm(argv, out=sys.stdout):
-    ap = argparse.ArgumentParser(prog="guardian_sensor canary arm")
+    ap = argparse.ArgumentParser(prog="%s canary arm" % called.invocation())
     ap.add_argument("--label", required=True)
     ap.add_argument("--file", default=canaries.DEFAULT_PATH)
     a = ap.parse_args(argv)
@@ -125,7 +143,7 @@ def arm(argv, out=sys.stdout):
 
 
 def remove(argv, out=sys.stdout):
-    ap = argparse.ArgumentParser(prog="guardian_sensor canary remove")
+    ap = argparse.ArgumentParser(prog="%s canary remove" % called.invocation())
     ap.add_argument("--label", required=True)
     ap.add_argument("--file", default=canaries.DEFAULT_PATH)
     a = ap.parse_args(argv)

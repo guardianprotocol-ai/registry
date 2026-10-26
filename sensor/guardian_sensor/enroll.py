@@ -118,7 +118,7 @@ def _run(command):
 
 def main(argv=None, out=sys.stdout, platform=None, runner=None):
     ap = argparse.ArgumentParser(
-        prog="guardian_sensor enroll",
+        prog="%s enroll" % called.invocation(),
         description="Take part in scheduled exercises. Installs once, then does nothing.")
     ap.add_argument("--base", default=None,
                     help="where the agenda is published. Omit with --offline")

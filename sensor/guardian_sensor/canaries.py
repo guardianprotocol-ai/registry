@@ -31,8 +31,16 @@ import os
 import re
 import secrets
 
+from . import home
+
 SCHEMA_VERSION = 1
-DEFAULT_PATH = os.path.join(".guardian", "canaries.json")
+def default_path():
+    return home.path("canaries.json")
+
+
+# Resolved at import for display only. Anything that opens a file calls default_path(),
+# so a command run with GUARDIAN_HOME set uses the directory it was given.
+DEFAULT_PATH = default_path()
 
 # Short values collide with ordinary text, and a canary that fires on ordinary text gets
 # switched off. Twelve characters is the floor for anything resembling a credential, and

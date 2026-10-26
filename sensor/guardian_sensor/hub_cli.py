@@ -10,9 +10,10 @@ import os
 import sys
 import urllib.request
 
-from . import hub
+from . import home
+from . import called, hub
 
-DEFAULT_UPDATES = ".guardian/updates.jsonl"
+DEFAULT_UPDATES = home.path("updates.jsonl")
 MANIFEST_NAME = "manifest.json"
 
 
@@ -23,7 +24,7 @@ def _fetch(url, opener=None):
 
 
 def report(argv, out=sys.stdout):
-    ap = argparse.ArgumentParser(prog="guardian_sensor report",
+    ap = argparse.ArgumentParser(prog="%s report" % called.invocation(),
                                  description="Build an anonymized sightings file")
     ap.add_argument("--since", default=None, metavar="YYYY-MM-DD")
     ap.add_argument("--out", default=None, metavar="FILE")
@@ -74,11 +75,11 @@ def report(argv, out=sys.stdout):
 
 
 def update(argv, opener=None, out=sys.stdout):
-    ap = argparse.ArgumentParser(prog="guardian_sensor update",
+    ap = argparse.ArgumentParser(prog="%s update" % called.invocation(),
                                  description="Fetch and verify the published rule set")
     ap.add_argument("--base", required=True,
                     help="base URL of the published release, holding manifest.json")
-    ap.add_argument("--dest", default=".guardian/rules",
+    ap.add_argument("--dest", default=home.path("rules"),
                     help="where to write the verified files")
     ap.add_argument("--updates", default=DEFAULT_UPDATES)
     ap.add_argument("--dry-run", action="store_true",

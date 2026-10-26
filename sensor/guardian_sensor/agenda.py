@@ -27,13 +27,18 @@ import os
 import sys
 import urllib.request
 
+from . import home
 from . import called
 from . import drill, hub
 
 AGENDA_NAME = "agenda.json"
 LOCK_NAME = ".agenda.lock"
-DEFAULT_LOG = os.path.join(".guardian", "agenda.jsonl")
-DEFAULT_DIR = os.path.join(".guardian", "drill")
+def default_log():
+    return home.path("agenda.jsonl")
+
+
+DEFAULT_LOG = default_log()
+DEFAULT_DIR = home.drill_dir()
 
 # The only keys an agenda may carry. A key nobody recognises is a refusal rather than
 # something to ignore, because ignoring one means a later version that understands it would
@@ -330,7 +335,7 @@ def module_is_present():
 
 def main(argv=None, out=sys.stdout, opener=None, now=None):
     ap = argparse.ArgumentParser(
-        prog="guardian_sensor agenda",
+        prog="%s agenda" % called.invocation(),
         description="Run a published exercise when its time has come. Safe to run hourly.")
     ap.add_argument("--base", default=None,
                     help="base URL holding agenda.json. Omit with --offline")

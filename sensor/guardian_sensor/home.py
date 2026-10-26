@@ -48,3 +48,15 @@ def evidence_paths(explicit=None):
     root = data_dir(explicit)
     return (os.path.join(root, "evidence.jsonl"),
             os.path.join(root, "drill", "evidence.jsonl"))
+
+
+def path(*parts):
+    """A file under the member's data directory, resolved when it is called.
+
+    Every default that used to be written as ".guardian/<name>" relative to the current
+    directory goes through here. Relative defaults meant the answer depended on where the
+    command was typed: a proxy started inside a project wrote its evidence into that
+    project, while a report read the member's home and found nothing. Live detections, the
+    ones the exchange exists for, were the data most likely to be stranded.
+    """
+    return os.path.join(data_dir(), *parts)

@@ -279,7 +279,7 @@ def respond(workdir, org, out, python=None):
 def main(argv=None, out=sys.stdout):
     import argparse
     ap = argparse.ArgumentParser(
-        prog="guardian_sensor drill",
+        prog="%s drill" % called.invocation(),
         description="Attack your own machine through your own sensor, then report it")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"),
                     help="your pseudonymous member id, never a company name")
