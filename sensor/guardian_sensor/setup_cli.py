@@ -16,9 +16,12 @@ import argparse
 import os
 import sys
 
-from . import called, canaries, credit, drill, enroll, hub, paint
+from . import called, canaries, credit, drill, enroll, hub, paint, share, share_cli
 
 PUBLISH_BASE = "https://guardianprotocol.network/season1"
+# One definition, in share_cli, so the address a member agrees to and the address
+# the poll sends to can never drift apart.
+DEFAULT_ENDPOINT = share_cli.DEFAULT_ENDPOINT
 
 
 def _ask(prompt, out, default=None, validate=None, explain=None):
@@ -102,7 +105,7 @@ def main(argv=None, out=sys.stdout):
 
     from . import banner
     banner.show(out)
-    out.write("Four questions. Nothing is installed or sent until you have seen it.\n\n")
+    out.write("Five questions. Nothing is installed or sent until you have seen it.\n\n")
 
     # 1. The pseudonym. Asked first because everything else carries it.
     org = _ask("member id", out, validate=_bad_org,
@@ -163,7 +166,42 @@ def main(argv=None, out=sys.stdout):
         else:
             out.write("\nNot installed. You can run this again any time.\n")
 
-    # 4. Credit. Asked last, because it is the only question about them rather than about
+    # 4. Sharing. Asked here because the member has just watched their own sensor catch
+    # three attacks, so the thing being offered is concrete rather than hypothetical.
+    #
+    # It is asked at all because an exchange whose data only moves when somebody remembers
+    # to send a file is not an exchange. Leaving this to a separate command meant every
+    # member had to discover `share on` by reading, and most would not.
+    #
+    # The preview is printed first, every time. Nobody agrees to a description of a
+    # document when the document itself fits on a screen.
+    shared = False
+    if arm != "neither":
+        out.write("\n")
+        try:
+            document = share_cli._document(where, org)
+        except Exception:  # noqa: BLE001
+            document = None
+        if document is not None and document.get("sightings"):
+            out.write("Sending this is what turns a sensor into an exchange: an attack\n")
+            out.write("caught on your machine becomes a warning on everybody else's.\n\n")
+            out.write(hub.preview_text(document) + "\n\n")
+            out.write("To %s, operated by Guardian Protocol.\n" % DEFAULT_ENDPOINT)
+            out.write("At most once an hour, and only when something changed.\n")
+            out.write("Stop at any time with: %s share off\n\n" % called.invocation())
+            if _yes("send sightings automatically", out, default=True):
+                try:
+                    share.record_consent(where, org, DEFAULT_ENDPOINT)
+                    shared = True
+                    out.write("\nAgreed. Recorded in %s.\n"
+                              % os.path.join(where, share.CONSENT_NAME))
+                except Exception as e:  # noqa: BLE001
+                    out.write("\nNot recorded: %s\n" % e)
+            else:
+                out.write("\nNothing will be sent. The sensor still runs and you can "
+                          "read your own\nreports any time.\n")
+
+    # 5. Credit. Asked last, because it is the only question about them rather than about
     # their machine, and because somebody who has just seen it work is better placed to
     # decide whether they want their name on it.
     out.write("\nCredit in the research is optional and separate from anything you share.\n")
@@ -186,6 +224,7 @@ def main(argv=None, out=sys.stdout):
     out.write("\n%s\n" % paint.paint("Done.", "good", out))
     out.write("  member id   %s\n" % org)
     out.write("  taking part %s\n" % (arm if installed else "not installed"))
+    out.write("  sharing     %s\n" % ("on, at most hourly" if shared else "off"))
     out.write("  records in  %s\n\n" % where)
     out.write("To see what you would share, and share nothing:\n")
     out.write("  %s report --org %s --evidence %s --preview\n\n"

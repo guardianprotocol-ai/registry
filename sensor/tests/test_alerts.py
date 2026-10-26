@@ -9,9 +9,11 @@ instruction is a command channel with a friendlier name.
 
 Run from the sensor folder:  python3 tests/test_alerts.py
 """
+import datetime
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 
@@ -182,6 +184,86 @@ def test_a_send_is_recorded_in_counts_only():
         check("it records when", record["time"].startswith("20"), body)
         for leak in ("send_message", "GP-0001", "acme-labs", "x.test"):
             check(f"{leak!r} is not in the send log", leak not in body, body)
+
+
+def _doc(entries):
+    return {"schema_version": "0.2", "org": "a-lab", "sightings": entries}
+
+
+def _entry(pattern="GP-0003", count=1):
+    return {"org": "a-lab", "sensor_version": "guardian-sensor v0",
+            "rules_version": "b34d9a7a88daa", "pattern": pattern, "action": "blocked",
+            "hour": "2026-10-22T13", "count": count, "source": "drill"}
+
+
+def test_sending_is_not_attempted_every_poll():
+    """The poll runs every sixty seconds. Sending every poll says nothing new.
+
+    The format buckets by the hour, so a second send inside the same hour cannot carry
+    information the first one did not. Thirty members polling every minute for a month is
+    about 1.3 million requests, each re-sending the member's entire history.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        document = _doc([_entry()])
+        now = datetime.datetime(2026, 10, 22, 14, 0, tzinfo=datetime.timezone.utc)
+
+        due, why = share.should_send(folder, document, at=now)
+        check("the first send always happens", due, why)
+
+        share.note_sent(folder, document, True, "ok", at=now)
+        due, why = share.should_send(folder, document, at=now)
+        check("an unchanged document is not sent again", not due, why)
+
+        minutes_later = now + datetime.timedelta(minutes=5)
+        due, why = share.should_send(folder, _doc([_entry(), _entry("GP-0001")]),
+                                     at=minutes_later)
+        check("something new still waits for the hour", not due, why)
+
+        an_hour_later = now + datetime.timedelta(hours=1, minutes=1)
+        due, why = share.should_send(folder, _doc([_entry(), _entry("GP-0001")]),
+                                     at=an_hour_later)
+        check("something new goes once the hour is up", due, why)
+
+        a_day_later = now + datetime.timedelta(hours=24, minutes=1)
+        due, why = share.should_send(folder, document, at=a_day_later)
+        check("an unchanged document still goes once a day", due, why)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_failed_send_does_not_start_the_clock():
+    """A receiver that was down must not cost the member an hour of silence.
+
+    If a refused attempt counted as a send, a member whose first attempt failed would wait
+    out an interval that never carried anything, and the evidence would sit on their disk
+    while the aggregate showed them as reporting nothing.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        document = _doc([_entry()])
+        now = datetime.datetime(2026, 10, 22, 14, 0, tzinfo=datetime.timezone.utc)
+        share.note_sent(folder, document, False, "connection refused", at=now)
+        due, why = share.should_send(folder, document, at=now)
+        check("a refused send is retried at once", due, why)
+        check("the reason says nothing has landed yet",
+              "nothing has been sent yet" in why, why)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_the_digest_follows_the_sightings_only():
+    """Two documents with the same sightings must look the same, or nothing throttles."""
+    a = _doc([_entry()])
+    b = _doc([_entry()])
+    b["org"] = "a-lab"
+    check("the same sightings give the same digest",
+          share.document_digest(a) == share.document_digest(b),
+          f"{share.document_digest(a)} vs {share.document_digest(b)}")
+    changed = _doc([_entry(count=2)])
+    check("a changed count is a changed document",
+          share.document_digest(a) != share.document_digest(changed),
+          share.document_digest(changed))
 
 
 def main():

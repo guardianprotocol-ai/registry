@@ -25,17 +25,29 @@ sends it.
 Python 3.9+ standard library only.
 """
 import datetime
+import hashlib
 import json
 import os
 import sys
 import urllib.error
 import urllib.request
 
-from . import hub
+from . import called, hub
 
 CONSENT_NAME = "sharing.json"
 SCHEMA_VERSION = 1
 SENT_NAME = "sent.jsonl"
+
+# How often sending is even considered. The poll runs every sixty seconds, but the format
+# buckets detections by the hour, so sending more than once an hour cannot carry
+# information the previous send did not already have. Thirty members polling every minute
+# would otherwise be about 1.3 million requests a month, every one of them re-sending the
+# member's whole history, to say the same thing the last one said.
+SEND_MIN_HOURS = 1
+# An unchanged document still goes once a day. Without it a quiet machine and a dead
+# machine look identical from the outside, and "nothing was caught" is a result the
+# experiment needs to be able to tell apart from "nobody is running it".
+HEARTBEAT_HOURS = 24
 
 
 class ShareError(Exception):
@@ -56,7 +68,11 @@ def record_consent(root, org, endpoint, agreed=True):
         "what_is_sent": ("counts only: pattern, action, hour, source, and the pseudonym "
                          "above. No tool names, arguments, URLs, paths or message text, and "
                          "no time finer than the hour."),
-        "revoke_with": "guardian share --stop",
+        # The command as the member would actually type it. This said "share --stop",
+        # which is not a command the CLI has: the one line telling somebody how to
+        # withdraw consent named something that fails. Taken from called.invocation() so
+        # it matches how they started the tool rather than assuming a name on PATH.
+        "revoke_with": "%s share off" % called.invocation(),
     }
     os.makedirs(root, exist_ok=True)
     path = consent_path(root)
@@ -133,7 +149,70 @@ def send(document, endpoint, opener=None, timeout=30):
         return False, "%s: %s" % (type(e).__name__, e)
 
 
-def note_sent(root, document, ok, message):
+def document_digest(document):
+    """A short digest of what would be sent.
+
+    Only the sightings are hashed. The envelope carries the member id and the schema
+    version, which do not change, so including them would make every document look new.
+    """
+    body = json.dumps(document.get("sightings", []), sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()[:16]
+
+
+def last_success(root):
+    """The most recent send that the receiver accepted, or None."""
+    found = None
+    try:
+        with open(os.path.join(root, SENT_NAME), encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError:
+                    continue
+                if record.get("ok"):
+                    found = record
+    except OSError:
+        return None
+    return found
+
+
+def should_send(root, document, at=None):
+    """Whether to send now, and the reason either way. Returns (bool, reason).
+
+    Three cases, in order. Nothing has ever been sent, so send. The document has changed
+    and the last send was at least an hour ago, so send. The document has not changed but
+    a day has passed, so send anyway as a sign of life.
+
+    A failed send does not count as a send: last_success only reads accepted ones, so a
+    receiver that was down for six hours is caught up on the next poll rather than waiting
+    out an interval that never started.
+    """
+    at = at or datetime.datetime.now(datetime.timezone.utc)
+    previous = last_success(root)
+    if previous is None:
+        return True, "nothing has been sent yet"
+    try:
+        when = datetime.datetime.fromisoformat(previous["time"])
+    except (KeyError, TypeError, ValueError):
+        # An unreadable timestamp must not wedge sending forever.
+        return True, "the last send has no readable time"
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    hours = (at - when).total_seconds() / 3600.0
+    changed = previous.get("digest") != document_digest(document)
+    if changed and hours >= SEND_MIN_HOURS:
+        return True, "there is something new"
+    if hours >= HEARTBEAT_HOURS:
+        return True, "a day has passed, sending a sign of life"
+    if changed:
+        return False, "something new, but the last send was under an hour ago"
+    return False, "nothing has changed since the last send"
+
+
+def note_sent(root, document, ok, message, at=None):
     """What was sent and when, so a member can see their own history.
 
     Counts only, the same as the document, because a log of what was shared should not be
@@ -143,9 +222,12 @@ def note_sent(root, document, ok, message):
     os.makedirs(root, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps({
-            "time": datetime.datetime.now(datetime.timezone.utc).isoformat(
-                timespec="seconds"),
+            "time": (at or datetime.datetime.now(
+                datetime.timezone.utc)).isoformat(timespec="seconds"),
             "entries": len(document.get("sightings", [])),
+            # So the next poll can tell an unchanged document from a new one without
+            # keeping a copy of what was sent.
+            "digest": document_digest(document),
             "ok": bool(ok),
             "detail": message[:200],
         }) + "\n")

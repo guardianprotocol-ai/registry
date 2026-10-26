@@ -553,12 +553,19 @@ def _share_if_agreed(a, out):
     except Exception as e:  # noqa: BLE001
         out.write("Could not build a report to send: %s\n" % e)
         return
+    due, why = share.should_send(root, document)
+    if not due:
+        # Quiet, because this is the common case: the poll runs every minute and most
+        # minutes have nothing to say. Saying so every time would bury the lines that
+        # matter in the member's own log.
+        return
     ok, message = share.send(document, agreed["endpoint"])
     share.note_sent(root, document, ok, message)
     entries = len(document.get("sightings", []))
     if ok:
-        out.write("Shared %d entr%s with %s: %s\n"
-                  % (entries, "y" if entries == 1 else "ies", agreed["endpoint"], message))
+        out.write("Shared %d entr%s with %s (%s): %s\n"
+                  % (entries, "y" if entries == 1 else "ies", agreed["endpoint"], why,
+                     message))
     else:
         # A receiver that is down is a delay, not a loss. The evidence stays on disk and the
         # next poll sends it, so this must not read like something went wrong with their
