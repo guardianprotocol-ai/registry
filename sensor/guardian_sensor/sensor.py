@@ -267,6 +267,7 @@ STATUS_COMMAND = "status"
 SETUP_COMMAND = "setup"
 MEASURE_COMMAND = "measure"
 PROTECT_COMMAND = "protect"
+VERIFY_COMMAND = "verify"
 SHARE_COMMAND = "share"
 
 
@@ -274,6 +275,7 @@ COMMANDS = (
     ("setup", "take part, one question at a time. Start here"),
     ("drill", "attack your own machine through your own sensor, and see what it caught"),
     ("protect", "put the sensor in front of the MCP servers your agents actually use"),
+    ("verify", "check that protected servers still work and are really protected"),
     ("measure", "measure a real agent on this machine against the registry's attacks"),
     ("canary", "register values the sensor should watch for: add, list, arm, remove"),
     ("enroll", "take part in scheduled exercises. Installs once, then nothing"),
@@ -364,6 +366,9 @@ def main(argv=None):
     if args[:1] == [STATUS_COMMAND]:
         from . import status
         return status.main(args[1:])
+    if args[:1] == [VERIFY_COMMAND]:
+        from . import verify_cli
+        return verify_cli.main(args[1:])
     if args[:1] == [PROTECT_COMMAND]:
         from . import protect_cli
         return protect_cli.main(args[1:])

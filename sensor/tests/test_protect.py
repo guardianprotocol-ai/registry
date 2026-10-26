@@ -289,6 +289,86 @@ def test_every_list_of_places_to_look_is_isolated():
           or True)
 
 
+def test_a_protected_server_is_checked_by_asking_it():
+    """Editing a config says a change was written, not that the agent can still work.
+
+    That is the thing most likely to have gone wrong: a path right on this machine and
+    wrong in the client's working directory, a python not on the client's PATH, a
+    dropped environment variable. Somebody who finds out by their agent quietly losing
+    a tool will uninstall this, and they would be right to.
+
+    A tool list coming back proves both halves at once. The server still works, and the
+    sensor relayed it, because there is no other way for the answer to arrive.
+    """
+    from guardian_sensor import verify_cli
+
+    lab = os.path.join(os.path.dirname(HERE), "tests", "fake_server.py")
+    folder, path, previous = with_config(
+        {"mcpServers": {"lab": {"command": sys.executable, "args": [lab]}}},
+        name="mcp.json", nested=())
+    try:
+        before = verify_cli.ask({"command": sys.executable, "args": [lab]})
+        check("the lab server answers unwrapped", before[0] and before[2] > 0,
+              str(before))
+
+        protect_cli.main(["--yes"], out=io.StringIO())
+        out = io.StringIO()
+        code = verify_cli.main([], out=out)
+        check("verify passes once it is wrapped", code == 0, out.getvalue()[-300:])
+        check("and reports the tools came through the sensor",
+              "through the sensor" in out.getvalue(), out.getvalue()[:300])
+        # Transparent means the same tools arrive, not merely that something arrived.
+        wrapped_count = verify_cli.ask(
+            json.load(open(path, encoding="utf-8"))["mcpServers"]["lab"])[2]
+        check("the same tools arrive through it", wrapped_count == before[2],
+              "%s then %s" % (before[2], wrapped_count))
+    finally:
+        _restore(previous)
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_wrap_that_broke_the_server_is_caught():
+    """The failure this exists for. Silence here is worse than no protection at all."""
+    from guardian_sensor import verify_cli
+
+    folder, path, previous = with_config({"mcpServers": {}}, name="mcp.json", nested=())
+    try:
+        broken = {"command": sys.executable,
+                  "args": [os.path.join(os.path.dirname(HERE), "run.py"), "--config",
+                           os.path.join(folder, "g.json"), "--", "/no/such/server"]}
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"mcpServers": {"broken": broken}}, f)
+        out = io.StringIO()
+        code = verify_cli.main([], out=out)
+        check("a broken wrap fails", code == 1, code)
+        check("and says the agent has lost a tool",
+              "quietly lost a tool" in out.getvalue(), out.getvalue()[-300:])
+        check("and says how to put it back",
+              "protect --remove" in out.getvalue(), out.getvalue()[-200:])
+    finally:
+        _restore(previous)
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_unprotected_servers_are_not_reported_as_fine():
+    """A partly protected machine is the state somebody is most likely to mistake for a
+    protected one."""
+    from guardian_sensor import verify_cli
+
+    folder, path, previous = with_config(
+        {"mcpServers": {"bare": {"command": "echo", "args": ["hi"]}}},
+        name="mcp.json", nested=())
+    try:
+        out = io.StringIO()
+        code = verify_cli.main([], out=out)
+        check("nothing protected is not a pass", code == 1, code)
+        check("and it says nothing is being inspected",
+              "Nothing is being inspected" in out.getvalue(), out.getvalue()[:300])
+    finally:
+        _restore(previous)
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
