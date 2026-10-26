@@ -38,7 +38,7 @@ PROBES = (
     "0" * 64 + "!",
     "/" * 32 + "a" * 32,
     ("the contents of notes.txt " * 8) + "!",
-    "​" * 32 + "a" * 32,
+    "\u200b" * 32 + "a" * 32,   # escaped: this repository refuses live invisible bytes
 )
 
 # There is no static check here on purpose. The obvious one, a quantified group inside a
