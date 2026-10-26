@@ -61,6 +61,7 @@ CHECKS = [
     ("Season 1 status tests", ".", ["scripts/tests/test_build_status.py"]),
     ("Season 1 issue tests", ".", ["scripts/tests/test_season_one_issues.py"]),
     ("Sightings aggregation tests", ".", ["scripts/tests/test_aggregate_sightings.py"]),
+    ("Time to protection tests", ".", ["scripts/tests/test_time_to_protection.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
 ]

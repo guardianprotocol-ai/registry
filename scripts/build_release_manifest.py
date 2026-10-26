@@ -31,6 +31,14 @@ SIGNATURES = os.path.join(ROOT, "sensor", "guardian_sensor", "signatures.json")
 PATTERNS = os.path.join(ROOT, "patterns")
 STATUS_NAME = "pattern-status.json"
 MANIFEST_NAME = "manifest.json"
+RELEASES_NAME = "releases.jsonl"
+# What a release is made of. Named rather than discovered, so nothing else in the
+# directory can end up inside the thing members verify.
+RELEASE_FILES = ("signatures.json", "pattern-status.json")
+
+
+def _now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
 def pattern_status(folder=None):
@@ -58,18 +66,49 @@ def build(out_dir, rules_version, signatures=None, patterns=None):
 
     files = {}
     for name in sorted(os.listdir(out_dir)):
-        if name == MANIFEST_NAME:
+        # Only the files this release is made of. Hashing whatever else happens to be in
+        # the directory swept up the agenda once, which would have broken verification
+        # every time the schedule changed.
+        if name in (MANIFEST_NAME, RELEASES_NAME) or name not in RELEASE_FILES:
             continue
         files[name] = hub.sha256_of(os.path.join(out_dir, name))
 
     manifest = {"schema_version": hub.SCHEMA_VERSION,
                 "rules_version": rules_version,
+                # When this was published. Without it the interval between a rule being
+                # published and a member running it, which is the number this research
+                # exists to report, cannot be computed from anything.
+                "published": _now(),
                 "files": files}
     path = os.path.join(out_dir, MANIFEST_NAME)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, sort_keys=True)
         f.write("\n")
+    # The manifest only ever describes the current release. Time to protection is asked
+    # about releases that are no longer current, so each one is appended to a log that
+    # is published beside it and never rewritten.
+    note_release(out_dir, rules_version, manifest["published"])
     return manifest
+
+
+def note_release(out_dir, rules_version, published):
+    """Append this release to the published history, once."""
+    path = os.path.join(out_dir, RELEASES_NAME)
+    seen = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    seen.append(json.loads(line))
+    except (OSError, ValueError):
+        seen = []
+    if any(r.get("rules_version") == rules_version for r in seen):
+        return False
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"rules_version": rules_version,
+                            "published": published}, sort_keys=True) + "\n")
+    return True
 
 
 def main(argv=None):
