@@ -549,19 +549,29 @@ def _poll(a, at, out, opener):
             if isinstance(candidate, str) and candidate.strip():
                 named = candidate[:64]
         record(a.log, named, "refused", str(e)[:300])
+        # A refused agenda says nothing about whether this member is alive.
+        _share_if_agreed(a, out, quiet=True)
         return 1
 
+    # Reporting does not wait for an exercise. These two paths returned before the send,
+    # so a member who had agreed to share sent nothing at all until an exercise came due,
+    # and nothing ever if none did. Their machine was running, protecting them and
+    # catching things in drills, and the network could not tell them from somebody who
+    # had never installed it. The sign of life is the point: a quiet member is the
+    # denominator every rate in the research is divided by.
     if at < run_after:
         if heartbeat_due(a.log, at):
             record(a.log, exercise_id, "waiting",
                    "scheduled for %s" % run_after.isoformat(timespec="seconds"))
             out.write("exercise %s is scheduled for %s, which has not come yet.\n"
                       % (exercise_id, run_after.isoformat(timespec="seconds")))
+        _share_if_agreed(a, out, quiet=True)
         return 0
     if already_ran(a.log, exercise_id):
         if heartbeat_due(a.log, at):
             record(a.log, exercise_id, "waiting", "already run here")
             out.write("exercise %s has already run here. Nothing to do.\n" % exercise_id)
+        _share_if_agreed(a, out, quiet=True)
         return 0
 
     described = ", ".join("%s=%s" % (k, v) for k, v in sorted(settings.items())) or "defaults"
@@ -608,7 +618,7 @@ def _poll(a, at, out, opener):
     return code
 
 
-def _share_if_agreed(a, out):
+def _share_if_agreed(a, out, quiet=False):
     """Send the sightings, if and only if the member said to.
 
     Consent is read from their disk every time rather than remembered, so revoking it takes
@@ -619,7 +629,12 @@ def _share_if_agreed(a, out):
     root = os.path.dirname(os.path.abspath(a.log)) or "."
     agreed = share.consent(root)
     if not agreed:
-        out.write("Nothing has been shared: build and read a report when you are ready.\n")
+        # Worth saying after an exercise, where somebody is reading the output. Not on
+        # every quiet poll: the poll runs every sixty seconds, and a line a minute saying
+        # nothing happened is how a log becomes unreadable and a member stops looking.
+        if not quiet:
+            out.write("Nothing has been shared: build and read a report when you are "
+                      "ready.\n")
         return
     try:
         document = share_cli._document(root, agreed["org"])

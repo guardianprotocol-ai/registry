@@ -9,6 +9,7 @@ Run from the sensor folder:  python3 tests/test_agenda.py
 """
 import datetime
 import io
+import inspect
 import json
 import os
 import sys
@@ -529,6 +530,30 @@ def test_a_server_that_reports_no_time_is_not_a_problem():
               out.getvalue()[-200:])
         check("and says nothing about a clock it could not check",
               "wrong hour" not in out.getvalue(), out.getvalue()[:300])
+
+
+def test_reporting_does_not_wait_for_an_exercise():
+    """A member who agreed to share reported nothing until an exercise came due.
+
+    Found by installing this on a real machine and watching it sit there. The service
+    ran, inherited the published rules, polled every minute, and sent nothing, because
+    the two paths that end a quiet poll returned before the send. The machine was
+    protecting its owner and catching things in drills, and the network could not tell it
+    from a machine nobody had installed.
+
+    That is the denominator. An organization seeing nothing is a result, and it only
+    counts if it arrives.
+    """
+    source = inspect.getsource(agenda._poll)
+    before_exercise = source.split("if at < run_after:")[1].split("return 0")[0]
+    check("a poll before the exercise still reports",
+          "_share_if_agreed" in before_exercise, before_exercise[:160])
+    already = source.split("if already_ran(")[1].split("return 0")[0]
+    check("a poll after it has run still reports",
+          "_share_if_agreed" in already, already[:160])
+    # And quietly, because the poll runs every sixty seconds.
+    check("the quiet paths ask for silence",
+          before_exercise.count("quiet=True") == 1, before_exercise[:160])
 
 
 def main():
