@@ -3,6 +3,7 @@
 Run from the repository root:  python3 scripts/tests/test_shipped.py
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -125,22 +126,39 @@ def test_an_empty_window_says_so():
 
 
 def test_the_real_repository_reports_something():
-    """Checks the shape of the summary, not who is in it.
+    """A smoke test: the tool runs here and the output it produces is well formed.
 
-    This used to assert that a named person appeared in the author list, which made the test
-    fail on exactly the contributions the project wants. On a pull request from somebody
-    else, the authors in the window are them, so a correct contribution showed red because of
-    a test about whose name was in git history. That is the worst first experience available
-    to a new contributor and it was ours to cause.
+    It asserts nothing about who is in the history, and nothing about how much is in it.
 
-    What is worth checking is that the summary is well formed and reports the commits that
-    are there. Who wrote them is not a property of the code.
+    Both of those have now been got wrong once. The first version asserted that a named
+    person appeared in the author list, which failed on exactly the outside contributions
+    the project wants. The replacement asserted the substring "by ", which this generator
+    never emits: it was passing because the word happened to appear inside a commit
+    subject, and it went red the first time a window's subjects did not contain it.
+
+    Depth is the other trap, and it is the same one recorded in test_build_contributors:
+    CI checks out a shallow merge commit, so the window is one commit on the runner and
+    the whole history on a maintainer's machine. Anything asserted about the contents of
+    that window is a test of the clone depth rather than of this code.
+
+    What is left is worth checking: the output parses, and the sentence at the end agrees
+    with the list above it. Authorship and grouping are tested against history this file
+    owns, in test_it_groups_by_the_person_who_signed_off.
     """
     text = shipped.markdown(shipped.commits("2026-09-01"), "2026-09-01")
     check("the real repository has shipped something", "Shipped since" in text, text[:80])
-    check("it names at least one author", "by " in text or "Nothing has landed" in text,
-          text[:200])
     check("it is markdown with a heading", text.lstrip().startswith("#"), text[:80])
+    # A heading is a whole line in bold. "**Patterns added:** GP-0002" carries text after
+    # the closing stars, so the end anchor leaves it out.
+    authors = re.findall(r"^\*\*(.+?)\*\*$", text, re.M)
+    listed = re.findall(r"^- .+ \(`[0-9a-f]{7,}`, \d{4}-\d{2}-\d{2}\)$", text, re.M)
+    check("every author heading has commits listed under it",
+          bool(authors) and len(listed) >= len(authors), f"{authors} / {len(listed)} lines")
+    # The closing sentence is generated from the same entries as the list, so a mismatch
+    # means the summary is describing something other than what it printed.
+    check("the closing count agrees with the list",
+          f"{len(listed)} change" in text and f"from {len(authors)} " in text,
+          text[-200:])
 
 
 def main():
