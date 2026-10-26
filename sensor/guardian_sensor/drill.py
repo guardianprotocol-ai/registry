@@ -392,7 +392,12 @@ def main(argv=None, out=sys.stdout):
     out.write("\nTo see exactly what would be shared, and share nothing:\n")
     out.write("  %s report --org %s --preview\n"
               % (called.invocation(), a.org or "<your-member-id>"))
-    out.write("\nTo write the file once you are happy with it:\n")
+    # Writing a file by hand was the only path offered here while there was nothing to
+    # receive one. There is now, so the step that actually joins the exchange is named
+    # first and the file is kept for anybody who would rather move it themselves.
+    out.write("\nTo take part, which asks before it installs or sends anything:\n")
+    out.write("  %s setup\n" % called.invocation())
+    out.write("\nOr to write the file and move it yourself:\n")
     out.write("  %s report --org %s --out sightings-%s.json\n"
               % (called.invocation(), a.org or "<your-member-id>",
                  time.strftime("%Y-%m-%d")))
