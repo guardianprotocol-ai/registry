@@ -556,6 +556,27 @@ def test_reporting_does_not_wait_for_an_exercise():
           before_exercise.count("quiet=True") == 1, before_exercise[:160])
 
 
+def test_the_alert_history_grows_on_every_poll():
+    """Remembering only new patterns left the spike check permanently dead.
+
+    Found by running it, not by unit tests: those called remember directly and passed.
+    In the real path remember was reached only when there was an unseen pattern to
+    announce, so after the first poll the history stopped at a single reading, and a
+    baseline needs at least two. The feature could never have fired on a real machine.
+
+    What to announce and what to remember are different questions.
+    """
+    source = inspect.getsource(agenda._read_alerts)
+    before_spike = source.split("if spiking:")[0]
+    check("the reading is recorded before anything is announced",
+          "remember" in before_spike, before_spike[-200:])
+    after = source.split("remember", 1)[1]
+    check("and not only when there is something unseen",
+          "if not fresh" in after and after.index("if not fresh") > 0, after[:160])
+    check("the whole published list is remembered, not just the new ones",
+          "remember(root, published" in source, source[:0])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

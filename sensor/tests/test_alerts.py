@@ -325,44 +325,77 @@ def test_a_clock_moving_backwards_does_not_silence_a_node():
         shutil.rmtree(folder, ignore_errors=True)
 
 
-def test_a_node_notices_when_something_is_spreading():
-    """The early warning, without naming anybody.
+def _history(folder, readings):
+    for organizations, reporting in readings:
+        alerts.remember(folder, [{"pattern": "GP-0003",
+                                  "organizations": organizations,
+                                  "total": organizations}],
+                        "2026-10-26T09:00", reporting=reporting)
 
-    A pattern going from six organizations to forty is the thing worth interrupting
-    somebody about, and a node cannot see it from a list of pattern names. Noticed on
-    the node rather than published, because a published trend would be one operator
-    deciding what counts as an emergency for everybody.
+
+def test_growing_the_network_is_not_a_spike():
+    """The flaw that made the first version of this unusable at scale.
+
+    Counts rise as the protocol gains members. Forty organizations out of a hundred
+    thousand is rarer than six out of a thousand, and a detector watching counts calls
+    that a spike every time somebody new installs, which is exactly when a false alarm
+    is least welcome.
     """
     folder = tempfile.mkdtemp()
     try:
-        alerts.remember(folder, [{"pattern": "GP-0003", "organizations": 6, "total": 9}],
-                        "2026-10-26T09:00")
-        spike = alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 40,
-                                        "total": 120}])
-        check("a sharp rise is noticed", [a["pattern"] for a in spike] == ["GP-0003"],
-              str(spike))
-        check("and it says what it rose from",
-              spike[0]["before"] == 6 and spike[0]["now"] == 40, str(spike))
+        # The same 0.6 per cent of the network throughout, while it grows a hundredfold.
+        _history(folder, [(6, 1000), (12, 2000), (60, 10000), (300, 50000)])
+        quiet = alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 600,
+                                        "total": 600}], reporting=100000)
+        check("a hundredfold more members is not an attack spreading", quiet == [],
+              str(quiet))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
 
 
-def test_ordinary_growth_is_not_an_alarm():
-    """An alarm that fires on noise is an alarm somebody turns off."""
+def test_an_attack_actually_spreading_is_noticed():
     folder = tempfile.mkdtemp()
     try:
-        alerts.remember(folder, [{"pattern": "GP-0001", "organizations": 10, "total": 10}],
-                        "2026-10-26T09:00")
-        check("ten to eleven is not a spike",
-              alerts.rising(folder, [{"pattern": "GP-0001", "organizations": 11,
-                                      "total": 11}]) == [])
-        # Doubling is required, and so is a floor, or every new pattern alarms twice.
-        check("one to two is not a spike",
-              alerts.rising(folder, [{"pattern": "GP-0001", "organizations": 2,
-                                      "total": 2}]) == [])
-        check("a pattern never seen before is not a spike",
-              alerts.rising(folder, [{"pattern": "GP-9999", "organizations": 99,
-                                      "total": 99}]) == [])
+        _history(folder, [(6, 1000), (7, 1100), (8, 1200), (9, 1300)])
+        spike = alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 52,
+                                        "total": 52}], reporting=1300)
+        check("a share rising from under one per cent to four is noticed",
+              [a["pattern"] for a in spike] == ["GP-0003"], str(spike))
+        check("and it is reported as sudden", spike[0]["how"] == "sharply", str(spike))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_a_slow_climb_is_noticed_too():
+    """Twenty per cent a day for a week is a bigger event than one doubling, and looks
+    like nothing to a detector that only compares with last time."""
+    folder = tempfile.mkdtemp()
+    try:
+        _history(folder, [(10, 10000), (13, 10000), (17, 10000), (22, 10000),
+                          (28, 10000)])
+        spike = alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 36,
+                                        "total": 36}], reporting=10000)
+        check("sustained growth is noticed", bool(spike), str(spike))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_small_numbers_and_no_denominator_stay_quiet():
+    folder = tempfile.mkdtemp()
+    try:
+        _history(folder, [(2, 1000), (2, 1000), (2, 1000)])
+        check("two organizations becoming four is noise",
+              alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 4,
+                                      "total": 4}], reporting=1000) == [])
+        _history(folder, [(6, 1000), (12, 2000)])
+        # A guess at the network size would have every member comparing against a
+        # different imagined network, which is worse than saying nothing.
+        check("no published network size means no alarm",
+              alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 600,
+                                      "total": 600}], reporting=None) == [])
+        check("a network size of zero means no alarm",
+              alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 600,
+                                      "total": 600}], reporting=0) == [])
     finally:
         shutil.rmtree(folder, ignore_errors=True)
 
@@ -373,9 +406,9 @@ def test_an_older_alerts_file_still_works():
     try:
         with open(os.path.join(folder, alerts.SEEN_NAME), "w", encoding="utf-8") as f:
             json.dump({"GP-0003": "2026-10-20T09:00"}, f)
-        check("no count to compare means no false alarm",
+        check("no baseline to compare means no false alarm",
               alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 40,
-                                      "total": 99}]) == [])
+                                      "total": 99}], reporting=1000) == [])
         check("and the file is still readable",
               "GP-0003" in alerts.seen(folder), str(alerts.seen(folder)))
     finally:

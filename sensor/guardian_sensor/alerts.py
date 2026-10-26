@@ -22,6 +22,7 @@ import urllib.request
 SCHEMA_VERSIONS = ("1",)
 ALERTS_NAME = "alerts.json"
 SEEN_NAME = "alerts-seen.json"
+NETWORK_NAME = "network.json"
 
 # The only keys an alert document may carry, and the only keys an alert may. An alert that
 # could carry an instruction would be a command channel with a friendlier name, so the shape
@@ -91,6 +92,26 @@ def parse(document):
     return out
 
 
+def fetch_network(base, opener=None, timeout=30):
+    """How many organizations reported, or None if nobody published it.
+
+    Its own document because the alerts format refuses keys it does not recognise, which
+    is right for something machines read unattended and means it cannot grow a field.
+    A reader that wants the denominator fetches this; one that does not never notices it
+    exists, so publishing it breaks nobody.
+    """
+    url = base.rstrip("/") + "/" + NETWORK_NAME
+    opener = opener or urllib.request.urlopen
+    try:
+        with opener(url, timeout=timeout) as response:
+            document = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+    value = (document or {}).get("organizations_reporting")
+    # A denominator smaller than one is not a denominator.
+    return value if isinstance(value, int) and value >= 1 else None
+
+
 def fetch(base, opener=None, timeout=30):
     """The published alerts, or None if there are none to read."""
     opener = opener or urllib.request.urlopen
@@ -107,49 +128,102 @@ def seen(root):
         return {}
 
 
-# How much larger a pattern has to get before it is worth interrupting somebody. At
-# least doubling, and at least this many more organizations, so a jump from one to two
-# is not an alarm and a jump from six to forty is.
+# A pattern is spreading if it reaches a larger share of the network than it has been
+# reaching. Share, not count, because counts rise as the network grows: forty
+# organizations out of a hundred thousand is rarer than six out of a thousand, and a
+# detector watching counts calls that a spike every time the protocol gains members,
+# which is exactly when a false alarm is least welcome.
 SPIKE_FACTOR = 2
-SPIKE_FLOOR = 3
+# Sustained growth is worth as much as a sudden jump and looks like nothing to a
+# detector that only compares with last time. Twenty per cent a day for a week is a
+# bigger event than one doubling.
+CREEP_FACTOR = 3
+# Below this many organizations the numbers are too small to mean anything: two
+# organizations becoming four is noise, and an alarm that fires on noise is an alarm
+# somebody turns off.
+MIN_ORGANIZATIONS = 10
+# Enough observations to have a baseline, few enough that a month-old reading does not
+# decide what today looks like.
+HISTORY = 12
 
 
-def _count(record):
-    """Organizations last seen for a pattern, from either file format."""
-    if isinstance(record, dict):
-        value = record.get("organizations")
-        return value if isinstance(value, int) else None
-    return None
+def _median(values):
+    ordered = sorted(values)
+    if not ordered:
+        return None
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
 
 
-def rising(root, alerts):
-    """Patterns that have grown sharply since this machine last looked.
+def _history(record):
+    """Past observations of a pattern, from either file format.
+
+    Machines that have been running carry the older shapes: a bare timestamp, or a
+    single reading. Both are read as having no usable baseline rather than as a
+    baseline of zero, which would make the next poll alarm on everything.
+    """
+    if isinstance(record, dict) and isinstance(record.get("seen"), list):
+        return [r for r in record["seen"] if isinstance(r.get("share"), (int, float))]
+    return []
+
+
+def share_of(organizations, reporting):
+    """What fraction of the reporting network saw this, or None if nobody published it."""
+    if not isinstance(organizations, int) or not isinstance(reporting, int):
+        return None
+    if reporting < 1:
+        return None
+    return organizations / float(reporting)
+
+
+def rising(root, alerts, reporting=None):
+    """Patterns reaching a larger share of the network than they have been.
 
     This is the early warning. Nobody is named and nothing is attributed: a member sees
-    that an attack is spreading across the network far faster than it was, which is
-    enough to go and look, and enough to ask the people they know whether they are
-    seeing it too.
+    that an attack is spreading faster than it was, which is enough to go and look, and
+    enough to ask the people they know whether they are seeing it too.
 
-    Computed here rather than published, because a published trend would be one
-    operator deciding what counts as an emergency for everybody, and because the alerts
-    format refuses fields it does not know, so it could not carry one without every
-    existing reader refusing the whole document.
+    Computed here rather than published, because a published trend would be one operator
+    deciding what counts as an emergency for everybody, and because the alerts format
+    refuses fields it does not know, so it could not carry one without every existing
+    reader refusing the whole document.
+
+    Without a published network size there is no denominator, so nothing is reported. A
+    guess would be worse than silence: every member would be comparing against a
+    different imagined network.
     """
+    if not reporting:
+        return []
     known = seen(root)
     out = []
     for alert in alerts:
-        now = alert.get("organizations")
-        if not isinstance(now, int):
+        now_count = alert.get("organizations")
+        if not isinstance(now_count, int) or now_count < MIN_ORGANIZATIONS:
             continue
-        before = _count(known.get(alert["pattern"]))
-        if before is None:
-            continue                     # never seen with a count, so nothing to compare
-        if now >= before * SPIKE_FACTOR and now - before >= SPIKE_FLOOR:
-            out.append({"pattern": alert["pattern"], "before": before, "now": now})
+        now = share_of(now_count, reporting)
+        if now is None:
+            continue
+        past = _history(known.get(alert["pattern"]))
+        if len(past) < 2:
+            continue                       # no baseline yet, so nothing to compare with
+        shares = [r["share"] for r in past]
+        baseline = _median(shares)
+        oldest = shares[0]
+        why = None
+        if baseline and now >= baseline * SPIKE_FACTOR:
+            why = "sharply"
+        elif oldest and now >= oldest * CREEP_FACTOR:
+            why = "steadily"
+        if why:
+            out.append({"pattern": alert["pattern"], "now": now_count,
+                        "share": now, "was_share": baseline, "how": why,
+                        "reporting": reporting})
     return out
 
 
-def remember(root, alerts, published):
+def remember(root, alerts, published, reporting=None):
     """Record what has been seen, so the same alert is announced once.
 
     A poll runs every sixty seconds. Announcing the same alert every time would train a
@@ -160,9 +234,17 @@ def remember(root, alerts, published):
     # What was seen, not only that it was seen. A pattern going from six organizations
     # to forty is the thing worth noticing, and a node cannot notice it from a list of
     # names. Older files hold a bare timestamp per pattern and are read as such.
-    known.update({a["pattern"]: {"published": published,
-                                 "organizations": a.get("organizations"),
-                                 "total": a.get("total")} for a in alerts})
+    for a in alerts:
+        record = known.get(a["pattern"])
+        past = _history(record)
+        entry = {"published": published, "organizations": a.get("organizations"),
+                 "total": a.get("total")}
+        share = share_of(a.get("organizations"), reporting)
+        if share is not None:
+            entry["share"] = share
+        # Kept as a short history rather than one reading, so a baseline survives a node
+        # being switched off for a week and a slow climb is visible as a slow climb.
+        known[a["pattern"]] = {"published": published, "seen": (past + [entry])[-HISTORY:]}
     path = os.path.join(root, SEEN_NAME)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(known, f, indent=2, sort_keys=True)

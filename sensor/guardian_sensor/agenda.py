@@ -504,28 +504,39 @@ def _read_alerts(a, out, opener=None):
         return
     # Checked before the unseen list, because a pattern this machine has already been
     # told about is exactly the one that matters when it starts spreading.
-    spiking = alerts_module.rising(root, published)
+    reporting = alerts_module.fetch_network(a.base, opener=opener)
+    spiking = alerts_module.rising(root, published, reporting=reporting)
+    fresh = alerts_module.unseen(root, published)
+
+    # Recorded before anything is announced and on every poll, not only when there is
+    # something new to say. Remembering only new patterns meant the history never grew
+    # past a single reading, so there was never a baseline and the spike check could
+    # never fire. The unseen list decides what to announce; it has nothing to do with
+    # what is worth remembering.
+    alerts_module.remember(root, published, document.get("published", ""),
+                           reporting=reporting)
+
     if spiking:
         out.write("\nThe network is seeing these far more widely than when this machine "
                   "last looked:\n")
         for alert in spiking:
-            out.write("  %-9s %d organizations, was %d\n"
-                      % (alert["pattern"], alert["now"], alert["before"]))
+            out.write("  %-9s %d of %d organizations, %.2f%% of the network, was %.2f%%"
+                      " and climbing %s\n"
+                      % (alert["pattern"], alert["now"], alert["reporting"],
+                         alert["share"] * 100, (alert["was_share"] or 0) * 100,
+                         alert["how"]))
         out.write("Nobody is named and nothing here says what to do. It is worth "
                   "looking, and worth\nasking the people you know whether they are "
                   "seeing it too.\n")
-        alerts_module.remember(root, published, document.get("published", ""))
 
-    fresh = alerts_module.unseen(root, published)
     if not fresh:
         return
-    out.write("\nThe network has seen %d pattern%s this machine had not been told about:\n"
-              % (len(fresh), "" if len(fresh) == 1 else "s"))
+    out.write("\nThe network has seen %d pattern%s this machine had not been told "
+              "about:\n" % (len(fresh), "" if len(fresh) == 1 else "s"))
     for alert in fresh:
         out.write("  %-9s seen by %d organizations\n"
                   % (alert["pattern"], alert["organizations"]))
     out.write("Counts only. Nothing here says who saw it, or what to do about it.\n")
-    alerts_module.remember(root, fresh, document.get("published", ""))
 
 
 def _poll(a, at, out, opener):
