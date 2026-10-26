@@ -66,6 +66,11 @@ rm -rf "$WORK"
 mkdir -p "$WORK/publish/season1" "$WORK/sightings"
 
 cleanup() {
+  # Captured first. Every line below ends in "|| true" so that cleanup always finishes,
+  # and without this the trap's own success became the script's exit status: a rehearsal
+  # that died halfway through an arm exited 0 and read as a pass. A harness that exists to
+  # catch silent failure must not be able to fail silently.
+  status=$?
   echo
   echo "cleaning up"
   for i in $(seq 1 "$NODES"); do
@@ -73,6 +78,10 @@ cleanup() {
   done
   $RUNTIME rm -f guardian-publish >/dev/null 2>&1 || true
   $RUNTIME network rm "$NET" >/dev/null 2>&1 || true
+  if [ "$status" -ne 0 ]; then
+    echo "rehearsal FAILED, exit $status" >&2
+  fi
+  exit "$status"
 }
 trap cleanup EXIT
 
@@ -216,5 +225,64 @@ if grep -rl -e CANARY -e notes.txt -e send_message -e registry.test "$WORK/sight
   exit 1
 fi
 echo "  no tool names, paths, canaries or destinations across $reported sightings files"
+echo
+echo "ARM 3: the way back. alerts published, and every node reads them."
+# Until this ran, the loop was proven in one direction only: a sighting reached an
+# aggregate and stopped. A node had no demonstrated way to learn what anybody else had
+# seen, which is the difference between a collection service and an immune system.
+#
+# The alerts are generated from what the nodes actually reported in arm 2, not written by
+# hand, so this fails if the publisher would have produced something a node refuses.
+python3 "$REPO/scripts/publish_alerts.py" "$WORK/sightings" \
+  --out "$WORK/publish/season1/alerts.json" --source drill >/dev/null
+published=$(python3 -c "import json;print(len(json.load(open('$WORK/publish/season1/alerts.json'))['alerts']))")
+echo "  $published alerts published, generated from what the nodes reported"
+
+# Arm 2's containers are gone but their /data is not, so the nodes come back with the
+# state they built. A node that has already seen an alert must not report it twice, and
+# starting from empty directories would hide that.
+for i in $(seq 1 "$NODES"); do $RUNTIME rm -f "guardian-node-$i" >/dev/null 2>&1 || true; done
+for i in $(seq 1 "$NODES"); do start_node "$i" networked; done
+sleep 8
+
+# alerts-seen.json, not the agenda log. Reading an alert is not running an exercise and
+# is deliberately not recorded as one, which the first version of this check got wrong and
+# reported as every node having failed.
+learned=0
+announced_twice=0
+for i in $(seq 1 "$NODES"); do
+  if [ -s "$WORK/node-$i/alerts-seen.json" ]; then
+    learned=$((learned + 1))
+  fi
+  # The poll runs every sixty seconds. Announcing the same alert on each one would train a
+  # member to ignore the line that matters, so the code remembers what it has said. If
+  # that stops working the rehearsal is the only place it would show.
+  times=$(grep -c "The network has seen" "$WORK/node-$i/poll.log" 2>/dev/null || echo 0)
+  if [ "$times" -gt 1 ]; then
+    announced_twice=$((announced_twice + 1))
+  fi
+done
+for i in $(seq 1 "$NODES"); do $RUNTIME rm -f "guardian-node-$i" >/dev/null 2>&1 || true; done
+
+echo "  $learned of $NODES nodes recorded what the network had seen"
+if [ "$learned" -lt "$NODES" ]; then
+  echo "  a node that cannot read the alerts is a node the network cannot protect" >&2
+  exit 1
+fi
+if [ "$announced_twice" -gt 0 ]; then
+  echo "  $announced_twice nodes announced the same alert more than once" >&2
+  exit 1
+fi
+echo "  and none announced the same alert twice, across every poll in the window"
+
+echo
+echo "and an alert carries no instruction, only what was seen"
+if grep -rlE '"(settings|mode|respond|command|run|exec|url)"' \
+     "$WORK/publish/season1/alerts.json" 2>/dev/null; then
+  echo "  AN ALERT CARRIED SOMETHING ACTIONABLE, shown above" >&2
+  exit 1
+fi
+echo "  patterns, organization counts and totals, and nothing a machine would act on"
+
 echo
 echo "rehearsal complete. state is in $WORK"
