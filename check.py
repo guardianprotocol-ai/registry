@@ -27,6 +27,7 @@ CHECKS = [
     ("Docs link to things that exist", ".", ["scripts/check_docs.py"]),
     ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
+    ("Rule bundle safety tests", "sensor", ["tests/test_safety.py"]),
     ("Sensor pinning tests", "sensor", ["tests/test_pinning.py"]),
     ("Fire drill tests", "sensor", ["tests/test_drill.py"]),
     ("Registered canary tests", "sensor", ["tests/test_canaries.py"]),

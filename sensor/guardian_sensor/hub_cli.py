@@ -11,7 +11,7 @@ import sys
 import urllib.request
 
 from . import home
-from . import called, hub
+from . import called, hub, safety
 
 DEFAULT_UPDATES = home.path("updates.jsonl")
 MANIFEST_NAME = "manifest.json"
@@ -109,6 +109,27 @@ def update(argv, opener=None, out=sys.stdout):
     except hub.HubError as e:
         print(f"guardian: {e}", file=sys.stderr)
         return 1
+
+    # Verified means it came from the publisher unaltered. It does not mean it is safe to
+    # run, and the sensor runs these against every tool call, so a pattern that backtracks
+    # catastrophically would not slow a member down, it would stop them. Checked before
+    # anything is written, so a refused bundle leaves the working rule set in place.
+    for name, data in sorted(files.items()):
+        if not os.path.basename(name) == "signatures.json":
+            continue
+        try:
+            document = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError) as e:
+            print(f"guardian: {name} is not readable JSON: {e}. Refusing to update.",
+                  file=sys.stderr)
+            return 1
+        try:
+            patterns = safety.check_signatures(document)
+        except safety.Unsafe as e:
+            print(f"guardian: refusing this bundle. {e}", file=sys.stderr)
+            print("guardian: the rules you already have are unchanged.", file=sys.stderr)
+            return 1
+        print(f"checked {patterns} patterns for runaway matching", file=out)
 
     if a.dry_run:
         print(f"verified {len(files)} file(s) against the manifest, rules version "

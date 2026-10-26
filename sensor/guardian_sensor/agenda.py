@@ -22,6 +22,7 @@ Run from cron or launchd, hourly. Python 3.9+ standard library only.
 import argparse
 import datetime
 import email.utils
+import io
 import json
 import os
 import sys
@@ -414,6 +415,50 @@ def _offline(a, at, out):
     return code
 
 
+def _adopt_rules(a, out):
+    """Pull a published rule bundle, verify it, and run it from the next session.
+
+    This is the step that turns knowing into being protected. Without it an alert told a
+    machine that other organizations had seen an attack and the machine's own defences
+    stayed exactly as they were, which is an exchange rather than an immune system.
+
+    Pull, never push. Nothing published can tell this machine what to do: the agenda
+    carries when to run, an alert carries what was seen, and a rule bundle is a file of
+    patterns that is fetched here, checked against a manifest hash by hash, and refused
+    whole if any part of it fails. Nothing in it executes. A publisher that is hostile or
+    compromised can therefore withhold protection, which is a loss, but cannot direct a
+    member's machine, which would be a command channel.
+
+    The bundle takes effect on the next session rather than the running one, because the
+    rule set is chosen at startup and must not change underneath a session already
+    judging traffic.
+    """
+    from . import hub, hub_cli, rules
+    before = rules.signatures_fingerprint()
+    dest = home.path("rules")
+    try:
+        code = hub_cli.update(["--base", a.base.rstrip("/"), "--dest", dest],
+                              out=io.StringIO())
+    except Exception:  # noqa: BLE001
+        # No published bundle is the ordinary case today, and a poll that complains about
+        # it every minute is a poll somebody switches off.
+        return
+    if code != 0:
+        return
+    after = rules.signatures_fingerprint(os.path.join(dest, "signatures.json"))
+    if after == before:
+        return
+    out.write("Adopted a verified rule bundle: %s, replacing %s.\n" % (after, before))
+    out.write("It is checked against the publisher's manifest and takes effect next "
+              "session.\n")
+    # Recorded with both fingerprints, because the measurement this project reports is
+    # the time between an attack being seen somewhere and a rule for it running here, and
+    # that cannot be read from a log that only says an update happened.
+    record(a.log, "rule-adoption", "adopted",
+           "rules %s replaced %s" % (after, before),
+           settings={"rules_before": before, "rules_after": after})
+
+
 def _read_alerts(a, out, opener=None):
     """What the network has seen, if anything new. Read, never obeyed.
 
@@ -452,6 +497,7 @@ def _poll(a, at, out, opener):
     # Read before the exercise, so a machine that has nothing scheduled still learns what
     # everybody else has seen. Learning is the part that does not need an exercise.
     _read_alerts(a, out, opener=None)
+    _adopt_rules(a, out)
     url = a.base.rstrip("/") + "/" + AGENDA_NAME
     skew = None
     try:

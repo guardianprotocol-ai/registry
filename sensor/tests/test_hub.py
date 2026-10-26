@@ -297,7 +297,12 @@ def test_the_written_file_contains_no_secret():
 def test_update_verifies_before_writing_anything():
     folder = tempfile.mkdtemp()
     try:
-        files = {"signatures.json": b'{"rules":1}'}
+        # A bundle with a real pattern in it. It used to be b'{"rules":1}', which has no
+        # patterns at all, and adopting that would replace a working rule set with one
+        # that matches nothing and says it updated. The update path refuses that now, so
+        # the fixture has to be a bundle somebody could actually run.
+        files = {"signatures.json":
+                 b'{"instruction": [{"id": "t", "pattern": "send [a-z ]{0,20} notes"}]}'}
         manifest = manifest_for(files)
         served = {"manifest.json": json.dumps(manifest).encode()}
         served.update(files)

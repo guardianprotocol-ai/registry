@@ -23,8 +23,40 @@ import re
 # without replacing it, and how the response drill measures the before and after of
 # adopting one. It is a path to data, not a way to author rules: nothing in the file can
 # execute, and the checks that read it are still the fixed ones in this module.
-SIGNATURES_PATH = (os.environ.get("GUARDIAN_SIGNATURES")
-                   or os.path.join(os.path.dirname(os.path.abspath(__file__)), "signatures.json"))
+INSTALLED_SIGNATURES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "signatures.json")
+
+
+def signatures_path():
+    """Which rule bundle this session runs, in order of precedence.
+
+    1. GUARDIAN_SIGNATURES, because somebody who named a file meant that file.
+    2. A bundle the member adopted, under their own data directory.
+    3. The one that shipped with the install.
+
+    Step 2 is the step that was missing. `update` fetched a bundle, checked every file
+    against the manifest and wrote it to <home>/rules, and then nothing read it. A member
+    who ran it was told they had updated, and kept running the rules they had before
+    unless they knew to set an environment variable. The network could tell a machine that
+    an attack existed and the machine's defences did not change, which is the difference
+    between an exchange and an immune system.
+
+    Only a bundle that passed the manifest check is ever written there, so preferring it
+    adopts nothing that arrived unverified, and nothing in it can execute.
+    """
+    named = os.environ.get("GUARDIAN_SIGNATURES")
+    if named:
+        return named
+    from . import home
+    adopted = home.path("rules", "signatures.json")
+    if os.path.exists(adopted):
+        return adopted
+    return INSTALLED_SIGNATURES
+
+
+# A sensor runs as its own process for one session, so the bundle is chosen once at
+# startup and never changes underneath a running session.
+SIGNATURES_PATH = signatures_path()
 
 _FLAGS = {"i": re.I, "s": re.S}
 
