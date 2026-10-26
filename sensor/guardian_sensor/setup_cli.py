@@ -86,6 +86,24 @@ def _bad_org(value):
     return None
 
 
+def _report_now(where, out):
+    """Send once, here, rather than waiting for a poll to come round.
+
+    Agreeing and then not appearing for an hour is a bottleneck for no reason: the
+    member has said yes, and the thing they said yes to may as well happen while they
+    are watching it. It also means the first thing they see is whether reporting works
+    from their network, which is the question they would otherwise find out about later
+    and silently.
+
+    Never fatal. A member whose network refuses this is still enrolled, and the next
+    poll sends it.
+    """
+    from . import share_cli
+    code = share_cli.now(["--home", where], out=out)
+    if code != 0:
+        out.write("That is not a problem. The next poll will send it.\n")
+
+
 def main(argv=None, out=sys.stdout):
     ap = argparse.ArgumentParser(
         prog="%s setup" % called.invocation(),
@@ -220,6 +238,7 @@ def main(argv=None, out=sys.stdout):
                     shared = True
                     out.write("\nAgreed. Recorded in %s.\n"
                               % os.path.join(where, share.CONSENT_NAME))
+                    _report_now(where, out)
                 except Exception as e:  # noqa: BLE001
                     out.write("\nNot recorded: %s\n" % e)
         elif document is not None and document.get("sightings"):
@@ -235,6 +254,7 @@ def main(argv=None, out=sys.stdout):
                     shared = True
                     out.write("\nAgreed. Recorded in %s.\n"
                               % os.path.join(where, share.CONSENT_NAME))
+                    _report_now(where, out)
                 except Exception as e:  # noqa: BLE001
                     out.write("\nNot recorded: %s\n" % e)
             else:

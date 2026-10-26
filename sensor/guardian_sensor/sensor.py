@@ -265,17 +265,19 @@ ENROLL_COMMAND = "enroll"
 CREDIT_COMMAND = "credit"
 STATUS_COMMAND = "status"
 SETUP_COMMAND = "setup"
+MEASURE_COMMAND = "measure"
 SHARE_COMMAND = "share"
 
 
 COMMANDS = (
     ("setup", "take part, one question at a time. Start here"),
     ("drill", "attack your own machine through your own sensor, and see what it caught"),
+    ("measure", "measure a real agent on this machine against the registry's attacks"),
     ("canary", "register values the sensor should watch for: add, list, arm, remove"),
     ("enroll", "take part in scheduled exercises. Installs once, then nothing"),
     ("agenda", "run a published exercise when its time has come. Safe to run often"),
     ("report", "build an anonymized sightings file, previewing it first"),
-    ("share", "agree to send sightings automatically, or stop: on, off, now"),
+    ("share", "agree to send sightings automatically, or stop: on, off, now, forget"),
     ("update", "fetch and verify a published rule set"),
     ("credit", "record how you want to be credited in the research"),
     ("status", "what this machine has done. Reads local files and nothing else"),
@@ -347,6 +349,9 @@ def main(argv=None):
     if args[:1] == [STATUS_COMMAND]:
         from . import status
         return status.main(args[1:])
+    if args[:1] == [MEASURE_COMMAND]:
+        from . import measure_cli
+        return measure_cli.main(args[1:])
     if args[:1] == [SETUP_COMMAND]:
         from . import setup_cli
         return setup_cli.main(args[1:])

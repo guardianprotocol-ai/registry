@@ -181,6 +181,57 @@ def test_every_default_is_the_automatic_one():
     check("sharing is the default", source.count("default=True") >= 1, source[:0])
 
 
+def test_measuring_a_real_agent_is_a_command():
+    """The drill measures the sensor against a server written to be attacked.
+
+    Every machine running it produces the same three results, which is right for
+    measuring how fast a detection travels and says nothing about how a real agent
+    behaves. That second question needs somebody's own harness at a version only they
+    are running, and it was reachable only by knowing a separate tool existed in
+    another folder. A thousand people measuring the agent they already have is a
+    thousand data points nobody can produce alone.
+    """
+    from guardian_sensor import measure_cli, sensor
+
+    names = [name for name, _ in sensor.COMMANDS]
+    check("measure is in the command list", "measure" in names, str(names))
+
+    out = io.StringIO()
+    code = measure_cli.main([], out=out)
+    text = out.getvalue()
+    check("with no target it lists what this machine can measure", code == 0, code)
+    check("and says it costs tokens on their own account",
+          "costs tokens on your account" in text, text[:200])
+    check("and runs nothing until a harness is named",
+          "Nothing runs until you name one" in text, text[:200])
+    check("and offers the other half of the comparison",
+          "--sensor" in text, text[:400])
+    # The controls exist to check the harness, not to say anything about an agent.
+    check("the scripted controls are not offered as findings",
+          "scripted:" not in text, text[:400])
+
+    out = io.StringIO()
+    code = measure_cli.main(["--target", "no-such-harness"], out=out)
+    check("an unknown harness is refused", code == 2, code)
+
+
+def test_a_measurement_below_the_floor_is_raised_and_said():
+    """Somebody who asked for five runs has a reason and should know why it is twenty.
+
+    Quietly correcting them would leave them believing they measured what they asked
+    for, and five runs leaves an interval so wide the number says nothing while still
+    being quotable.
+    """
+    from guardian_sensor import measure_cli
+
+    out = io.StringIO()
+    measure_cli.main(["--target", "no-such-harness", "--repeat", "5"], out=out)
+    source = inspect.getsource(measure_cli.main)
+    check("the floor is enforced", "MIN_RUNS" in source, source[:0])
+    check("and explained rather than applied silently",
+          "below the floor" in source, source[:0])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
