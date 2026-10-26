@@ -11,6 +11,9 @@ import hashlib
 import json
 import os
 import re
+import sys
+
+from . import home
 
 # ---------- Signatures ----------
 # The patterns live in signatures.json, as data. This module compiles them and runs fixed
@@ -72,9 +75,66 @@ def _compile(entry: dict):
     return re.compile(entry["pattern"], _flags(entry.get("flags", "")))
 
 
-def load_signatures(path: str = SIGNATURES_PATH) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+def local_path():
+    """A member's own patterns, kept beside the ones they adopt from the network."""
+    return home.path("local-signatures.json")
+
+
+def merge_signatures(base: dict, local: dict) -> dict:
+    """The network's patterns and the member's own, in one rule set.
+
+    A security team has attacks that are theirs: an internal hostname, a product name, a
+    phrasing seen in their own incidents. Before this, pointing the sensor at their own
+    file replaced the published set entirely, so adding one pattern of their own silently
+    stopped them receiving everybody else's. Nobody would notice until an attack the
+    network already knew about went through.
+
+    Lists are added to, keys the member does not mention are left alone. Their patterns
+    are extra signatures in the existing categories, so a hit is reported under the same
+    GP number as any other: nothing about an internal rule travels, and the receiver
+    never sees a pattern id it does not recognise.
+    """
+    merged = dict(base)
+    for key, value in (local or {}).items():
+        if isinstance(value, list) and isinstance(merged.get(key), list):
+            merged[key] = merged[key] + value
+        elif isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = {**merged[key], **value}
+        else:
+            merged[key] = value
+    return merged
+
+
+def load_signatures(path: str = None, local: str = None) -> dict:
+    """The active rule set: what was published, plus whatever the member added."""
+    with open(path or signatures_path(), encoding="utf-8") as f:
+        document = json.load(f)
+    where = local if local is not None else local_path()
+    try:
+        with open(where, encoding="utf-8") as f:
+            own = json.load(f)
+    except OSError:
+        return document          # no local file, which is the ordinary case
+    except ValueError as e:
+        _refuse_local(where, "it is not readable JSON: %s" % e)
+        return document
+    # Checked the same way an adopted bundle is. A member's own pattern can backtrack
+    # catastrophically just as easily as a published one, and the sensor runs it against
+    # every tool call. Their file is dropped rather than the sensor being taken down, and
+    # it is said out loud, because believing you are covered by a rule that never loaded
+    # is worse than knowing it did not.
+    from . import safety
+    try:
+        safety.check_signatures(merge_signatures({"instruction": []}, own))
+    except safety.Unsafe as e:
+        _refuse_local(where, str(e))
+        return document
+    return merge_signatures(document, own)
+
+
+def _refuse_local(where, why):
+    sys.stderr.write("guardian: ignoring your own patterns in %s. %s\n" % (where, why))
+    sys.stderr.write("guardian: the published rules are still running.\n")
 
 
 SIGNATURES = load_signatures()
