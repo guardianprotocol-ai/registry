@@ -5,7 +5,14 @@
 
 MITRE ATLAS names the attacks on AI systems. Guardian Protocol is the open, executable layer for AI agents: runnable tests, working detections and measured results, each mapped to ATLAS, and an anonymized way to share what each organization sees, so one detection protects everyone. Built in the open by YC founders, headed for a neutral home.
 
-**Want to test your own agent?** [TEST_YOUR_AGENT.md](TEST_YOUR_AGENT.md) takes about twenty minutes, runs on your machine, and sends nothing anywhere.
+**Want to take part?** Clone this and run `./guardian`. It attacks your own machine
+through your own sensor so you can watch it work, then asks before it installs or sends
+anything. Ctrl-C at any point leaves having done neither.
+
+```
+git clone https://github.com/guardianprotocol-ai/registry
+cd registry && ./guardian
+```
 
 If you know security tooling: **Atomic Red Team and Sigma for AI agents, mapped to ATLAS.** [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) publishes runnable tests mapped to MITRE ATT&CK; [Sigma](https://github.com/SigmaHQ/sigma) publishes open detection rules mapped to it. Nobody had built either one for agents.
 
@@ -61,6 +68,58 @@ The words above are used precisely. [docs/GLOSSARY.md](docs/GLOSSARY.md) says wh
 
 New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.
 
+## Taking part
+
+One command does each thing, and each asks before it changes anything.
+
+| | |
+| --- | --- |
+| `./guardian` | Start. Shows the drill, then asks what you want |
+| `./guardian drill` | Attack your own machine through your own sensor. Nothing leaves |
+| `./guardian protect` | Put the sensor in front of the MCP servers your agents use |
+| `./guardian verify` | Check those servers still answer, and really are behind the sensor |
+| `./guardian measure` | Measure a real agent on your machine against these attacks |
+| `./guardian canary add` | Register a value the sensor should watch for leaving |
+| `./guardian report --preview` | The whole of what would be shared, before anything is |
+| `./guardian share on` / `off` / `forget` | Agree to report, stop, or delete everything held about you |
+| `./guardian status` | What this machine has done. Reads local files and nothing else |
+
+`protect` reads the configuration of Claude Code, Claude Desktop, Cursor, Windsurf, VS Code
+and Gemini CLI, shows every server it found with the command it runs, copies each file
+before writing it, and can be undone with `--remove`. Codex keeps its servers in TOML,
+which the standard library reads and cannot write, so those are reported with the exact
+lines to paste rather than changed. It starts in monitor mode: the first thing a sensor
+does to real work should not be to stop it.
+
+## What is shared, and what is not
+
+Eight fields, counts only: a pseudonym you choose, sensor version, rules version, pattern,
+action, the hour, a count, and whether it came from a drill or live traffic. No tool names,
+no arguments, no URLs, no paths, no message text, nothing finer than an hour. Those are not
+removed from the report; they are never read.
+
+| | |
+| --- | --- |
+| Before anything is sent | You see the entire document and agree once |
+| Rows carrying your pseudonym | Deleted after 30 days |
+| The counts they contributed to | Kept, and identify nobody |
+| Everything about you, on request | `./guardian share forget` |
+| Reporting under a name in use | Refused unless signed with that member's key |
+| A total from fewer than three organizations | Withheld, because it would be traceable |
+
+## What this measures
+
+A detection found at one organization becoming a working defence at another, and how long
+that took. `scripts/time_to_protection.py` reports the distribution: how many members
+adopted, the median, and how many never did, because a member who never adopted is the
+result rather than missing data.
+
+A sensor that has been removed or killed stops reporting, and a sign of life goes once a
+day whether or not there is anything to report. So absence is visible to the network. A
+sensor cannot be made tamper proof against an agent running at the same privilege on the
+same machine; it can be made tamper evident, and that is what this is. See
+[THREAT_MODEL.md](THREAT_MODEL.md).
+
 ## How it works
 
 Everyone here is a contributor. Fork the repository, pick an issue, open a pull request.
@@ -96,8 +155,10 @@ move between them is in [GOVERNANCE.md](GOVERNANCE.md). Start at
 | `schema.yaml` | The pattern format |
 | `coverage/` | Every MITRE ATLAS technique, triaged by where the protocol can act on it |
 | `scanner/` | Validates the registry and measures an attack success rate against an agent |
-| `sensor/` | Prototype MCP proxy that enforces detections in real time |
+| `sensor/` | The MCP proxy, the CLI, and everything a member runs |
 | `hooks/` | Client hooks that cover an agent's own tools, which never pass through MCP |
+| `receiver/` | The HTTP contract a receiver implements, and one implementation of it |
+| `spec/` | The sightings format, normative, with a conformance suite |
 | `demo/` | A 90-second end-to-end demo with a visual report |
 
 No dependencies beyond the Python 3.9+ standard library.

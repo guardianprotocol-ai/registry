@@ -120,6 +120,34 @@ class Sensor:
         with open(self.cfg["pins_path"], "w") as f:
             json.dump(self.pins, f, indent=2)
 
+    def _canary_read(self, source, text):
+        """A registered canary appearing in a tool result, once the session is tainted.
+
+        The access alarm, and it is conditional on purpose. A canary sits in a file or a
+        record that legitimate work reads all day: a configuration, a vault entry, a
+        customer row. Reporting every read would be reporting normal operation, and an
+        alarm that fires on normal operation is one somebody turns off.
+
+        What is not normal is reading it after untrusted content arrived carrying
+        instructions. That is GP-0007, a credential read after the agent read outside
+        content, and keying it on the operator's actual registered value rather than on a
+        guess about which paths look sensitive is a far better piece of evidence: the
+        value is theirs, they said it mattered, and nothing about the filename has to be
+        inferred.
+
+        Egress is still the stronger signal and is still GP-0020. This says something was
+        reached. That one says it left.
+        """
+        if not self.state.get("tainted_by"):
+            return []
+        found = []
+        for entry in canaries.matches(self.canaries, text or ""):
+            detail = canaries.redacted(entry)
+            detail["tainted_by"] = self.state["tainted_by"]
+            detail["reached"] = "a registered value appeared in a tool result"
+            found.append(("GP-0007", detail))
+        return found
+
     def evidence(self, pattern_ids, action, detail):
         rec = {"time": now(), "patterns": pattern_ids, "reasons": [rules.RULES[p] for p in pattern_ids],
                "action": action, "detail": detail, "sensor": "guardian-sensor v0 (prototype)",
@@ -228,7 +256,13 @@ class Sensor:
         elif method == "tools/call":
             text = " ".join(c.get("text", "") for c in result.get("content", []) if isinstance(c, dict))
             source = (params or {}).get("name")
+            # Whether a registered canary was read is checked before taint is updated by
+            # this result, so a page that both carries instructions and contains the
+            # value does not accuse itself of a read it caused in the same breath.
+            read_hits = self._canary_read(source, text)
             for pid, d in rules.check_output(source, text, self.state):
+                self.evidence([pid], "flagged", {"tool": source, **d})
+            for pid, d in read_hits:
                 self.evidence([pid], "flagged", {"tool": source, **d})
         return msg
 

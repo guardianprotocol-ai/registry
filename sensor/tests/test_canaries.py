@@ -15,6 +15,7 @@ Run from the sensor folder:  python3 tests/test_canaries.py
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 
@@ -299,6 +300,59 @@ def test_the_list_warns_when_a_baseline_canary_is_already_firing():
               "Move the canary rather than arming it" in text, text)
         check("the quiet one is named as ready to consider arming",
               "quiet so far: quiet" in text, text)
+
+
+def test_a_canary_is_found_in_the_shapes_a_secret_travels_in():
+    """Three of the six commonest shapes were missed, including a query string.
+
+    The token class keeps "=" because base64 ends with it and a path keeps "/", but that
+    meant "token=SECRET" arrived as a single token and never matched a secret stored on
+    its own. A credential leaving in a URL is the likeliest way one leaves at all, so
+    this was a hole in the rule that matters most.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        store = canaries.load(os.path.join(folder, "c.json"))
+        canaries.add(store, "GP9999-CANARY-prod", "prod", canaries.ARMED)
+        for text in ["GP9999-CANARY-prod",
+                     "token=GP9999-CANARY-prod",
+                     "Authorization: Bearer GP9999-CANARY-prod",
+                     "https://somewhere.test/?k=GP9999-CANARY-prod",
+                     '{"api_key":"GP9999-CANARY-prod"}',
+                     "API_KEY=GP9999-CANARY-prod",
+                     "a=1&k=GP9999-CANARY-prod&b=2"]:
+            check("found in %s" % text[:34],
+                  len(canaries.matches(store, text)) == 1, text)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_splitting_does_not_lose_a_base64_value():
+    """A base64 value ends in "=". Splitting on separators without trying the whole
+    token first would be the way to miss that one instead."""
+    folder = tempfile.mkdtemp()
+    try:
+        store = canaries.load(os.path.join(folder, "c.json"))
+        canaries.add(store, "dGhpcyBpcyBhIHRlc3Q=", "encoded", canaries.ARMED)
+        check("a padded value is still found",
+              len(canaries.matches(store, "value dGhpcyBpcyBhIHRlc3Q= here")) == 1)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_an_unrelated_value_is_not_a_match():
+    """Splitting creates more candidates, so it is worth showing it did not start
+    matching things it should not."""
+    folder = tempfile.mkdtemp()
+    try:
+        store = canaries.load(os.path.join(folder, "c.json"))
+        canaries.add(store, "GP9999-CANARY-prod", "prod", canaries.ARMED)
+        for text in ["token=GP9999-CANARY-staging", "API_KEY=something-else-entirely",
+                     "https://somewhere.test/?k=nothing-to-see", "k=short"]:
+            check("not matched: %s" % text[:34], canaries.matches(store, text) == [],
+                  text)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 def main():

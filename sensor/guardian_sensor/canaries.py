@@ -165,20 +165,55 @@ def tokens(text):
 def matches(store, text):
     """Registered canaries present in `text`, as a list of entries. Never returns a value.
 
-    Each candidate token is hashed and compared, so the stored form stays a digest. A value
-    spliced into the middle of a longer run of characters, or re-encoded on the way out, is
-    not found. That limitation is real and is documented rather than hidden: this catches a
-    credential being passed on, not a credential being smuggled.
+    Each candidate is hashed and compared, so the stored form stays a digest. A token is
+    tried whole and then in the parts a name-and-value separator leaves behind, so
+    "token=SECRET" and a query string both match, which they did not before.
+
+    A value re-encoded on the way out, base64 or percent escaped or split across two
+    calls, is still not found. That limitation is real and is documented rather than
+    hidden: this catches a credential being passed on, not a credential being smuggled by
+    somebody who knows it is watched.
     """
     if not store.get("canaries"):
         return []
     by_hash = {c["hash"]: c for c in store["canaries"]}
     found = []
     for token in tokens(text):
-        entry = by_hash.get(_digest(token, store["salt"]))
-        if entry is not None and entry not in found:
-            found.append(entry)
+        for candidate in _candidates(token):
+            entry = by_hash.get(_digest(candidate, store["salt"]))
+            if entry is not None and entry not in found:
+                found.append(entry)
     return found
+
+
+# The characters that join a name to its value. A token class that keeps them is right,
+# because base64 ends in "=" and a path keeps "/", but it means "token=SECRET" arrives as
+# one token and never matches a secret stored on its own.
+#
+# Three of the six shapes a credential actually travels in were missed because of this,
+# including a query string, which is the likeliest way one leaves at all:
+#
+#   token=SECRET                        missed
+#   https://somewhere/?k=SECRET         missed
+#   API_KEY=SECRET                      missed
+#
+# So a token is compared whole and also in the parts these separators divide it into. The
+# whole token is still tried first and still matters: a base64 value ends in "=" and
+# splitting it would be the way to miss that one instead.
+JOINERS = "=&?;,"
+
+
+def _candidates(token):
+    """The token itself, then the pieces a name-and-value separator leaves behind."""
+    yield token
+    piece = token
+    for joiner in JOINERS:
+        piece = piece.replace(joiner, "\x00")
+    if "\x00" not in piece:
+        return
+    for part in piece.split("\x00"):
+        if len(part) >= MIN_LENGTH:
+            yield part
 
 
 def hits_by_label(evidence_path):

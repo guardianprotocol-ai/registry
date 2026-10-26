@@ -16,7 +16,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
-from guardian_sensor import canaries  # noqa: E402
+from guardian_sensor import canaries, sensor  # noqa: E402
 
 failures = []
 SECRET = "sk-live-9f2bAcD7xK3mQ"
@@ -226,6 +226,48 @@ def test_a_refusal_does_not_say_which_rule_fired():
     check("and still recorded in full locally",
           gp0020(canary_hit)[0]["detail"].get("canary") == "staging payment key",
           str(gp0020(canary_hit)))
+
+
+def test_reading_a_canary_is_an_alarm_only_once_something_untrusted_arrived():
+    """The access alarm, and why it is conditional.
+
+    A canary sits where legitimate work reads it all day: a configuration, a vault entry,
+    a customer record. Reporting every read would be reporting normal operation, and an
+    alarm that fires on normal operation is one somebody turns off.
+
+    Reading it after untrusted content arrived carrying instructions is not normal. That
+    is GP-0007, keyed on the operator's own registered value rather than on a guess about
+    which file paths look sensitive, which is a far better piece of evidence: they said
+    this value mattered, so nothing has to be inferred from a filename.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        store = canaries.load(os.path.join(folder, "c.json"))
+        canaries.add(store, "GP9999-CANARY-read", "prod-key", canaries.ARMED)
+        canaries.save(store, os.path.join(folder, "c.json"))
+        config = {"mode": "monitor", "allowlist": [],
+                  "pins_path": os.path.join(folder, "p.json"),
+                  "evidence_path": os.path.join(folder, "e.jsonl"),
+                  "canaries_path": os.path.join(folder, "c.json"), "max_repeat": 10}
+
+        quiet = sensor.Sensor(config)
+        check("an ordinary read is not an alarm",
+              quiet._canary_read("read_file", "API_KEY=GP9999-CANARY-read") == [],
+              "it fired with nothing tainted")
+
+        after = sensor.Sensor(config)
+        after.state["tainted_by"] = "fetch_page"
+        hits = after._canary_read("read_file", "API_KEY=GP9999-CANARY-read")
+        check("a read after untrusted content is an alarm",
+              [p for p, _ in hits] == ["GP-0007"], str(hits))
+        check("and it names which canary was reached",
+              hits[0][1].get("canary") == "prod-key", str(hits))
+        check("and says what tainted the session",
+              hits[0][1].get("tainted_by") == "fetch_page", str(hits))
+        check("and never carries the value itself",
+              "GP9999-CANARY-read" not in json.dumps(hits[0][1]), str(hits))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 def main():
