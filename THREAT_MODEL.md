@@ -4,6 +4,61 @@ What could go wrong with Guardian Protocol itself, and what stops it. The protoc
 
 This document covers the project and its supply chain. `SECURITY.md` covers how to report a problem.
 
+## An agent that wants its own sensor gone
+
+The sensor is a proxy, not a tool. That distinction is the whole security argument and it
+is worth stating plainly, because the obvious alternative looks friendlier and is not a
+control at all.
+
+A tool is something an agent chooses to call. An agent that would rather not be observed
+simply does not call it, and nothing happens. Offering detection as a tool, or as a
+plugin the model can reach, is asking an adversary to report itself.
+
+A proxy is the transport. Every MCP message passes through it because there is no other
+path, so an agent does not get a say in whether it is inspected. That is complete
+mediation, and it is the only property that survives an agent that is actively unhelpful.
+
+### What an agent at the same privilege can still do
+
+Everything, and this should be said rather than implied. A sensor runs as a process the
+client launched, configured in a file the user owns, writing state in that user's home.
+An agent with shell access on that machine can:
+
+- edit the client's configuration and remove the sensor from the path
+- end the sensor's process
+- delete the pins, the registered canaries, the evidence
+
+No arrangement at equal privilege prevents this. The industry has the same problem with
+endpoint monitoring on a machine where the attacker has root, and the honest answer there
+is the honest answer here: tamper proofing is not available, tamper evidence is.
+
+### Why silence is the control
+
+A member sends a sign of life once a day whether or not it has anything to report, and a
+receiver records when each was last heard from. A sensor that has been removed, killed or
+quietly reconfigured stops sending. It cannot both be disabled and keep reporting.
+
+So absence is visible from outside the machine, and visible to a network rather than only
+to the machine's owner. `receiver/participation.py` separates a member with nothing to
+report from a member nobody has heard from, and says in the output that silence is worth
+asking about and is not proof of anything on its own, because it is also what a laptop
+being closed looks like.
+
+### What would make this stronger
+
+Running the sensor as a different user from the agent, so its configuration and state are
+not writable by the thing it watches. That is a real improvement and it is not done. It
+costs an installation step on every machine, which at scale is the thing that decides
+whether anybody runs it at all, so it belongs behind a flag for the people who want it
+rather than in the default path.
+
+### Where a harness implementing this itself helps, and where it does not
+
+A vendor putting the protocol in their own transport layer is good: it is one fewer thing
+to install, and the detection stays in the data path where the model cannot route around
+it. A vendor exposing it as a tool the model can call is not the same thing and is not
+worth having, however much easier it is to adopt.
+
 ## What we protect
 
 1. **Integrity of the rules.** Sensors must enforce exactly the rules the project approved, and nothing else.

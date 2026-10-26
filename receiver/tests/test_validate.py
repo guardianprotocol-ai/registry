@@ -337,6 +337,55 @@ def test_identified_rows_expire_and_counts_do_not():
           "deleted after" in retention.describe(), retention.describe())
 
 
+def test_a_sensor_that_goes_silent_is_visible():
+    """The honest answer to whether an agent can disable its own sensor.
+
+    It can. A sensor runs at the same privilege as the agent on the same machine, so
+    anything with shell access can edit the client config, kill the process, or delete
+    the state. No design at equal privilege prevents that.
+
+    What it cannot do is keep reporting while disabled. A sign of life goes once a day
+    even with nothing to report, so absence is visible from outside the machine, and
+    visible to a network rather than only to its owner. Tamper evident rather than tamper
+    proof, which is the achievable property.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import datetime
+    import participation
+
+    now = datetime.datetime(2026, 10, 26, 15, tzinfo=datetime.timezone.utc)
+    seen = {"alive": {"org": "alive", "last_seen": "2026-10-26T14:00:00"},
+            "went-dark": {"org": "went-dark", "last_seen": "2026-10-22T09:00:00"}}
+    gone = participation.silent(seen, now=now)
+    check("the silent member is named", [o for o, _ in gone] == ["went-dark"], str(gone))
+    check("with how long it has been", round(gone[0][1]) == 102, str(gone))
+
+    text = participation.text(seen, {"alive": 12}, now=now)
+    check("silence is separated from having nothing to report",
+          "stopped reporting altogether" in text, text[:400])
+    check("and it is not overclaimed as proof",
+          "not proof of anything on its own" in text, text[-400:])
+
+
+def test_quiet_is_not_the_same_as_gone():
+    """A member reporting daily with nothing to report is a result. Conflating the two
+    would make the denominator wrong and hide the tampering signal in it."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import datetime
+    import participation
+
+    now = datetime.datetime(2026, 10, 26, 15, tzinfo=datetime.timezone.utc)
+    quiet = {"q": {"org": "q", "last_seen": "2026-10-26T14:00:00"}}
+    check("a member heard from an hour ago is not silent",
+          participation.silent(quiet, now=now) == [],
+          str(participation.silent(quiet, now=now)))
+    text = participation.text(quiet, {}, now=now)
+    check("they are counted as having seen nothing",
+          "1 have seen nothing" in text, text[:300])
+    check("and not reported as gone",
+          "stopped reporting" not in text, text[:300])
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

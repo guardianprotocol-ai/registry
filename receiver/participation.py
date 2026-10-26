@@ -42,6 +42,36 @@ def record_for(org, document, existing=None, now=None):
     return record
 
 
+# A member sends a sign of life once a day even with nothing to report. Two days of
+# silence is therefore not quiet, it is absent: switched off, uninstalled, broken, or
+# stopped. Which of those it is cannot be told from here, and that is the point: a sensor
+# cannot be made tamper proof against an agent running at the same privilege on the same
+# machine, so it is made tamper evident instead. Silence is the evidence.
+SILENT_HOURS = 48
+
+
+def silent(seen, now=None, hours=SILENT_HOURS):
+    """Members who have stopped reporting, with how long since each was last heard from.
+
+    Worth separating from members who have nothing to report. One is a result and the
+    other is a gap, and before this they looked the same in the table.
+    """
+    at = now or datetime.datetime.now(datetime.timezone.utc)
+    out = []
+    for org, record in sorted(seen.items()):
+        when = record.get("last_seen")
+        try:
+            last = datetime.datetime.fromisoformat(when)
+        except (TypeError, ValueError):
+            continue
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=datetime.timezone.utc)
+        quiet_for = (at - last).total_seconds() / 3600.0
+        if quiet_for >= hours:
+            out.append((org, quiet_for))
+    return out
+
+
 def rows(client, participants="participants", sightings="sightings"):
     seen = {}
     for document in client.collection(participants).stream():
@@ -76,6 +106,17 @@ def text(seen, reported, now=None):
     lines.append("")
     lines.append("%d organization%s reporting, of which %d have seen nothing."
                  % (len(seen), "" if len(seen) == 1 else "s", quiet))
+    gone = silent(seen, now=now)
+    if gone:
+        lines.append("")
+        lines.append("%d have stopped reporting altogether:" % len(gone))
+        for org, hours in gone:
+            lines.append("  %-24s last heard from %.0f hours ago" % (org[:24], hours))
+        lines.append("A sign of life goes once a day even with nothing to report, so this")
+        lines.append("is absence rather than quiet. A sensor cannot be made tamper proof")
+        lines.append("against an agent running at the same privilege on the same machine.")
+        lines.append("It can be made tamper evident, and this is that evidence: worth")
+        lines.append("asking about, and not proof of anything on its own.")
     lines.append("An organization seeing nothing is a result, not a gap: it is the "
                  "denominator")
     lines.append("every rate in the research is divided by.")
