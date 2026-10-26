@@ -15,18 +15,15 @@ import json
 import os
 import sys
 
+from . import home as _home
 from . import called, canaries, credit, paint
 
 DEFAULT_HOME = os.path.join(".guardian")
 
 
 def home(explicit=None):
-    if explicit:
-        return os.path.abspath(explicit)
-    override = os.environ.get("GUARDIAN_HOME")
-    if override:
-        return os.path.abspath(override)
-    return os.path.join(os.path.expanduser("~"), ".guardian")
+    """Kept as a name callers already use. The answer lives in one place now."""
+    return _home.data_dir(explicit)
 
 
 def _read_jsonl(path):

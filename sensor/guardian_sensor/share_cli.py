@@ -14,6 +14,7 @@ import json
 import os
 import sys
 
+from . import home
 from . import called, hub, paint, share
 
 COMMANDS = ("on", "off", "now", "status")
@@ -21,8 +22,7 @@ DEFAULT_ENDPOINT = "https://guardianprotocol.network/season1/sightings"
 
 
 def _document(root, org, since=None):
-    paths = [os.path.join(root, "drill", "evidence.jsonl"),
-             os.path.join(root, "evidence.jsonl")]
+    paths = list(home.evidence_paths(root))
     records = hub.read_evidence([p for p in paths if os.path.exists(p)], since=since)
     rules_version = hub.rules_version_from(records) or "unrecorded"
     return hub.build_sightings(records, org, rules_version)
@@ -144,12 +144,7 @@ def status(argv, out=sys.stdout, root=None):
 
 
 def _home(explicit):
-    if explicit:
-        return os.path.abspath(explicit)
-    override = os.environ.get("GUARDIAN_HOME")
-    if override:
-        return os.path.abspath(override)
-    return os.path.join(os.path.expanduser("~"), ".guardian")
+    return home.data_dir(explicit)
 
 
 def main(argv, out=sys.stdout):

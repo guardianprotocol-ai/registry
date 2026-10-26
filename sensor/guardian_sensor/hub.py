@@ -17,6 +17,8 @@ import json
 import os
 import re
 
+from . import home
+
 # 0.2 adds `source`. Additive, so a 0.1 file is still a valid file and still reads: a
 # missing source means live. Bumped anyway, for the same reason the result schema was,
 # because a reader needs to be able to tell whether absence means live or means old.
@@ -52,7 +54,14 @@ HOUR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}$")
 RULES_VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
 SENSOR_VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$")
 
-DEFAULT_EVIDENCE = (".guardian/evidence.jsonl",)
+def default_evidence():
+    """Both logs a report is built from, as absolute paths under the member's home.
+
+    A function rather than a constant because GUARDIAN_HOME is read when the command runs.
+    As a constant resolved at import, a service that sets the variable before invoking a
+    subcommand would still get the directory that existed when Python first loaded this.
+    """
+    return list(home.evidence_paths())
 
 
 class HubError(Exception):

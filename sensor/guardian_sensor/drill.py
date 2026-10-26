@@ -21,6 +21,7 @@ import subprocess
 import sys
 import time
 
+from . import home
 from . import called
 from . import paint
 
@@ -32,7 +33,17 @@ LAB_SERVER = os.path.join(SENSOR_ROOT, "tests", "fake_server.py")
 # bad; overwriting pins is worse, because it resets the approval baseline and the next
 # listing re-approves whatever the server offers. A drill must never disarm the sensor it
 # exists to demonstrate.
-DEFAULT_DIR = os.path.join(".guardian", "drill")
+# Under the member's data directory, not under wherever the command happened to be run.
+# This used to be relative, so a drill run from a clone wrote into the clone, and a member
+# who had set GUARDIAN_HOME had their drill write somewhere their sharing never looked:
+# three attacks caught, nothing to send, and both statements true about different folders.
+def default_dir():
+    return home.drill_dir()
+
+
+# Kept for callers and messages that want a name to print. Resolved at import for display
+# only; anything that opens a file calls default_dir() so a changed environment is seen.
+DEFAULT_DIR = default_dir()
 PROTECTED_NAMES = ("evidence.jsonl", "pins.json")
 
 
@@ -272,7 +283,7 @@ def main(argv=None, out=sys.stdout):
         description="Attack your own machine through your own sensor, then report it")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"),
                     help="your pseudonymous member id, never a company name")
-    ap.add_argument("--dir", default=DEFAULT_DIR,
+    ap.add_argument("--dir", default=None,
                     help="where the drill keeps its config, pins and evidence")
     ap.add_argument("--mode", default="block", choices=("block", "monitor"))
     ap.add_argument("--keep", action="store_true",
@@ -302,6 +313,10 @@ def main(argv=None, out=sys.stdout):
             a.org = None
         out.write("\n")
 
+    # Resolved here rather than as an argparse default, so GUARDIAN_HOME is read at the
+    # moment the command runs instead of at the moment the module was imported.
+    if a.dir is None:
+        a.dir = default_dir()
     workdir = os.path.abspath(a.dir)
     os.makedirs(workdir, exist_ok=True)
 

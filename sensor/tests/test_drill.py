@@ -10,11 +10,12 @@ Run from the sensor folder:  python3 tests/test_drill.py
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from guardian_sensor import drill  # noqa: E402
+from guardian_sensor import drill, home, hub, share_cli  # noqa: E402
 
 failures = []
 
@@ -249,6 +250,56 @@ def test_the_response_drill_refuses_to_claim_a_result_it_did_not_get():
                   "is not in this rule set" in text, text)
         finally:
             drill.WITHHELD_RULE = saved
+
+
+def test_every_command_agrees_where_a_members_data_lives():
+    """The drill and the sharing must read and write the same folder.
+
+    They did not. Three commands read GUARDIAN_HOME and the drill did not, so a member on
+    a locked down machine, which is exactly who that variable exists for, had the drill
+    write to one place and the send read another. The drill reported three attacks caught
+    and the send that followed reported nothing to send. Both were true, about different
+    directories, and nothing in either message hinted at that.
+    """
+    folder = tempfile.mkdtemp()
+    previous = os.environ.get(home.OVERRIDE)
+    os.environ[home.OVERRIDE] = folder
+    try:
+        root = home.data_dir()
+        check("the home honours the override", root == os.path.abspath(folder), root)
+        check("the drill writes under it",
+              drill.default_dir().startswith(root), drill.default_dir())
+        check("a report reads under it",
+              all(p.startswith(root) for p in hub.default_evidence()),
+              str(hub.default_evidence()))
+        check("sharing reads under it", share_cli._home(None) == root, share_cli._home(None))
+        # The drill's log is one of the files a report reads, so catching something and
+        # then reporting it needs no flags.
+        check("the drill log is one a report reads",
+              os.path.join(drill.default_dir(), "evidence.jsonl") in hub.default_evidence(),
+              str(hub.default_evidence()))
+    finally:
+        if previous is None:
+            os.environ.pop(home.OVERRIDE, None)
+        else:
+            os.environ[home.OVERRIDE] = previous
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_the_home_is_read_when_the_command_runs():
+    """Not captured at import, or a service that sets the variable gets the wrong folder."""
+    previous = os.environ.get(home.OVERRIDE)
+    try:
+        os.environ[home.OVERRIDE] = "/tmp/guardian-one"
+        first = home.data_dir()
+        os.environ[home.OVERRIDE] = "/tmp/guardian-two"
+        second = home.data_dir()
+        check("a changed environment is seen", first != second, f"{first} then {second}")
+    finally:
+        if previous is None:
+            os.environ.pop(home.OVERRIDE, None)
+        else:
+            os.environ[home.OVERRIDE] = previous
 
 
 def main():

@@ -37,7 +37,7 @@ def report(argv, out=sys.stdout):
     ap.add_argument("--updates", default=DEFAULT_UPDATES)
     a = ap.parse_args(argv)
 
-    paths = a.evidence or list(hub.DEFAULT_EVIDENCE)
+    paths = a.evidence or hub.default_evidence()
 
     try:
         records = hub.read_evidence(paths, since=a.since)

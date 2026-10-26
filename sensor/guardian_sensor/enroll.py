@@ -20,7 +20,7 @@ import plistlib
 import subprocess
 import sys
 
-from . import called
+from . import home as _home, called
 
 LABEL = "network.guardianprotocol.agenda"
 DEFAULT_INTERVAL = 60
@@ -31,12 +31,10 @@ DEFAULT_INTERVAL = 60
 # repository would be entangled with their data, and an operator asking somebody to "just
 # pull" would be asking them to risk it.
 def data_dir(home=None):
-    # GUARDIAN_HOME exists for a participant whose home directory is managed and locked
-    # down, which is normal on a corporate machine and is the audience this is for.
-    override = os.environ.get("GUARDIAN_HOME")
-    if override and home is None:
-        return os.path.abspath(override)
-    return os.path.join(home or os.path.expanduser("~"), ".guardian")
+    """Kept as a name callers already use. The answer lives in one place now."""
+    if home is not None:
+        return os.path.join(home, _home.DIR_NAME)
+    return _home.data_dir()
 
 
 def agenda_args(base, org, work_dir, offline=False, every_hours=24):
