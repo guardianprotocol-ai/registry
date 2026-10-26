@@ -43,6 +43,7 @@ CHECKS = [
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
     ("Sensor shutdown tests", "sensor", ["tests/test_shutdown.py"]),
     ("Sharing hub tests", "sensor", ["tests/test_hub.py"]),
+    ("Receiver contract tests", "receiver", ["tests/test_validate.py"]),
     ("Scanner parser tests", "scanner", ["tests/test_yamlish.py"]),
     ("Scanner tests", "scanner", ["tests/test_scanner.py"]),
     ("Result file tests", "scanner", ["tests/test_results.py"]),
