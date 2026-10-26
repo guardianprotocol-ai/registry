@@ -155,6 +155,106 @@ def test_what_the_sensor_builds_is_what_the_receiver_accepts():
         check("a document the sensor built is accepted", False, e)
 
 
+class _FakeDoc:
+    def __init__(self, data=None):
+        self._data, self.exists = data, data is not None
+
+    def to_dict(self):
+        return dict(self._data or {})
+
+
+class _FakeRef:
+    def __init__(self, store, key):
+        self.store, self.key = store, key
+
+    def get(self):
+        return _FakeDoc(self.store.get(self.key))
+
+    def set(self, value, merge=False):
+        if merge and self.key in self.store:
+            self.store[self.key].update(value)
+        else:
+            self.store[self.key] = dict(value)
+
+
+class _FakeCollection:
+    def __init__(self, store):
+        self.store = store
+
+    def document(self, key):
+        return _FakeRef(self.store, key)
+
+    def stream(self):
+        return [_FakeDoc(v) for v in self.store.values()]
+
+
+class _FakeDb:
+    def __init__(self):
+        self.data = {}
+
+    def collection(self, name):
+        return _FakeCollection(self.data.setdefault(name, {}))
+
+    def batch(self):
+        raise AssertionError("not needed for these tests")
+
+
+def test_a_member_who_saw_nothing_is_still_counted():
+    """The denominator. Before this they were invisible.
+
+    A member who installs, agrees to report and catches nothing sends a document with no
+    entries. Storing only sightings stored nothing for them, so there was no way to tell
+    a quiet machine from one nobody installed, and "twenty organizations saw this" had no
+    denominator to sit over.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import participation as receiver
+
+    db = _FakeDb()
+    quiet = {"schema_version": "0.2", "org": "quiet-co", "sightings": []}
+    record = receiver.record_for("quiet-co", quiet)
+    check("a member with nothing to report is recorded", record["org"] == "quiet-co",
+          str(record))
+    check("and it says they had nothing", record["last_entries"] == 0, str(record))
+    check("and when they were first seen", "first_seen" in record, str(record))
+
+    busy = {"schema_version": "0.2", "org": "busy-co",
+            "sightings": [entry(org="busy-co")]}
+    other = receiver.record_for("busy-co", busy)
+    check("a member with something to report is recorded too",
+          other["last_entries"] == 1, str(other))
+    check("and the sensor version travels with them",
+          other.get("sensor_version") == "guardian-sensor v0", str(other))
+
+
+def test_reporting_twice_does_not_make_two_members():
+    """Otherwise the denominator grows every hour and every rate shrinks."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import participation as receiver
+
+    document = {"schema_version": "0.2", "org": "same-co", "sightings": []}
+    first = receiver.record_for("same-co", document)
+    again = receiver.record_for("same-co", document, existing=first)
+    check("the first sighting of them is kept",
+          again["first_seen"] == first["first_seen"], f"{first} then {again}")
+    check("and last seen moves forward", "last_seen" in again, str(again))
+
+
+def test_the_report_says_zero_plainly():
+    """A report of nothing that reads like a report of something is the failure this
+    project keeps finding in its own checks."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import participation
+
+    empty = participation.text({}, {})
+    check("an empty network says so", "No organization has reported yet" in empty, empty)
+    both = participation.text(
+        {"a": {"org": "a", "first_seen": "x", "last_seen": "y"},
+         "b": {"org": "b", "first_seen": "x", "last_seen": "y"}}, {"a": 4})
+    check("a quiet member is counted and named", "none yet" in both, both)
+    check("the total is stated", "2 organizations reporting" in both, both)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

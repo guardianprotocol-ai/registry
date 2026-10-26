@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Who is taking part, and how much of the network reported.
+
+    python3 receiver/participation.py
+
+The denominator. A rate needs one: "twenty organizations saw this attack" says nothing
+without knowing how many were running, and before this there was no way to tell a quiet
+machine from a machine nobody installed.
+
+What it cannot tell you is how many people installed the sensor. Nothing is sent when
+somebody installs, on purpose: the tool promises that nothing leaves until they agree,
+and a silent ping on install would make that promise false in the first minute. So this
+counts members who agreed to report, which is a smaller number than installs and the only
+one that can be measured honestly.
+"""
+import argparse
+import datetime
+import os
+import sys
+
+
+def record_for(org, document, existing=None, now=None):
+    """What to store about a member reporting. No cloud dependency, so it is testable.
+
+    Nothing here is more revealing than the document that carried it: the member id is
+    already in the envelope and the versions are already in every entry. What they saw is
+    not duplicated here, because that is what the sightings are for.
+    """
+    at = now or datetime.datetime.now(datetime.timezone.utc)
+    stamp = at.isoformat(timespec="seconds")
+    versions = {e.get("sensor_version") for e in document.get("sightings", [])}
+    record = {"org": org, "last_seen": stamp,
+              "last_entries": len(document.get("sightings", []))}
+    if versions and None not in versions:
+        record["sensor_version"] = sorted(versions)[0]
+    # Kept from the first time they appeared. Without this a member who reports every
+    # hour looks new every hour, the denominator grows, and every rate shrinks.
+    if existing and existing.get("first_seen"):
+        record["first_seen"] = existing["first_seen"]
+    else:
+        record["first_seen"] = stamp
+    return record
+
+
+def rows(client, participants="participants", sightings="sightings"):
+    seen = {}
+    for document in client.collection(participants).stream():
+        record = document.to_dict()
+        seen[record.get("org") or document.id] = record
+    reported = {}
+    for document in client.collection(sightings).stream():
+        entry = document.to_dict()
+        org = entry.get("org")
+        reported[org] = reported.get(org, 0) + int(entry.get("count") or 0)
+    return seen, reported
+
+
+def text(seen, reported, now=None):
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    if not seen:
+        # Said plainly. A report of zero that reads like a report of something is the
+        # failure this project keeps finding in its own checks.
+        return ("No organization has reported yet. Nobody has agreed to share, or nobody "
+                "has run it.\n")
+    lines = ["%-24s %-22s %-22s %s" % ("member", "first seen", "last seen", "sightings"),
+             "-" * 78]
+    quiet = 0
+    for org in sorted(seen):
+        record = seen[org]
+        total = reported.get(org, 0)
+        if not total:
+            quiet += 1
+        lines.append("%-24s %-22s %-22s %s"
+                     % (org[:24], (record.get("first_seen") or "")[:19],
+                        (record.get("last_seen") or "")[:19], total or "none yet"))
+    lines.append("")
+    lines.append("%d organization%s reporting, of which %d have seen nothing."
+                 % (len(seen), "" if len(seen) == 1 else "s", quiet))
+    lines.append("An organization seeing nothing is a result, not a gap: it is the "
+                 "denominator")
+    lines.append("every rate in the research is divided by.")
+    lines.append("")
+    lines.append("This counts members who agreed to report. It is not a count of "
+                 "installs, because")
+    lines.append("nothing is sent when somebody installs and nothing should be.")
+    return "\n".join(lines) + "\n"
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--project", default=os.environ.get("GUARDIAN_PROJECT",
+                                                        "guardian-protocol-site"))
+    a = ap.parse_args(argv)
+    from google.cloud import firestore
+    client = firestore.Client(project=a.project)
+    seen, reported = rows(client)
+    sys.stdout.write(text(seen, reported))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

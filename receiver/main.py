@@ -22,9 +22,16 @@ import os
 import functions_framework
 from google.cloud import firestore
 
+import participation
 import validate
 
 COLLECTION = os.environ.get("GUARDIAN_COLLECTION", "sightings")
+# Who is taking part, as distinct from what they saw. A member who installs, agrees to
+# share and catches nothing sends a document with no entries, which stored nothing, so
+# they were invisible. That makes the denominator unknowable: "twenty organizations saw
+# this" means nothing without knowing how many were running. The research needs both
+# numbers and only one of them existed.
+PARTICIPANTS = os.environ.get("GUARDIAN_PARTICIPANTS", "participants")
 _db = None
 
 
@@ -37,6 +44,22 @@ def db():
 
 def _json(body, code):
     return (json.dumps(body), code, {"Content-Type": "application/json"})
+
+
+def note_participant(org, document, store_at=None, now=None):
+    """Record that this member reported, whether or not they had anything to report.
+
+    A member who installs, agrees to share and catches nothing sends a document with no
+    entries, which stores no sightings and left them invisible. The research needs to
+    tell a quiet machine from one nobody installed, because that is the denominator.
+    """
+    writer = store_at or db()
+    ref = writer.collection(PARTICIPANTS).document(org)
+    found = ref.get()
+    existing = found.to_dict() if found and found.exists else None
+    record = participation.record_for(org, document, existing, now)
+    ref.set(record, merge=True)
+    return record
 
 
 def store(entries, store_at=None):
@@ -80,6 +103,9 @@ def sightings(request):
         # keep sending the same thing, and the member will believe they are taking part.
         return _json({"error": str(e)}, 400)
     try:
+        # Before the sightings, so a member with nothing to report is still counted. That
+        # case is the whole reason this exists.
+        note_participant(document["org"], document)
         written = store(entries)
     except Exception as e:  # noqa: BLE001
         # The sender keeps its evidence and retries, so a failure here is a delay. The
