@@ -9,7 +9,7 @@ handle as a link whose text is `@handle`.
 
 | Name | GitHub | Affiliation | Areas |
 | --- | --- | --- | --- |
-| Frank Albanese | [@faalbane](https://github.com/faalbane) | Founder of a company building on the protocol (name to be announced) | All (founding maintainer; organizer of the research group) |
+| Frank Albanese | [@faalbane](https://github.com/faalbane) | Founder, [White Hat Labs](https://whitehatlabs.ai), which builds on the protocol | All (founding maintainer; organizer of the research group) |
 
 ## Reviewers
 
@@ -31,4 +31,21 @@ The project has no mailbox of its own yet. Everything private goes through GitHu
 
 New maintainers join through the process in `GOVERNANCE.md`. The project's goal is maintainers from several organizations before foundation entry.
 
-The founding maintainer is also starting a company that builds on the protocol, the way Red Hat builds on Linux. Under `GOVERNANCE.md`, that company gets no privileged access to the project, the registry or network data, and its founder's own changes need approval from a reviewer at another organization.
+## The company, and why it is named here
+
+The founding maintainer is also founder of White Hat Labs, which builds on the protocol the
+way Red Hat builds on Linux. That is written here because a maintainer's commercial interest
+in what they maintain should be the first thing a reader finds, not something they discover
+later.
+
+What it does not mean:
+
+- **The protocol stays open and neutral.** Apache 2.0, vendor neutral, and headed for the
+  OpenSSF Sandbox and then the Linux Foundation. No company owns it, and none will.
+- Under `GOVERNANCE.md` that company gets no privileged access to the project, the registry
+  or network data, and no earlier sight of anything than anybody else.
+- The founder's own changes need approval from a reviewer at another organization, which is
+  the same rule that applies to everyone and is the reason the project wants maintainers
+  from several organizations before foundation entry.
+- Nothing here is an endorsement of that company or its services. A commercial claim belongs
+  on a commercial site, not in the governance file of a neutral protocol.
