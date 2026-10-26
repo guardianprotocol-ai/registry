@@ -69,6 +69,46 @@ The project aims for maintainers from several organizations. Until the TSC is fo
 
 The Guardian Protocol name, domains and GitHub organization are held for the project, not for any company, and will be transferred to the foundation on acceptance.
 
+## Listings
+
+The project's website carries two lists. Neither confers anything: no access to the
+registry, the network or its data that is not already public, no influence over what gets
+merged, and no standing in any decision described above.
+
+They exist because somebody evaluating the protocol reasonably asks who else is using it,
+and because the alternative to a written rule is a list that reflects whoever asked the
+maintainer at the right moment.
+
+**Built on Guardian Protocol** names products and services that implement the protocol.
+To qualify, a product must implement a published part of it: the sightings format, the
+receiver contract, or the detections, in a form somebody outside the company can verify.
+Intending to is not enough.
+
+**Founding members** names organizations that publicly support an open, neutral defense
+for AI agents. It asks for a statement, not an implementation.
+
+### The rules, which apply to every entry
+
+- **Anyone may apply**, by opening a pull request that adds the entry, with one line
+  saying what is implemented and where that can be verified.
+- **Listed alphabetically.** Not by size, by when they joined, or by contribution.
+- **No fee**, and nothing may be paid for a listing or for position in one.
+- **A maintainer's own company applies the same way**, through a pull request, and the
+  decision is made by a maintainer at another organization. Until there is one, such an
+  entry waits. The founding maintainer is founder of White Hat Labs, so this rule decides
+  the first entry rather than being written after it.
+- **An entry is removed** when it no longer implements what it claimed, when the
+  organization asks, or when a maintainer shows the claim was never true. Removal follows
+  the significant-change process and is recorded.
+- **A listing is not an endorsement**, and the website says so beside both lists.
+
+### What is not allowed
+
+The project does not sell placement, does not rank entries, does not offer a paid tier,
+and does not use these lists to direct work toward any company. The protocol's website is
+not a channel for any company's sales, including the founding maintainer's. Companies
+have their own sites for that.
+
 ## Changes to this document
 
 Changes to governance follow the significant-change process above.
