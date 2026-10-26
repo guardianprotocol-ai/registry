@@ -9,6 +9,7 @@ Run from the sensor folder:  python3 tests/test_status.py
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -205,6 +206,41 @@ def test_printed_commands_match_how_the_tool_was_invoked():
             os.environ.pop("GUARDIAN_INVOCATION", None)
         else:
             os.environ["GUARDIAN_INVOCATION"] = saved
+
+
+def test_the_command_reports_its_exit_code():
+    """Every command exited 0, including the ones that failed.
+
+    The entry point called main() and threw the result away, so a script or a CI job
+    running this was told everything succeeded whatever happened. A tool whose exit code
+    is always zero cannot be automated, and this one is meant to run unattended.
+    """
+    here = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    wrapper = os.path.join(here, "guardian")
+    if not os.path.exists(wrapper):
+        check("the wrapper is where it was", False, wrapper)
+        return
+    for args, expected, label in [(["wibble"], 2, "an unknown command"),
+                                  (["report", "--org", "BAD..ID", "--preview"], 1,
+                                   "an invalid member id"),
+                                  (["--help"], 0, "asking for help")]:
+        done = subprocess.run([wrapper] + args, capture_output=True, text=True,
+                              cwd=here)
+        check("%s exits %d" % (label, expected), done.returncode == expected,
+              "got %d" % done.returncode)
+
+
+def test_an_interrupt_is_not_a_crash():
+    """Ctrl-C is an answer, not a fault. A traceback tells somebody they broke it."""
+    here = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    entry = os.path.join(here, "sensor", "guardian_sensor", "__main__.py")
+    with open(entry, encoding="utf-8") as f:
+        source = f.read()
+    check("the interrupt is caught", "KeyboardInterrupt" in source, source[:120])
+    check("and says nothing was installed or sent",
+          "Nothing was installed and nothing was sent" in source, source[:0])
+    check("a closed pipe is not an error either", "BrokenPipeError" in source,
+          source[:0])
 
 
 def main():
