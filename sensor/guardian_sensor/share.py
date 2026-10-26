@@ -250,3 +250,33 @@ def note_sent(root, document, ok, message, at=None):
             "ok": bool(ok),
             "detail": message[:200],
         }) + "\n")
+
+
+def forget(endpoint, org, key, opener=None, timeout=30):
+    """Ask the receiver to delete everything it holds about this member.
+
+    Signed with the key this member reports with, so only they can ask. Never raises on
+    a network problem: a receiver that is down is a reason to try again, not a reason
+    for the command to look like it broke something.
+
+    What is deleted is everything that says this member saw anything. The counts their
+    reports contributed to stay, because those identify nobody and removing them would
+    silently rewrite results other people are relying on. Said here so the promise and
+    the behaviour are written in the same place.
+    """
+    request = urllib.request.Request(
+        endpoint, data=b"", method="DELETE",
+        headers={"X-Guardian-Org": org,
+                 "X-Guardian-Signature": identity.sign(key, b""),
+                 "User-Agent": "guardian-sensor/%s" % hub.SENSOR_VERSION})
+    opener = opener or urllib.request.urlopen
+    try:
+        with opener(request, timeout=timeout) as response:
+            code = getattr(response, "status", None) or response.getcode()
+            if 200 <= code < 300:
+                return True, "deleted"
+            return False, "the receiver answered %d" % code
+    except urllib.error.HTTPError as e:
+        return False, "the receiver answered %d" % e.code
+    except Exception as e:
+        return False, "%s: %s" % (type(e).__name__, e)

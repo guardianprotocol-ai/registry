@@ -415,6 +415,54 @@ def test_an_older_alerts_file_still_works():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_a_member_can_be_told_how_to_leave_and_have_it_work():
+    """The invitation promises `share forget`. A promise has to be a command.
+
+    The consent file once told members to revoke with `share --stop`, which was not a
+    command either. The one line explaining how to withdraw has to name something that
+    runs, and this nearly went out to thirty people naming something that did not.
+    """
+    from guardian_sensor import share_cli
+
+    check("forget is a command", "forget" in share_cli.COMMANDS,
+          str(share_cli.COMMANDS))
+    check("and it is reachable", callable(getattr(share_cli, "forget", None)))
+
+    sent = {}
+
+    def opener(request, timeout=None):
+        sent["method"] = request.get_method()
+        sent["org"] = request.get_header("X-guardian-org")
+        sent["signature"] = request.get_header("X-guardian-signature")
+
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b'{"deleted": 3}'
+        return Response()
+
+    folder = tempfile.mkdtemp()
+    try:
+        share.record_consent(folder, "a-lab", "https://example.test/s")
+        code = share_cli.forget(["--yes"], out=io.StringIO(), root=folder,
+                                opener=opener)
+        check("leaving succeeds", code == 0, code)
+        check("it asks the receiver to delete", sent.get("method") == "DELETE",
+              str(sent))
+        check("it names the member", sent.get("org") == "a-lab", str(sent))
+        check("and it is signed, so only they can ask",
+              bool(sent.get("signature")), str(sent))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

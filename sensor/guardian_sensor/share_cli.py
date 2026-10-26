@@ -17,7 +17,7 @@ import sys
 from . import home
 from . import called, hub, identity, paint, share
 
-COMMANDS = ("on", "off", "now", "status")
+COMMANDS = ("on", "off", "now", "status", "forget")
 DEFAULT_ENDPOINT = "https://guardianprotocol.network/season1/sightings"
 
 
@@ -86,6 +86,54 @@ def off(argv, out=sys.stdout, root=None):
     except OSError:
         out.write("Not sharing. Nothing was being sent.\n")
     return 0
+
+
+def forget(argv, out=sys.stdout, root=None, opener=None):
+    """Delete everything the receiver holds about this member."""
+    ap = argparse.ArgumentParser(
+        prog="%s share forget" % called.invocation(),
+        description="Delete everything the receiver holds about you")
+    ap.add_argument("--home", default=None)
+    ap.add_argument("--endpoint", default=None)
+    ap.add_argument("--yes", action="store_true", help="skip the question")
+    a = ap.parse_args(argv)
+    root = root or _home(a.home)
+
+    agreed = share.consent(root)
+    org = (agreed or {}).get("org")
+    endpoint = a.endpoint or (agreed or {}).get("endpoint") or DEFAULT_ENDPOINT
+    if not org:
+        out.write("Nothing to delete: this machine has never agreed to share.\n")
+        return 0
+
+    out.write("This asks %s to delete everything it holds about %s.\n"
+              % (endpoint, org))
+    out.write("The counts your reports contributed to stay. They name nobody, and "
+              "removing them\nwould change results other people are relying on.\n")
+    out.write("You can start sharing again afterwards with: %s share on\n\n"
+              % called.invocation())
+    if not a.yes:
+        try:
+            answer = input("  delete it [y/N]: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            out.write("\n")
+            answer = ""
+        if not answer.startswith("y"):
+            out.write("\nNothing was deleted.\n")
+            return 0
+
+    ok, message = share.forget(endpoint, org, identity.load_or_create(root),
+                               opener=opener)
+    if ok:
+        # The registration goes too, so starting again is a clean first contact rather
+        # than signing against a key the receiver no longer has.
+        identity.forget_registration(root, endpoint)
+        out.write("\nDeleted. %s holds nothing that says %s saw anything.\n"
+                  % (endpoint, org))
+        return 0
+    out.write("\nNot deleted (%s). Nothing on your machine changed, and you can try "
+              "again.\n" % message)
+    return 1
 
 
 def now(argv, out=sys.stdout, root=None, opener=None):
@@ -170,4 +218,6 @@ def main(argv, out=sys.stdout):
         return off(rest, out=out)
     if command == "now":
         return now(rest, out=out)
+    if command == "forget":
+        return forget(rest, out=out)
     return status(rest, out=out)
