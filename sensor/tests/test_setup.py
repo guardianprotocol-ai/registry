@@ -9,6 +9,7 @@ What it must not do is act before showing, or claim to have done something it di
 Run from the sensor folder:  python3 tests/test_setup.py
 """
 import io
+import inspect
 import os
 import sys
 import tempfile
@@ -144,6 +145,40 @@ def test_an_empty_publish_point_sets_expectations_rather_than_refusing():
           setup_cli._agenda_reachable("https://x.test", Nothing()) is False)
     check("a published agenda reads as something",
           setup_cli._agenda_reachable("https://x.test", Something()) is True)
+
+
+def test_sharing_is_offered_even_with_nothing_to_preview():
+    """Skipping the question made a member invisible with nothing explaining why.
+
+    The preview only exists once the drill has caught something. If building it failed,
+    the question was skipped entirely: the member enrolled, never reported, and the
+    research could not tell them from somebody who never installed it. There is still
+    something to agree to, because the daily sign of life is what makes them countable.
+    """
+    source = inspect.getsource(setup_cli.main)
+    check("the question is asked when there is nothing to preview",
+          "There is nothing to preview yet" in source, source[:0])
+    check("and it still names every field that would travel",
+          "hub.ALLOWED_FIELDS" in source, source[:0])
+    check("and it still names who receives them",
+          "operated by Guardian Protocol" in source, source[:0])
+    # Both paths must end in the same recorded consent, or one of them is decoration.
+    check("both paths record consent the same way",
+          source.count("share.record_consent(where, org, DEFAULT_ENDPOINT)") == 2,
+          source.count("share.record_consent(where, org, DEFAULT_ENDPOINT)"))
+
+
+def test_every_default_is_the_automatic_one():
+    """Pressing Enter at every question has to leave the immune system running.
+
+    A default is the answer most people give. If the automatic path needed somebody to
+    type something, most members would end up with a sensor that detects locally and
+    tells nobody, which is the shape that looks like participation and is not.
+    """
+    source = inspect.getsource(setup_cli.main)
+    check("the networked arm is the default", 'default="networked"' in source)
+    check("adopting new rules is the default", 'default="auto"' in source)
+    check("sharing is the default", source.count("default=True") >= 1, source[:0])
 
 
 def main():

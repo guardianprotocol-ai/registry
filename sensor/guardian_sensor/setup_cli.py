@@ -199,7 +199,30 @@ def main(argv=None, out=sys.stdout):
             document = share_cli._document(where, org)
         except Exception:  # noqa: BLE001
             document = None
-        if document is not None and document.get("sightings"):
+        if document is None or not document.get("sightings"):
+            # Asked anyway. Skipping the question meant a member who had nothing to
+            # preview was never offered the choice, so they enrolled, never reported, and
+            # were invisible to the research with nothing on screen explaining why. There
+            # is still something to agree to: the sign of life that makes them countable.
+            out.write("There is nothing to preview yet, so here is what would go when "
+                      "there is:\n")
+            out.write("  the fields %s, and nothing else.\n"
+                      % ", ".join(hub.ALLOWED_FIELDS))
+            out.write("  counts only, no tool names, arguments, URLs, paths or message "
+                      "text.\n\n")
+            out.write("To %s, operated by Guardian Protocol.\n" % DEFAULT_ENDPOINT)
+            out.write("At most once an hour, and once a day even with nothing to report, "
+                      "so that\na quiet machine and a machine nobody installed do not "
+                      "look the same.\n\n")
+            if _yes("send sightings automatically", out, default=True):
+                try:
+                    share.record_consent(where, org, DEFAULT_ENDPOINT)
+                    shared = True
+                    out.write("\nAgreed. Recorded in %s.\n"
+                              % os.path.join(where, share.CONSENT_NAME))
+                except Exception as e:  # noqa: BLE001
+                    out.write("\nNot recorded: %s\n" % e)
+        elif document is not None and document.get("sightings"):
             out.write("Sending this is what turns a sensor into an exchange: an attack\n")
             out.write("caught on your machine becomes a warning on everybody else's.\n\n")
             out.write(hub.preview_text(document) + "\n\n")
