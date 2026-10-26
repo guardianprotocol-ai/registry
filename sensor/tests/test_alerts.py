@@ -325,6 +325,63 @@ def test_a_clock_moving_backwards_does_not_silence_a_node():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_a_node_notices_when_something_is_spreading():
+    """The early warning, without naming anybody.
+
+    A pattern going from six organizations to forty is the thing worth interrupting
+    somebody about, and a node cannot see it from a list of pattern names. Noticed on
+    the node rather than published, because a published trend would be one operator
+    deciding what counts as an emergency for everybody.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        alerts.remember(folder, [{"pattern": "GP-0003", "organizations": 6, "total": 9}],
+                        "2026-10-26T09:00")
+        spike = alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 40,
+                                        "total": 120}])
+        check("a sharp rise is noticed", [a["pattern"] for a in spike] == ["GP-0003"],
+              str(spike))
+        check("and it says what it rose from",
+              spike[0]["before"] == 6 and spike[0]["now"] == 40, str(spike))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_ordinary_growth_is_not_an_alarm():
+    """An alarm that fires on noise is an alarm somebody turns off."""
+    folder = tempfile.mkdtemp()
+    try:
+        alerts.remember(folder, [{"pattern": "GP-0001", "organizations": 10, "total": 10}],
+                        "2026-10-26T09:00")
+        check("ten to eleven is not a spike",
+              alerts.rising(folder, [{"pattern": "GP-0001", "organizations": 11,
+                                      "total": 11}]) == [])
+        # Doubling is required, and so is a floor, or every new pattern alarms twice.
+        check("one to two is not a spike",
+              alerts.rising(folder, [{"pattern": "GP-0001", "organizations": 2,
+                                      "total": 2}]) == [])
+        check("a pattern never seen before is not a spike",
+              alerts.rising(folder, [{"pattern": "GP-9999", "organizations": 99,
+                                      "total": 99}]) == [])
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_an_older_alerts_file_still_works():
+    """Machines that have been running carry the previous format, a bare timestamp."""
+    folder = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(folder, alerts.SEEN_NAME), "w", encoding="utf-8") as f:
+            json.dump({"GP-0003": "2026-10-20T09:00"}, f)
+        check("no count to compare means no false alarm",
+              alerts.rising(folder, [{"pattern": "GP-0003", "organizations": 40,
+                                      "total": 99}]) == [])
+        check("and the file is still readable",
+              "GP-0003" in alerts.seen(folder), str(alerts.seen(folder)))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

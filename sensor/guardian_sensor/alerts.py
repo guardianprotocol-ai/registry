@@ -107,6 +107,48 @@ def seen(root):
         return {}
 
 
+# How much larger a pattern has to get before it is worth interrupting somebody. At
+# least doubling, and at least this many more organizations, so a jump from one to two
+# is not an alarm and a jump from six to forty is.
+SPIKE_FACTOR = 2
+SPIKE_FLOOR = 3
+
+
+def _count(record):
+    """Organizations last seen for a pattern, from either file format."""
+    if isinstance(record, dict):
+        value = record.get("organizations")
+        return value if isinstance(value, int) else None
+    return None
+
+
+def rising(root, alerts):
+    """Patterns that have grown sharply since this machine last looked.
+
+    This is the early warning. Nobody is named and nothing is attributed: a member sees
+    that an attack is spreading across the network far faster than it was, which is
+    enough to go and look, and enough to ask the people they know whether they are
+    seeing it too.
+
+    Computed here rather than published, because a published trend would be one
+    operator deciding what counts as an emergency for everybody, and because the alerts
+    format refuses fields it does not know, so it could not carry one without every
+    existing reader refusing the whole document.
+    """
+    known = seen(root)
+    out = []
+    for alert in alerts:
+        now = alert.get("organizations")
+        if not isinstance(now, int):
+            continue
+        before = _count(known.get(alert["pattern"]))
+        if before is None:
+            continue                     # never seen with a count, so nothing to compare
+        if now >= before * SPIKE_FACTOR and now - before >= SPIKE_FLOOR:
+            out.append({"pattern": alert["pattern"], "before": before, "now": now})
+    return out
+
+
 def remember(root, alerts, published):
     """Record what has been seen, so the same alert is announced once.
 
@@ -115,7 +157,12 @@ def remember(root, alerts, published):
     """
     os.makedirs(root, exist_ok=True)
     known = seen(root)
-    known.update({a["pattern"]: published for a in alerts})
+    # What was seen, not only that it was seen. A pattern going from six organizations
+    # to forty is the thing worth noticing, and a node cannot notice it from a list of
+    # names. Older files hold a bare timestamp per pattern and are read as such.
+    known.update({a["pattern"]: {"published": published,
+                                 "organizations": a.get("organizations"),
+                                 "total": a.get("total")} for a in alerts})
     path = os.path.join(root, SEEN_NAME)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(known, f, indent=2, sort_keys=True)

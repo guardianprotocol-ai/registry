@@ -502,6 +502,20 @@ def _read_alerts(a, out, opener=None):
     except alerts_module.AlertError as e:
         out.write("Refusing the published alerts: %s\n" % e)
         return
+    # Checked before the unseen list, because a pattern this machine has already been
+    # told about is exactly the one that matters when it starts spreading.
+    spiking = alerts_module.rising(root, published)
+    if spiking:
+        out.write("\nThe network is seeing these far more widely than when this machine "
+                  "last looked:\n")
+        for alert in spiking:
+            out.write("  %-9s %d organizations, was %d\n"
+                      % (alert["pattern"], alert["now"], alert["before"]))
+        out.write("Nobody is named and nothing here says what to do. It is worth "
+                  "looking, and worth\nasking the people you know whether they are "
+                  "seeing it too.\n")
+        alerts_module.remember(root, published, document.get("published", ""))
+
     fresh = alerts_module.unseen(root, published)
     if not fresh:
         return
