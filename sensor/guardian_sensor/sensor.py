@@ -325,8 +325,21 @@ def main(argv=None):
     args = sys.argv[1:] if argv is None else list(argv)
     # Before argparse, because argparse would answer --help with the proxy's options and
     # never mention a command. A bare invocation asks for help rather than erroring.
-    if not args or args[0] in ("help", "--help", "-h", "commands"):
-        if not args or args[0] in ("help", "commands") or len(args) == 1:
+    if not args:
+        # Typed on its own, in a terminal, by somebody who has just cloned this: start.
+        # A list of eleven commands is a decision to make before anything has happened,
+        # and the first of them is the one they want. setup shows the drill, then asks
+        # before it installs or sends anything, and Ctrl-C leaves without doing either,
+        # so starting is not a thing done to them.
+        #
+        # Piped or scripted, the list is the right answer: nothing is waiting to read an
+        # answer, and an interactive flow would hang.
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            from . import setup_cli
+            return setup_cli.main([])
+        return usage()
+    if args[0] in ("help", "--help", "-h", "commands"):
+        if args[0] in ("help", "commands") or len(args) == 1:
             return usage()
     if args[:1] and args[0] in HUB_COMMANDS:
         from . import hub_cli

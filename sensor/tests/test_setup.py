@@ -15,7 +15,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from guardian_sensor import drill, enroll, hub, setup_cli  # noqa: E402
+from guardian_sensor import sensor, drill, enroll, hub, setup_cli  # noqa: E402
 
 failures = []
 
@@ -230,6 +230,27 @@ def test_a_measurement_below_the_floor_is_raised_and_said():
     check("the floor is enforced", "MIN_RUNS" in source, source[:0])
     check("and explained rather than applied silently",
           "below the floor" in source, source[:0])
+
+
+def test_the_bare_command_starts_rather_than_listing():
+    """The first thing somebody types after cloning should do the thing.
+
+    Eleven commands is a decision to make before anything has happened, and the first of
+    them is the one they want. Starting is not something done to them: setup shows the
+    drill, asks before it installs or sends anything, and Ctrl-C leaves having done
+    neither.
+
+    Piped or scripted there is nobody to answer, so the list is the right response and an
+    interactive flow would hang.
+    """
+    source = inspect.getsource(sensor.main)
+    check("a terminal gets setup", "setup_cli.main([])" in source, source[:0])
+    check("and it is conditional on there being somebody there",
+          "isatty" in source, source[:0])
+    check("both ends are checked, since either can be redirected",
+          source.count("isatty") >= 2, source.count("isatty"))
+    check("without a terminal it still lists the commands",
+          "return usage()" in source, source[:0])
 
 
 def main():
