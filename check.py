@@ -10,6 +10,7 @@ No dependencies beyond the Python 3.9+ standard library.
 """
 import os
 import subprocess
+import tempfile
 import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,7 @@ CHECKS = [
     ("Pattern scaffold tests", ".", ["scripts/tests/test_new_pattern.py"]),
     ("Status guard tests", ".", ["scripts/tests/test_check_status_changes.py"]),
     ("Sign-off gate tests", ".", ["scripts/tests/test_check_signoff.py"]),
+    ("Test isolation", ".", ["scripts/tests/test_isolation.py"]),
     ("Invisible character tests", ".", ["scripts/tests/test_check_invisible.py"]),
     ("Contributor data tests", ".", ["scripts/tests/test_build_contributors.py"]),
     ("Meeting summary tests", ".", ["scripts/tests/test_shipped.py"]),
@@ -80,7 +82,24 @@ def main():
         return new_pattern(sys.argv[2:])
     verbose = "-v" in sys.argv or "--verbose" in sys.argv
     failed = []
-    for label, folder, args in CHECKS:
+    # Every check runs against a throwaway home, so no test can write to the records of
+    # whoever is running it.
+    #
+    # The sensor's defaults live under the member's data directory, which is right for a
+    # sensor and wrong for a test suite: running these wrote fourteen detections into the
+    # real evidence log each time, and a machine that was sharing then reported them to
+    # the network as live traffic. Test runs were being counted as findings.
+    #
+    # Set here rather than in each test because the next test to be written will not
+    # remember, and because the cost of forgetting is somebody's research data.
+    with tempfile.TemporaryDirectory(prefix="guardian-checks-") as scratch:
+        return _run_checks(CHECKS, scratch, verbose, failed)
+
+
+def _run_checks(checks, scratch, verbose, failed):
+    environment = dict(os.environ)
+    environment["GUARDIAN_HOME"] = scratch
+    for label, folder, args in checks:
         # Output is captured, so a check that hangs would print nothing and stall until
         # the CI job's own timeout. Bound it here, where the partial output still exists.
         try:
@@ -90,6 +109,7 @@ def main():
                 capture_output=True,
                 text=True,
                 timeout=TIMEOUT_SECONDS,
+                env=environment,
             )
             ok = result.returncode == 0
             output = (result.stdout + result.stderr).strip()

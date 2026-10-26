@@ -193,6 +193,10 @@ def test_an_unwritable_home_is_explained_rather_than_raised():
         os.makedirs(locked)
         os.chmod(locked, 0o500)
         saved = os.environ.get("HOME")
+        # GUARDIAN_HOME is the escape hatch this test is about, so it has to be out of
+        # the way. The suite sets it to a scratch directory for every check, which would
+        # otherwise hand this test a writable home and quietly stop it testing anything.
+        saved_override = os.environ.pop("GUARDIAN_HOME", None)
         os.environ["HOME"] = locked
         try:
             out = io.StringIO()
@@ -202,6 +206,8 @@ def test_an_unwritable_home_is_explained_rather_than_raised():
             os.chmod(locked, 0o700)
             if saved is not None:
                 os.environ["HOME"] = saved
+            if saved_override is not None:
+                os.environ["GUARDIAN_HOME"] = saved_override
         text = out.getvalue()
         check("it exits non zero", code == 1, str(code))
         check("it says it cannot write", "Cannot write to" in text, text[:200])
