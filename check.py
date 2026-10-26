@@ -36,6 +36,7 @@ CHECKS = [
     ("Credit tests", "sensor", ["tests/test_credit.py"]),
     ("Status and packaging tests", "sensor", ["tests/test_status.py"]),
     ("Guided setup tests", "sensor", ["tests/test_setup.py"]),
+    ("Protect real servers tests", "sensor", ["tests/test_protect.py"]),
     ("Banner tests", "sensor", ["tests/test_banner.py"]),
     ("Alerts and sharing tests", "sensor", ["tests/test_alerts.py"]),
     ("Hostile agenda tests", "sensor", ["tests/test_agenda_hostile.py"]),
