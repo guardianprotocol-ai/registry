@@ -272,6 +272,34 @@ def test_a_base_or_offline_is_required_to_enrol():
     check("and both are offered", "--offline" in out.getvalue(), out.getvalue())
 
 
+def test_the_rule_choice_is_written_into_the_service():
+    """An operator who cannot refuse a rule change will not install this.
+
+    Detection logic changing without a person agreeing is what stops a deployment in a
+    regulated environment. The choice also has to survive a reboot, so it belongs in the
+    service definition rather than in a shell somebody ran once.
+    """
+    for choice in ("auto", "manual", "off"):
+        args = enroll.agenda_args("https://example.test/s", "a-lab", "/tmp/w",
+                                  rules=choice)
+        check("agenda is told rules=%s" % choice,
+              "--rules" in args and args[args.index("--rules") + 1] == choice, str(args))
+
+    plist = enroll.launchd_plist("/usr/bin/python3", "/mod", "https://example.test/s",
+                                 "a-lab", 60, "/tmp/l", "/tmp/w", rules="manual")
+    check("launchd records the choice", "manual" in plist["ProgramArguments"],
+          str(plist["ProgramArguments"]))
+    service, _ = enroll.systemd_units("/usr/bin/python3", "/mod", "https://example.test/s",
+                                      "a-lab", 60, "/tmp/l", "/tmp/w", rules="off")
+    check("systemd records the choice", "--rules off" in service, service[:200])
+
+    # The default has to be auto, because a network whose members never update protects
+    # nobody, and a default is the answer most people give.
+    default = enroll.agenda_args("https://example.test/s", "a-lab", "/tmp/w")
+    check("the default is auto", default[default.index("--rules") + 1] == "auto",
+          str(default))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

@@ -37,7 +37,7 @@ def data_dir(home=None):
     return _home.data_dir()
 
 
-def agenda_args(base, org, work_dir, offline=False, every_hours=24):
+def agenda_args(base, org, work_dir, offline=False, every_hours=24, rules="auto"):
     """The poll, with every path absolute.
 
     Relative defaults are resolved against the working directory, so a relative
@@ -49,17 +49,20 @@ def agenda_args(base, org, work_dir, offline=False, every_hours=24):
              else ["--base", base])
     return (["-m", "guardian_sensor", "agenda"] + where
             + ["--log", os.path.join(work_dir, "agenda.jsonl"),
-               "--dir", os.path.join(work_dir, "drill")]
+               "--dir", os.path.join(work_dir, "drill"),
+               # Written into the service file, so the choice survives a reboot rather
+               # than quietly reverting to the default months later.
+               "--rules", rules]
             + (["--org", org] if org else []))
 
 
 def launchd_plist(python, module_dir, base, org, interval, log_dir, work_dir,
-                  offline=False, every_hours=24):
+                  offline=False, every_hours=24, rules="auto"):
     """A launchd agent that runs the poll on an interval and keeps running."""
     return {
         "Label": LABEL,
         "ProgramArguments": [python] + agenda_args(base, org, work_dir, offline,
-                                                  every_hours),
+                                                  every_hours, rules),
         "WorkingDirectory": work_dir,
         "EnvironmentVariables": {"PYTHONPATH": module_dir},
         "StartInterval": interval,
@@ -70,9 +73,9 @@ def launchd_plist(python, module_dir, base, org, interval, log_dir, work_dir,
 
 
 def systemd_units(python, module_dir, base, org, interval, log_dir, work_dir,
-                  offline=False, every_hours=24):
+                  offline=False, every_hours=24, rules="auto"):
     """A systemd timer and service. Returns (service_text, timer_text)."""
-    args = " ".join(agenda_args(base, org, work_dir, offline, every_hours))
+    args = " ".join(agenda_args(base, org, work_dir, offline, every_hours, rules))
     service = (
         "[Unit]\n"
         "Description=Guardian Protocol exercise agenda\n"
@@ -129,6 +132,9 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
                     help="with --offline, how often to run. Default 24")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"),
                     help="your pseudonymous member id, never a company name")
+    ap.add_argument("--rules", choices=("auto", "manual", "off"), default="auto",
+                    help="how new detections arrive: auto adopts a verified bundle, "
+                         "manual says one is waiting, off never looks. Default auto")
     ap.add_argument("--interval", type=int, default=DEFAULT_INTERVAL,
                     help="seconds between polls. Default %d" % DEFAULT_INTERVAL)
     ap.add_argument("--print-only", action="store_true",
@@ -200,12 +206,13 @@ def main(argv=None, out=sys.stdout, platform=None, runner=None):
     if kind == "launchd":
         body = plistlib.dumps(launchd_plist(python, module_dir, a.base, a.org,
                                             a.interval, log_dir, work_dir,
-                                            a.offline, a.every_hours)).decode("utf-8")
+                                            a.offline, a.every_hours,
+                                            a.rules)).decode("utf-8")
         files = [(path, body)]
     else:
         service, timer = systemd_units(python, module_dir, a.base, a.org,
                                        a.interval, log_dir, work_dir,
-                                       a.offline, a.every_hours)
+                                       a.offline, a.every_hours, a.rules)
         files = [(path.replace(".timer", ".service"), service), (path, timer)]
 
     # Shown before it is written. Installing something that runs forever on somebody's

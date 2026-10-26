@@ -343,6 +343,15 @@ def main(argv=None, out=sys.stdout, opener=None, now=None):
     ap.add_argument("--offline", action="store_true",
                     help="run on a local schedule and fetch nothing. The control arm for the "
                          "network: what a sensor is worth on its own")
+    # How new detections arrive. An operator who cannot say no to a rule change is an
+    # operator who will not install this: in a regulated environment, detection logic
+    # changing without a person agreeing is the thing that stops a deployment. Automatic
+    # is the default because a network whose members never update protects nobody, and
+    # manual is one word away and reports what is waiting.
+    ap.add_argument("--rules", choices=("auto", "manual", "off"), default="auto",
+                    help="auto adopts a verified rule bundle when one is published, "
+                         "manual tells you one is waiting and leaves it, off never looks. "
+                         "Default auto")
     ap.add_argument("--every-hours", type=int, default=24,
                     help="with --offline, how often to run the exercise. Default 24")
     ap.add_argument("--org", default=os.environ.get("GUARDIAN_ORG"))
@@ -434,16 +443,29 @@ def _adopt_rules(a, out):
     judging traffic.
     """
     from . import hub, hub_cli, rules
+    choice = getattr(a, "rules", "auto")
+    if choice == "off":
+        return
     before = rules.signatures_fingerprint()
     dest = home.path("rules")
+    args = ["--base", a.base.rstrip("/"), "--dest", dest]
+    if choice == "manual":
+        # Fetched and checked, written nowhere. The member learns a bundle exists and
+        # that it passed every check, and decides.
+        args.append("--dry-run")
     try:
-        code = hub_cli.update(["--base", a.base.rstrip("/"), "--dest", dest],
-                              out=io.StringIO())
+        code = hub_cli.update(args, out=io.StringIO())
     except Exception:  # noqa: BLE001
         # No published bundle is the ordinary case today, and a poll that complains about
         # it every minute is a poll somebody switches off.
         return
     if code != 0:
+        return
+    if choice == "manual":
+        out.write("A verified rule bundle is published and this machine has not adopted "
+                  "it.\n")
+        out.write("It passed every check. To take it:  %s update --base %s\n"
+                  % (called.invocation(), a.base.rstrip("/")))
         return
     after = rules.signatures_fingerprint(os.path.join(dest, "signatures.json"))
     if after == before:

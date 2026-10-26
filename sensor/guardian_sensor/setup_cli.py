@@ -105,7 +105,7 @@ def main(argv=None, out=sys.stdout):
 
     from . import banner
     banner.show(out)
-    out.write("Five questions. Nothing is installed or sent until you have seen it.\n\n")
+    out.write("Six questions. Nothing is installed or sent until you have seen it.\n\n")
 
     # 1. The pseudonym. Asked first because everything else carries it.
     org = _ask("member id", out, validate=_bad_org,
@@ -154,10 +154,27 @@ def main(argv=None, out=sys.stdout):
                       "quietly and run one\nwhen it appears, so there is nothing to see "
                       "until then.\n")
 
+    # How new detections arrive. Asked rather than assumed, because adopting a rule is
+    # the one thing the network does that changes how a member's own machine behaves, and
+    # somebody who cannot say no to that will not install this at all.
+    rule_mode = "auto"
+    if arm != "neither":
+        out.write("\nWhen somebody finds a new attack, a rule for it gets published.\n\n")
+        out.write("  auto    adopt it once it passes every check. how the network \n")
+        out.write("          protects you rather than only telling you\n")
+        out.write("  manual  say one is waiting and leave it for you to run\n")
+        out.write("  off     never look\n\n")
+        out.write("Either way nothing published can tell this machine what to do: a rule\n")
+        out.write("is a file of patterns, checked against the publisher's manifest and\n")
+        out.write("against runaway matching before anything is written.\n\n")
+        rule_mode = _ask("which", out, default="auto",
+                         validate=lambda v: None if v in ("auto", "manual", "off")
+                         else "One of: auto, manual, off.") or "auto"
+
     installed = False
     if arm != "neither":
-        args = ["--org", org] + (["--offline"] if arm == "offline"
-                                 else ["--base", a.base])
+        args = ["--org", org, "--rules", rule_mode] + (["--offline"] if arm == "offline"
+                                                       else ["--base", a.base])
         out.write("\n")
         enroll.main(args + ["--print-only", "--brief"], out=out)
         if _yes("install it", out):
@@ -225,6 +242,7 @@ def main(argv=None, out=sys.stdout):
     out.write("  member id   %s\n" % org)
     out.write("  taking part %s\n" % (arm if installed else "not installed"))
     out.write("  sharing     %s\n" % ("on, at most hourly" if shared else "off"))
+    out.write("  new rules   %s\n" % rule_mode)
     out.write("  records in  %s\n\n" % where)
     out.write("To see what you would share, and share nothing:\n")
     out.write("  %s report --org %s --evidence %s --preview\n\n"
