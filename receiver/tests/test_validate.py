@@ -8,7 +8,10 @@ promised was not there.
 
 Run from the receiver folder:  python3 tests/test_validate.py
 """
+import json
 import os
+import shutil
+import tempfile
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -384,6 +387,43 @@ def test_quiet_is_not_the_same_as_gone():
           "1 have seen nothing" in text, text[:300])
     check("and not reported as gone",
           "stopped reporting" not in text, text[:300])
+
+
+def test_the_export_carries_only_the_eight_fields():
+    """A stored row has more in it than a sighting does.
+
+    The receiver keeps an expiry on every row, which is what drives retention. That is
+    its own bookkeeping and not something a member reported, and handing it to the
+    validator refused the entire export. Correct of the validator; the export's mistake.
+
+    Found the first time four organizations were on the network and the aggregate was
+    run for real, which is the worst moment to find it and the only moment it could have
+    been found: nothing had exercised the path since retention was added.
+    """
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import export
+
+    stored = dict(entry())
+    stored["expires_at"] = "2026-11-25T00:00:00+00:00"
+    stored["key_fingerprint"] = "should not travel either"
+
+    folder = tempfile.mkdtemp()
+    try:
+        export.write({"a-lab": [stored]}, folder)
+        with open(os.path.join(folder, "a-lab", "sightings.json"),
+                  encoding="utf-8") as f:
+            written = json.load(f)
+        for name in ("expires_at", "key_fingerprint"):
+            check("%s does not reach the export" % name,
+                  name not in written["sightings"][0], str(written["sightings"][0]))
+        check("and the eight fields all do",
+              sorted(written["sightings"][0]) == sorted(validate.ALLOWED_FIELDS),
+              str(sorted(written["sightings"][0])))
+        # The point of projecting rather than deleting known extras.
+        check("a field nobody has thought of yet is also left behind",
+              "key_fingerprint" not in json.dumps(written), json.dumps(written)[:200])
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 def main():
