@@ -71,6 +71,37 @@ def test_the_table_is_read_as_the_opt_in():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_a_second_table_is_not_read_as_the_opt_in():
+    """Only one table in the file is the opt-in, and the header is what says which.
+
+    The acknowledged table is Name, GitHub, What. Reading its third cell as an employer
+    published a sentence about somebody's contribution as the place they work: one commit
+    away, Shaun would have been listed as working at "Ran the sensor and reported".
+    Reported by @mwaoi on #245.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        path = write(folder, "CONTRIBUTORS.md", """# Contributors
+
+| Name | GitHub | Organization | Contributions |
+| --- | --- | --- | --- |
+| Dana Reed | [@danareed](https://github.com/danareed) | Example Corp | Patterns |
+
+## Acknowledged, with no commit yet
+
+| Name | GitHub | What |
+| --- | --- | --- |
+| Lee Park | [@leepark](https://github.com/leepark) | Ran the sensor and reported |
+""")
+        rows = builder.from_contributors_file(path)
+        check("the opt-in row is still read", rows["dana reed"]["organization"] == "Example Corp",
+              str(rows.get("dana reed")))
+        check("the acknowledged row is not an opt-in row", "lee park" not in rows,
+              str(sorted(rows)))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def test_a_role_is_not_treated_as_an_organization():
     """Credits say "Founding maintainer" until the company name is cleared. That is a role."""
     folder = tempfile.mkdtemp()
