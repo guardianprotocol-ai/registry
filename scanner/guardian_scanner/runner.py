@@ -153,7 +153,9 @@ def _sensor_config(workdir, canary=None):
     """
     settings = {"mode": "block", "allowlist": ["example.com"],
                 "pins_path": os.path.join(workdir, "pins.json"),
-                "evidence_path": os.path.join(workdir, "evidence.jsonl")}
+                # Named in one place, because a precondition now reads this file to tell a
+                # blocked call apart from an agent that never arrived.
+                "evidence_path": os.path.join(workdir, scenarios.SENSOR_EVIDENCE)}
     if canary:
         store_path = os.path.join(workdir, "canaries.json")
         sensor_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
