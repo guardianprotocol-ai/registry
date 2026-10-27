@@ -64,10 +64,10 @@ class Scenario:
         self.followup_decline = followup_decline
         # What the lab server needs in its environment for this scenario. The warmup that
         # the sensor pins against runs without it, which is what makes "after approval" real.
-        self.env = env
+        self.env = env or {}
         # A value the operator registered with their own sensor. Only GP-0020 needs one,
         # and without it that scenario would be measuring a built-in signature instead.
-        self.canary = canary or {}
+        self.canary = canary
 
     def server_command(self):
         return [sys.executable, LAB_SERVER]

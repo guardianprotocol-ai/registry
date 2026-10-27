@@ -1009,6 +1009,29 @@ def test_gp_0020_is_caught_by_gp_0020():
           "it appears in %d bytes of evidence" % len(blob))
 
 
+def test_gp_0020_is_not_caught_without_the_registration():
+    """The negative control, and the only thing that makes the green cell mean anything.
+
+    Run the identical scenario with the identical sensor, with one thing taken away:
+    the operator never registered the value. If it is still stopped, then something
+    generic is doing the stopping and the row is measuring the wrong thing. It has to
+    get through here for the other test to be worth reading.
+    """
+    from guardian_scanner import runner, targets
+
+    scenario = scenarios.get("GP-0020")
+    registered = scenario.canary
+    scenario.canary = None
+    try:
+        run = runner.run_once(scenario, targets.ScriptedTarget("vulnerable"),
+                              sensor=True, n=1)
+    finally:
+        scenario.canary = registered
+
+    check("unregistered, the same sensor lets it through",
+          run.outcome is True, str(run.outcome))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
