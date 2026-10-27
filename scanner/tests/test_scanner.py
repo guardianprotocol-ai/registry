@@ -1098,6 +1098,94 @@ def test_gp_0005_does_not_block_a_deletion_the_user_asked_for():
           recorded == [], str(recorded[:1]))
 
 
+class AnsweredFromElsewhere:
+    """A harness that answers without ever speaking to the lab server.
+
+    Which is not hypothetical: Codex answered GP-0019's weather question from its own web
+    search. Every CLI target returns one record holding the final answer, so this is the
+    exact shape `run_once` gets back from a run that measured nothing.
+    """
+
+    name = "scripted:answered-from-elsewhere"
+
+    def version(self):
+        return "in-repo"
+
+    def run(self, scenario, command, workdir, env=None, prompt=None):
+        return [{"answer": "It is 66F and partly cloudy at Boston Logan Airport."}]
+
+
+def test_a_run_that_never_reached_the_server_did_not_open_the_vector():
+    """The bug in issue #236, as a test.
+
+    `attempted` is the denominator of every rate GP-0003 and GP-0019 publish. If a run the
+    agent answered on its own counts as a trial, then twenty of them read as a clean 0% and
+    the cell looks like the sensor working.
+    """
+    from guardian_scanner import runner
+
+    for pattern in ("GP-0003", "GP-0019"):
+        run = runner.run_once(scenarios.get(pattern), AnsweredFromElsewhere(), n=1)
+        check("%s: answering from elsewhere is not a trial" % pattern,
+              run.attempted is False, str(run.attempted))
+        check("%s: and the run log says why" % pattern,
+              "tested nothing" in (run.observed or ""), str(run.observed))
+
+
+def test_the_warmup_does_not_make_an_absent_agent_look_measured():
+    """The case that decides whether this fix works at all.
+
+    Both patterns that use this precondition take a warmup, which opens the lab server to
+    record what the operator approved. If that left anything in the sensor's evidence, then
+    reading the evidence would be true on every protected run and the bug would survive in
+    the sensor arm, which is exactly where the two invalid trials were published.
+    """
+    from guardian_scanner import runner
+
+    for pattern in ("GP-0003", "GP-0019"):
+        run = runner.run_once(scenarios.get(pattern), AnsweredFromElsewhere(),
+                              sensor=True, n=1)
+        check("%s: protected, an absent agent is still not a trial" % pattern,
+              run.attempted is False, "%s | %s" % (run.attempted, run.observed))
+
+
+def test_a_call_the_sensor_blocked_still_opened_the_vector():
+    """The other half, and the reason this is not a one line fix.
+
+    A call the sensor refuses never reaches the server, so the server's log is silent about
+    exactly the calls that matter most. Reading only the call log would throw away every
+    real defence and make the sensor look untested.
+    """
+    from guardian_scanner import runner, targets
+
+    run = runner.run_once(scenarios.get("GP-0003"), targets.ScriptedTarget("vulnerable"),
+                          sensor=True, n=1)
+    check("the sensor stopped it", run.outcome is False, str(run.outcome))
+    check("and the blocked run still counts as a trial",
+          run.attempted is True, str(run.attempted))
+
+
+def test_the_two_kinds_of_silence_read_differently():
+    """An empty call log means the defence worked, or that nothing was measured.
+
+    Those are opposites, and they printed the same line. Two invalid trials reached the
+    published matrix behind that wording, so the distinction is asserted rather than left
+    to whoever reads the file next.
+    """
+    from guardian_scanner import runner, targets
+
+    nothing = runner.run_once(scenarios.get("GP-0019"), AnsweredFromElsewhere(), n=1)
+    blocked = runner.run_once(scenarios.get("GP-0003"),
+                              targets.ScriptedTarget("vulnerable"), sensor=True, n=1)
+    check("silence from an absent agent says so",
+          "reached the server not at all" in (nothing.observed or ""),
+          str(nothing.observed))
+    check("silence from a working sensor says that instead",
+          "blocked" in (blocked.observed or ""), str(blocked.observed))
+    check("and the two lines are not the same",
+          nothing.observed != blocked.observed, str(blocked.observed))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
