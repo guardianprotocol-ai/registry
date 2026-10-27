@@ -35,3 +35,22 @@ alphabetical under `GOVERNANCE.md`.
 | Max Greenfeld | [@clearvan](https://github.com/clearvan) | | GP-0009 made runnable across two sessions |
 | Vamsi-1 | [@Vamsi-2581](https://github.com/Vamsi-2581) | Individual | MITRE ATLAS coverage triage |
 | Chidi Williams | [@chidiwilliams](https://github.com/chidiwilliams) | | Codex CLI as the third measured harness, and the first cross-vendor difference in the matrix |
+
+## Acknowledged, with no commit yet
+
+Some contributions leave no `Signed-off-by` line and so never reach the generated list.
+A report that turns out to be right is one of them, and so is running the sensor and
+sending what it saw: the measurement in the paper does not exist without organizations
+willing to be one of its data points.
+
+This section is maintained by hand for exactly that reason, and anyone here moves into
+the table above the moment they have a commit.
+
+Member ids are never written beside names, here or anywhere else. A member id is the
+pseudonym a member's sightings travel under, and publishing the pair would undo the only
+thing that pseudonym is for.
+
+| Name | GitHub | What |
+| --- | --- | --- |
+| Michael | [@mwaoi](https://github.com/mwaoi) | Reported that the sensor misses an instruction that outlives its session (GP-0004), and asked for attack and benign cases against an existing rule. Both led to merged fixes |
+| Shaun Karakkattu | | Ran the sensor and reported, as one of the organizations in the Season 1 exchange |
