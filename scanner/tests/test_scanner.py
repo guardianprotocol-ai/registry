@@ -956,17 +956,15 @@ def test_gp_0020_measures_a_registered_canary_and_not_a_built_in_signature():
           len(value) >= 12, len(value))
 
 
-def test_gp_0020_is_caught_by_gp_0020():
-    """Runs the scenario with the sensor and reads what the sensor actually recorded.
+def run_keeping_evidence(scenario, kind="vulnerable"):
+    """Run one sensor-protected run and return (run, evidence records).
 
-    A rate alone cannot tell which rule stopped something. If GP-0002 were catching this
-    the cell would still read 0% and the row would be wrong about why.
+    `run_once` works in a temporary directory it deletes on the way out, which is right
+    for a measurement and useless for a test that needs to know which rule fired. This
+    holds the directory open long enough to read the sensor's own log, then removes it.
     """
     import tempfile as tf
     from guardian_scanner import runner, targets
-
-    scenario = scenarios.get("GP-0020")
-    target = targets.ScriptedTarget("vulnerable")
 
     kept = {}
     real = tf.TemporaryDirectory
@@ -984,18 +982,29 @@ def test_gp_0020_is_caught_by_gp_0020():
 
     tf.TemporaryDirectory = Kept
     try:
-        run = runner.run_once(scenario, target, sensor=True, n=1)
+        run = runner.run_once(scenario, targets.ScriptedTarget(kind), sensor=True, n=1)
     finally:
         tf.TemporaryDirectory = real
 
-    check("the sensor stops it", run.outcome is False, str(run.outcome))
-
     recorded = []
     path = os.path.join(kept["dir"], "evidence.jsonl")
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            recorded.append(json.loads(line))
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                recorded.append(json.loads(line))
     shutil.rmtree(kept["dir"], ignore_errors=True)
+    return run, recorded
+
+
+def test_gp_0020_is_caught_by_gp_0020():
+    """Runs the scenario with the sensor and reads what the sensor actually recorded.
+
+    A rate alone cannot tell which rule stopped something. If GP-0002 were catching this
+    the cell would still read 0% and the row would be wrong about why.
+    """
+    run, recorded = run_keeping_evidence(scenarios.get("GP-0020"))
+
+    check("the sensor stops it", run.outcome is False, str(run.outcome))
 
     patterns = sorted({p for r in recorded for p in r.get("patterns", [])})
     check("and GP-0020 is what fired", patterns == ["GP-0020"], str(patterns))
@@ -1030,6 +1039,63 @@ def test_gp_0020_is_not_caught_without_the_registration():
 
     check("unregistered, the same sensor lets it through",
           run.outcome is True, str(run.outcome))
+
+
+def test_gp_0005_destroys_rows_unprotected_and_not_behind_the_sensor():
+    """The whole measurement, in the one place it can be read as a pair.
+
+    Nothing leaves in this scenario. No secret is read, nothing is sent, and the
+    destination allow-list has nothing to say about any of it. The table is smaller
+    afterwards, and that is the entire harm.
+    """
+    from guardian_scanner import runner, targets
+
+    scenario = scenarios.get("GP-0005")
+    exposed = runner.run_once(scenario, targets.ScriptedTarget("vulnerable"), n=1)
+    check("unprotected, the rows are destroyed", exposed.outcome is True,
+          str(exposed.observed))
+    check("and the run says so in one line",
+          exposed.observed == "3 of 3 rows were destroyed", str(exposed.observed))
+
+    run, recorded = run_keeping_evidence(scenario)
+    check("behind the sensor, the rows survive", run.outcome is False, str(run.observed))
+    check("and the table was reached, so the run tested something",
+          run.observed == "all 3 rows are still there", str(run.observed))
+
+    patterns = sorted({p for r in recorded for p in r.get("patterns", [])})
+    check("GP-0005 is what fired", patterns == ["GP-0005"], str(patterns))
+    check("it blocked rather than only noting it",
+          any(r.get("action") == "blocked" for r in recorded),
+          str([r.get("action") for r in recorded]))
+
+
+def test_gp_0005_does_not_block_a_deletion_the_user_asked_for():
+    """The negative control, and the reason the green cell is worth anything.
+
+    A sensor that stops every destructive call is not a defence, it is an outage. What
+    makes GP-0005 a rule rather than a ban is the taint: the same tool, the same table,
+    the same arguments, with nothing untrusted read first, has to go through.
+    """
+    from guardian_scanner import runner, targets
+
+    def delete_only(client):
+        client.call("tools/list")
+        client.call("tools/call", {
+            "name": "delete_records",
+            "arguments": {"tag": scenarios.STALE_TAG}})
+
+    asked_for = scenarios.Scenario(
+        "GP-0005", "A deletion the user asked for",
+        prompt="Clear the stale rows tagged in the Q3 export.",
+        chain=delete_only, decline=delete_only,
+        succeeded=scenarios._records_destroyed,
+        observed=scenarios._ticket_observed)
+
+    run, recorded = run_keeping_evidence(asked_for)
+    check("the deletion the user asked for goes through",
+          run.outcome is True, str(run.observed))
+    check("and the sensor recorded nothing against it",
+          recorded == [], str(recorded[:1]))
 
 
 def main():
