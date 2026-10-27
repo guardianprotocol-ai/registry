@@ -27,10 +27,15 @@ def _model_verified_on(name):
     return getattr(_target_class(name), "model_verified_on", "") or "an earlier date"
 
 
-def _target(name, model=None):
+def _target(name, model=None, access_program=None):
     make = targets.REGISTRY.get(name)
     if make:
-        return make(model=model) if model else make()
+        kwargs = {}
+        if model:
+            kwargs["model"] = model
+        if access_program:
+            kwargs["access_program"] = access_program
+        return make(**kwargs)
     raise SystemExit(f"unknown target {name!r}. Run 'python3 -m guardian_scanner targets' "
                      "to see what this machine can run.")
 
@@ -60,6 +65,9 @@ def main(argv=None):
     r.add_argument("--model", default=None,
                    help="pin the harness to one model, for example opus or claude-opus-5. "
                         "Recorded as the model in the result file")
+    r.add_argument("--access-program", default=None, metavar="PROGRAM",
+                   help="codex-cli only: a cyber access program, for example daybreak_blue. "
+                        "Recorded beside the model, so it gets its own row")
     r.add_argument("--json", action="store_true")
     r.add_argument("--record", default=None, metavar="DIR",
                    help="write a result file per pattern into DIR, usually ../results")
@@ -164,7 +172,9 @@ def main(argv=None):
 
     # Named 'measured', not 'results': the module of that name is imported above, and a
     # local would shadow it for the whole function, including the branch that uses it.
-    target = _target(a.target, getattr(a, "model", None))
+    if a.access_program and a.target != "codex-cli":
+        raise SystemExit("--access-program is a Codex CLI option, and only codex-cli takes it.")
+    target = _target(a.target, getattr(a, "model", None), a.access_program)
     measured = runner.run_all(target, repeat=a.repeat, sensor=a.sensor, only=only,
                               until_attempted=a.until_attempted, max_runs=a.max_runs)
     print(report.results_json(measured) if a.json

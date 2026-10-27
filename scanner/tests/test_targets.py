@@ -16,7 +16,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from guardian_scanner import scenarios, targets  # noqa: E402
+from guardian_scanner import results, scenarios, targets  # noqa: E402
 
 failures = []
 
@@ -430,6 +430,26 @@ def test_a_model_can_be_pinned_and_is_recorded_as_asked_for():
         argv = c.argv("hello", c.mcp_config(LAB, folder, {}))
         check("codex-cli passes the model through",
               "--model" in argv and "gpt-6-luna" in argv, str(argv))
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_codex_access_program_is_passed_and_recorded_as_its_own_condition():
+    plain = targets.codex_cli(model="gpt-6-sol")
+    folder = tempfile.mkdtemp()
+    try:
+        check("no access program unless asked",
+              "--cyber-access-program" not in plain.argv("hello", plain.mcp_config(LAB, folder, {})))
+        c = targets.codex_cli(model="gpt-6-sol", access_program="daybreak_blue")
+        argv = c.argv("hello", c.mcp_config(LAB, folder, {}))
+        at = argv.index("--cyber-access-program") if "--cyber-access-program" in argv else -1
+        check("codex-cli passes the access program to exec",
+              at > argv.index("exec") and argv[at + 1] == "daybreak_blue", str(argv))
+        check("and the prompt stays last", argv[-1] == "hello", str(argv[-3:]))
+        check("the access program is recorded beside the model",
+              c.model_requested() == "gpt-6-sol (daybreak_blue)", c.model_requested())
+        check("so it never shares a filename with the plain model",
+              results.slug(c.model_requested()) != results.slug(plain.model_requested()))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
 

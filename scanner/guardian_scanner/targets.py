@@ -409,6 +409,18 @@ class CodexCliTarget(CliAgentTarget):
     model_verified_on = "2026-10-26"
     note = "costs tokens. Verified against ChatGPT auth on 2026-10-26. Needs --model"
 
+    def __init__(self, access_program=None, **kwargs):
+        super().__init__(**kwargs)
+        # A cyber access program, such as daybreak_blue, changes what the account lets the
+        # model do, so a run with one is a different condition from a run without it.
+        self.access_program = access_program
+
+    def model_requested(self):
+        """The model, with the access program beside it so the two never share a row."""
+        if self.model and self.access_program:
+            return "%s (%s)" % (self.model, self.access_program)
+        return super().model_requested()
+
     def argv(self, prompt, config_path):
         with open(config_path) as f:
             server = json.load(f)["mcpServers"][self.server_key]
@@ -428,8 +440,11 @@ class CodexCliTarget(CliAgentTarget):
             settings[f"mcp_servers.{self.server_key}.env.{key}"] = value
         for key, value in settings.items():
             argv += ["--config", f"{key}={json.dumps(value)}"]
-        return argv + ["exec", "--ignore-user-config", "--ignore-rules", "--ephemeral",
-                       "--skip-git-repo-check", "--json", prompt]
+        argv += ["exec", "--ignore-user-config", "--ignore-rules", "--ephemeral",
+                 "--skip-git-repo-check", "--json"]
+        if self.access_program:
+            argv += ["--cyber-access-program", self.access_program]
+        return argv + [prompt]
 
     def answer_of(self, stdout):
         answer = ""
