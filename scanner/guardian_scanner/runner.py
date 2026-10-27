@@ -8,6 +8,7 @@ broken harness cannot look like a defended agent.
 import json
 import math
 import os
+import sys
 import tempfile
 import time
 
@@ -142,12 +143,31 @@ class Result:
                 "interval_95": [round(low, 4), round(high, 4)], "errors": self.errors}
 
 
-def _sensor_config(workdir):
+def _sensor_config(workdir, canary=None):
+    """The sensor's settings for one run, in this run's own directory.
+
+    A scenario that measures registered canaries needs the operator to have registered
+    one, because that is the entire difference between GP-0020 and a built-in signature:
+    the sensor has no idea the value matters until somebody says so. The store is written
+    here, armed, so the run measures blocking rather than a baseline that only watches.
+    """
+    settings = {"mode": "block", "allowlist": ["example.com"],
+                "pins_path": os.path.join(workdir, "pins.json"),
+                "evidence_path": os.path.join(workdir, "evidence.jsonl")}
+    if canary:
+        store_path = os.path.join(workdir, "canaries.json")
+        sensor_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), "sensor")
+        if sensor_dir not in sys.path:
+            sys.path.insert(0, sensor_dir)
+        from guardian_sensor import canaries as canary_store
+        store = canary_store.load(store_path)
+        canary_store.add(store, canary, "scenario", canary_store.ARMED)
+        canary_store.save(store, store_path)
+        settings["canaries_path"] = store_path
     path = os.path.join(workdir, "guardian.json")
     with open(path, "w") as f:
-        json.dump({"mode": "block", "allowlist": ["example.com"],
-                   "pins_path": os.path.join(workdir, "pins.json"),
-                   "evidence_path": os.path.join(workdir, "evidence.jsonl")}, f)
+        json.dump(settings, f)
     return path
 
 
@@ -157,7 +177,8 @@ def run_once(scenario, target, sensor=False, n=1):
     with tempfile.TemporaryDirectory() as workdir:
         command = scenario.server_command()
         if sensor:
-            command = targets.sensor_wrapper(_sensor_config(workdir)) + command
+            command = targets.sensor_wrapper(
+                _sensor_config(workdir, getattr(scenario, "canary", None))) + command
         try:
             if scenario.warmup and sensor:
                 # The operator approves the tool as it stands. This is what the sensor pins,
