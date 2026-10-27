@@ -18,7 +18,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Map | Covered by a pattern | 20 |
 | Map | Marked not testable at runtime | 0 |
 | Map | Still open | 43 |
-| Prove | With a runnable test | 10 |
+| Prove | With a runnable test | 11 |
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 10 |
 
@@ -87,7 +87,7 @@ The benign corpus holds 20 cases of ordinary work that no rule may flag. It is s
 | `AML.T0098` | AI Agent Tool Credential Harvesting | GP-0007 | no | yes | no | covered |
 | `AML.T0099` | AI Agent Tool Data Poisoning |  | no | no | no | open |
 | `AML.T0100` | AI Agent Clickbait |  | no | no | no | open |
-| `AML.T0101` | Data Destruction via AI Agent Tool Invocation | GP-0005 | no | yes | no | covered |
+| `AML.T0101` | Data Destruction via AI Agent Tool Invocation | GP-0005 | yes | yes | no | covered |
 | `AML.T0103` | Deploy AI Agent |  | no | no | no | open |
 | `AML.T0108` | AI Agent |  | no | no | no | open |
 | `AML.T0110` | AI Agent Tool Poisoning |  | no | no | no | open |
