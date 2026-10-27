@@ -6,6 +6,7 @@ New here? [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes, an
 
 ## Ways to contribute
 
+- **Write a harness target, which is the most useful thing here.** Two short methods let the scan drive an agent you already use, and each one turns patterns nobody has measured on your stack into rows with rates and intervals. Three exist: Claude Code, Gemini CLI and Codex CLI. Cursor, Ollama and a custom framework like LangGraph are unclaimed. See [TEST_YOUR_AGENT.md](TEST_YOUR_AGENT.md), which also shows how to scan your own agent without writing anything.
 - **Review a coverage row.** Check how a MITRE ATLAS technique is triaged in `coverage/atlas-coverage.csv`.
 - **Write a pattern.** A test plus a detection for an attack not yet in the registry. See `README.md` for the format and checks.
 - **Improve the sensor or tooling.** Bug fixes, new transports, client hooks, tests.
@@ -19,7 +20,7 @@ Report live attacks and vulnerabilities privately, never in a public issue. See 
 2. Fork the repository and create a branch from the latest `main`. Contributors work in their own forks; only maintainers merge into this repository.
 3. Make your change. Keep each pull request to one idea. Run `python3 check.py` before you push. For a new attack pattern, start with `python3 check.py new-pattern "Title of the attack"`, which takes the next free ID and the boilerplate.
 4. Sign off every commit under the Developer Certificate of Origin (below).
-5. Open a pull request with the evidence that it works: `check.py` output, a scanner run, or the corpus cases you added. Automatic checks run, then reviewers from `.github/CODEOWNERS` review it.
+5. Open a pull request with the evidence that it works: `check.py` output, a scanner run, or the corpus cases you added. Automatic checks run, then it is reviewed by whoever `.github/CODEOWNERS` names for the files you touched. There are no reviewers beyond the founding maintainer yet, so today that is him; `GOVERNANCE.md` says how that changes.
 6. A maintainer merges once checks pass and reviews are complete. Nobody merges their own change.
 
 ## What the checks enforce
