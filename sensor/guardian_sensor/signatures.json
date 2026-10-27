@@ -4,7 +4,7 @@
   "instruction": [
     {
       "id": "addressed-to-agent",
-      "pattern": "\\b(assistant|ai|agent)\\s*[:,]\\s*\\w+",
+      "pattern": "(?<![\\w-])(assistant|ai|agent)\\s*[:,]\\s*\\w+",
       "flags": "is"
     },
     {

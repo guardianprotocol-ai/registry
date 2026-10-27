@@ -27,7 +27,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def load_engine(sensor_dir):
+    """The rule engine, pinned to this repository's signatures.
+
+    A sensor prefers a bundle the member adopted from the network, which is correct for
+    a sensor and wrong for a gate that exists to judge this repository. Without the pin,
+    a maintainer who had ever run the poller was testing whatever their machine last
+    adopted: edits to signatures.json had no effect on the result, and a rule change
+    could be verified green without the change ever being loaded.
+
+    It fails in the dangerous direction, so it is pinned here rather than left to
+    whoever runs it to remember.
+    """
     sys.path.insert(0, os.path.abspath(sensor_dir))
+    os.environ["GUARDIAN_SIGNATURES"] = os.path.join(
+        os.path.abspath(sensor_dir), "guardian_sensor", "signatures.json")
     return importlib.import_module("guardian_sensor.rules")
 
 
