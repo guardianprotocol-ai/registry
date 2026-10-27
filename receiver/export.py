@@ -43,8 +43,16 @@ def write(by_org, out):
     """
     written = 0
     for org, entries in sorted(by_org.items()):
+        # Only the eight fields. A stored row also carries the receiver's own
+        # bookkeeping, the expiry that drives retention, and that is not a sighting:
+        # handing it to the validator refused the whole export, which is correct of the
+        # validator and was the export's mistake.
+        #
+        # Projecting rather than deleting known extras, so a field added to storage
+        # later cannot leak into an exported document by nobody remembering this.
+        clean = [{f: e[f] for f in validate.ALLOWED_FIELDS if f in e} for e in entries]
         document = {"schema_version": "0.2", "org": org,
-                    "sightings": sorted(entries, key=validate.key_for)}
+                    "sightings": sorted(clean, key=validate.key_for)}
         validate.check_document(document)
         folder = os.path.join(out, org)
         os.makedirs(folder, exist_ok=True)
