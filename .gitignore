@@ -10,3 +10,10 @@ contributors.json
 .env.*
 *.key
 *.pem
+
+# Artefacts the lab server writes when a scenario or drill runs from the repository
+# root. One of these reached a pull request, which is how it got noticed.
+calls.jsonl
+sinkhole.jsonl
+agent-inbox.jsonl
+memory.jsonl

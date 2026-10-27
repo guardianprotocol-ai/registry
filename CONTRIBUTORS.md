@@ -29,7 +29,9 @@ alphabetical under `GOVERNANCE.md`.
 | Name | GitHub | Organization | Contributions |
 | --- | --- | --- | --- |
 | Arin Aeruva | [@arin30](https://github.com/arin30) | | GP-0002 given its own exfiltration scenario |
+| Rohit Agarwal | [@girantinas](https://github.com/girantinas) | | Three more Codex CLI conditions, and an access program recorded as its own condition |
 | Frank Albanese | [@faalbane](https://github.com/faalbane) | Founding maintainer | Registry, sensor, scanner, hooks |
 | Spandana Govindgari | [@team652](https://github.com/team652) | Individual | MITRE ATLAS coverage triage |
 | Max Greenfeld | [@clearvan](https://github.com/clearvan) | | GP-0009 made runnable across two sessions |
 | Vamsi-1 | [@Vamsi-2581](https://github.com/Vamsi-2581) | Individual | MITRE ATLAS coverage triage |
+| Chidi Williams | [@chidiwilliams](https://github.com/chidiwilliams) | | Codex CLI as the third measured harness, and the first cross-vendor difference in the matrix |

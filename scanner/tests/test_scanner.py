@@ -927,6 +927,111 @@ def test_sensor_also_blocks_a_benign_config_write_after_taint():
           str(protected.dimensions))
 
 
+def test_gp_0020_measures_a_registered_canary_and_not_a_built_in_signature():
+    """The whole difference between GP-0020 and GP-0002 is who decided the value matters.
+
+    A built-in signature recognises a secret by its shape. A registered canary is a
+    string the sensor has no opinion about until an operator says it matters. If the
+    scenario's value were recognisable on its own, a green run would prove the secret
+    patterns work and say nothing about registered canaries, which is the only thing
+    this scenario exists to measure.
+    """
+    sys.path.insert(0, os.path.join(REPO, "sensor"))
+    from guardian_sensor import rules
+
+    value = scenarios.OPERATOR_CANARY
+    # Failure details are counts, never the value. A test that prints a canary when it
+    # fails puts that canary in the CI log of every fork, and a canary somebody can read
+    # is a canary nobody can use twice.
+    check("no built-in signature recognises the value",
+          rules.find_secrets(value) == [],
+          "%d built-in signatures matched it" % len(rules.find_secrets(value)))
+    check("and nothing else in the engine does either",
+          not rules.has_instructions(value), "the engine read it as an instruction")
+
+    scenario = scenarios.get("GP-0020")
+    check("the scenario registers it with the sensor",
+          scenario.canary == value, str(scenario.canary))
+    check("and it is long enough to be a canary at all",
+          len(value) >= 12, len(value))
+
+
+def test_gp_0020_is_caught_by_gp_0020():
+    """Runs the scenario with the sensor and reads what the sensor actually recorded.
+
+    A rate alone cannot tell which rule stopped something. If GP-0002 were catching this
+    the cell would still read 0% and the row would be wrong about why.
+    """
+    import tempfile as tf
+    from guardian_scanner import runner, targets
+
+    scenario = scenarios.get("GP-0020")
+    target = targets.ScriptedTarget("vulnerable")
+
+    kept = {}
+    real = tf.TemporaryDirectory
+
+    class Kept:
+        def __init__(self, *a, **k):
+            self.name = tf.mkdtemp()
+            kept["dir"] = self.name
+
+        def __enter__(self):
+            return self.name
+
+        def __exit__(self, *a):
+            return False
+
+    tf.TemporaryDirectory = Kept
+    try:
+        run = runner.run_once(scenario, target, sensor=True, n=1)
+    finally:
+        tf.TemporaryDirectory = real
+
+    check("the sensor stops it", run.outcome is False, str(run.outcome))
+
+    recorded = []
+    path = os.path.join(kept["dir"], "evidence.jsonl")
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            recorded.append(json.loads(line))
+    shutil.rmtree(kept["dir"], ignore_errors=True)
+
+    patterns = sorted({p for r in recorded for p in r.get("patterns", [])})
+    check("and GP-0020 is what fired", patterns == ["GP-0020"], str(patterns))
+    check("it blocked rather than only noting it",
+          any(r.get("action") == "blocked" for r in recorded), str(recorded[:1]))
+    # The label travels; the value never does. Evidence about a canary that contains the
+    # canary would be a canary nobody can use twice.
+    blob = json.dumps(recorded)
+    check("the value itself is not in the evidence",
+          scenarios.OPERATOR_CANARY not in blob,
+          "it appears in %d bytes of evidence" % len(blob))
+
+
+def test_gp_0020_is_not_caught_without_the_registration():
+    """The negative control, and the only thing that makes the green cell mean anything.
+
+    Run the identical scenario with the identical sensor, with one thing taken away:
+    the operator never registered the value. If it is still stopped, then something
+    generic is doing the stopping and the row is measuring the wrong thing. It has to
+    get through here for the other test to be worth reading.
+    """
+    from guardian_scanner import runner, targets
+
+    scenario = scenarios.get("GP-0020")
+    registered = scenario.canary
+    scenario.canary = None
+    try:
+        run = runner.run_once(scenario, targets.ScriptedTarget("vulnerable"),
+                              sensor=True, n=1)
+    finally:
+        scenario.canary = registered
+
+    check("unregistered, the same sensor lets it through",
+          run.outcome is True, str(run.outcome))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
