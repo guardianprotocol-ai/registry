@@ -218,6 +218,34 @@ def test_a_server_added_at_user_scope_is_found_and_protected():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_the_settings_point_at_the_records_the_tools_read():
+    """A detection that nothing can collect is not a detection anybody will ever see.
+
+    The hook defaults its evidence and state to a relative `.guardian/`, which is right
+    when somebody runs it by hand and wrong once it is installed in a client: it then
+    writes into whatever directory the agent is working in, while status, report and
+    share all read the member's home.
+
+    Found by installing the hooks, catching a real chain in a live session, and then
+    watching `report --preview` report no entries at all.
+    """
+    folder = tempfile.mkdtemp()
+    try:
+        path, created = protect_cli.ensure_config(root=folder, out=io.StringIO())
+        settings = json.load(open(path, encoding="utf-8"))
+        check("it was written", created and os.path.exists(path))
+        for key in ("evidence_path", "state_dir"):
+            value = settings.get(key, "")
+            check("%s is set" % key, bool(value), str(settings))
+            check("%s is absolute, so the agent's directory cannot move it" % key,
+                  os.path.isabs(value), value)
+            check("%s is under the member's own records" % key,
+                  value.startswith(folder), value)
+        check("it still starts in monitor mode", settings["mode"] == "monitor")
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def test_a_flat_config_works_too():
     """Desktop, Cursor and Windsurf keep one table rather than one per project."""
     folder, path, previous = with_config(
