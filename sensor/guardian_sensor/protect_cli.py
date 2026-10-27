@@ -40,15 +40,32 @@ def ensure_config(root=None, out=sys.stdout):
     path = config_path(root)
     if os.path.exists(path):
         return path, False
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    where = os.path.dirname(path)
+    os.makedirs(where, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump({"mode": "monitor",
                    "allowlist": [],
+                   # Absolute, and pointed at the member's own records.
+                   #
+                   # The hook defaults both of these to a relative `.guardian/`, which is
+                   # right for running it by hand and wrong for a service: a hook installed
+                   # in a client writes to whatever directory the agent happens to be
+                   # working in. Detections then scatter across the user's projects, and
+                   # `status`, `report` and `share` read the member's home and find
+                   # nothing. A real detection could be made and never reach the exchange.
+                   #
+                   # Found by installing the hooks, catching a real taint-then-act chain in
+                   # a live session, and then watching `report --preview` say "Entries: 0".
+                   "evidence_path": os.path.join(where, "evidence.jsonl"),
+                   "state_dir": os.path.join(where, "hook-state"),
                    "_mode": ("monitor records and allows. Change to block once you trust "
                              "it, and a detection will stop the call instead."),
                    "_allowlist": ("domains your agents may send data to. Anything else "
                                   "counts as outside when a tool result carried "
-                                  "instructions.")}, f, indent=2, sort_keys=True)
+                                  "instructions."),
+                   "_evidence_path": ("where detections are written. The same file "
+                                      "status, report and share read."),
+                   }, f, indent=2, sort_keys=True)
         f.write("\n")
     return path, True
 
