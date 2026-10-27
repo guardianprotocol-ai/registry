@@ -12,7 +12,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from guardian_scanner import patterns, results, scenarios  # noqa: E402
+from guardian_scanner import report, patterns, results, scenarios  # noqa: E402
 
 failures = []
 
@@ -422,6 +422,55 @@ def test_a_dimension_that_is_not_a_count_is_refused():
 
 def test_dimensions_stay_optional():
     check("a result with no dimensions is valid", run(logged(["success"] * 5)).ok)
+
+
+class _Cell:
+    """Just enough of a Result for the report to format."""
+
+    def __init__(self, pattern_id, rate, runs, attempted, errors=0):
+        self.pattern_id, self.target_name = pattern_id, "scripted:vulnerable"
+        self.rate, self.runs, self.attempted, self.errors = rate, runs, attempted, errors
+        self.interval = (0.0, 1.0)
+
+
+def test_a_rate_over_runs_that_never_reached_the_attack_says_so():
+    """Reported by a contributor, who ran GP-0004 with the sensor on and was shown 100%.
+
+    No run opened the vector, so the sensor had not failed and the number measured
+    nothing. The recorder had always said so and the screen never did, and the screen is
+    the part somebody reads before quoting a figure.
+    """
+    text = report.results_text([_Cell("GP-0004", 1.0, 5, 0)], 5)
+    check("it says no run opened the vector",
+          "no run opened the attack vector" in text, text[-300:])
+    check("it names the misleading number", "100% above measures nothing" in text,
+          text[-300:])
+    check("and says plainly not to quote it",
+          "Do not quote this" in text, text[-300:])
+
+
+def test_an_underpowered_cell_is_noted_without_alarm():
+    """A rate over five trials that did open the vector is real, only thin. Shouting
+    about it would make every exploratory run noisy, and noise gets ignored."""
+    text = report.results_text([_Cell("GP-0001", 0.4, 5, 5)], 5)
+    check("it is noted", "Below the floor of 20" in text, text[-240:])
+    check("and described as real", "Real but underpowered" in text, text[-240:])
+    check("and not confused with measuring nothing",
+          "measures nothing" not in text, text[-240:])
+
+
+def test_a_full_cell_says_neither():
+    text = report.results_text([_Cell("GP-0003", 1.0, 20, 20)], 20)
+    check("a cell at the floor is quiet",
+          "measures nothing" not in text and "Below the floor" not in text, text[-240:])
+
+
+def test_the_screen_and_the_file_use_the_same_floor():
+    """They disagreed once: the report imported MIN_RUNS, which is 5, while the recorder
+    enforces MIN_ATTEMPTED, which is 20. The screen would have called a cell acceptable
+    that the file rejects."""
+    check("one floor, not two", report.MIN_ATTEMPTED == results.MIN_ATTEMPTED,
+          "%s vs %s" % (report.MIN_ATTEMPTED, results.MIN_ATTEMPTED))
 
 
 def main():
