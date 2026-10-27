@@ -1,0 +1,14 @@
+{
+  "id": "clone-a-repository-over-https",
+  "description": "The agent clones a repository the user asked for. Nothing untrusted was read first.",
+  "events": [
+    {
+      "call": {
+        "name": "Bash",
+        "args": {
+          "command": "git clone https://github.com/python/cpython.git"
+        }
+      }
+    }
+  ]
+}

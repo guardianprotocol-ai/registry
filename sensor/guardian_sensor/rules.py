@@ -178,6 +178,13 @@ BASE64_BLOB = _compile(_S["hidden"]["base64_blob"])
 
 DESTINATION_KEYS = set(_S["destination_keys"])
 PATH_KEYS = set(_S["path_keys"])
+# A shell command arrives as one string under one key, so every rule that reads argument
+# names saw nothing in it. The hook exists for the tools a proxy cannot see, and shell is
+# the largest of them, so that was the gap doing the most work.
+# Defaulted rather than indexed. A member running an adopted bundle from before this key
+# existed would otherwise get a KeyError on import, which takes their sensor down to add a
+# rule. A bundle may always be older than the engine reading it.
+COMMAND_KEYS = set(_S.get("command_keys") or ("code", "cmd", "command", "script"))
 DESTRUCTIVE_TOOL = _compile(_S["tool_classes"]["destructive"])
 MEMORY_TOOL = _compile(_S["tool_classes"]["memory"])
 AGENT_TOOL = _compile(_S["tool_classes"]["agent"])
@@ -229,9 +236,45 @@ def find_secrets(text: str):
     return [r.pattern for r in SECRET_RES if r.search(text or "")]
 
 
+def commands_in(args) -> list:
+    """Shell commands among these arguments, as strings."""
+    out = []
+    if isinstance(args, dict):
+        for k, v in args.items():
+            if k.lower() in COMMAND_KEYS and isinstance(v, str):
+                out.append(v)
+            elif isinstance(v, (dict, list)):
+                out.extend(commands_in(v))
+    elif isinstance(args, list):
+        for v in args:
+            out.extend(commands_in(v))
+    return out
+
+
+def paths_in_command(command: str) -> list:
+    """Path looking words in a shell command.
+
+    Split rather than matched with a pattern. A regular expression over attacker
+    controlled command text is where catastrophic backtracking comes from, and this
+    only has to over-collect safely: a word is a candidate, and SENSITIVE_PATHS is what
+    decides whether it matters.
+    """
+    out = []
+    for word in (command or "").split():
+        word = word.strip("\"'`,;()<>").lstrip("@")
+        if "/" in word and not word.startswith("-"):
+            out.append(word)
+    return out
+
+
 def destinations(args) -> list:
     """Collect values that look like where data is being sent."""
     out = []
+    # A URL inside a shell command is a destination as surely as one in a `url` argument.
+    # It still only matters to a rule that also requires taint, so an ordinary fetch in an
+    # untainted session raises nothing.
+    for command in commands_in(args):
+        out.extend(URL_RE.findall(command))
     if isinstance(args, dict):
         for k, v in args.items():
             if k.lower() in DESTINATION_KEYS:
@@ -258,6 +301,8 @@ def allowed(domain: str, allowlist) -> bool:
 
 def paths_in(args) -> list:
     out = []
+    for command in commands_in(args):
+        out.extend(paths_in_command(command))
     if isinstance(args, dict):
         for k, v in args.items():
             if k.lower() in PATH_KEYS and isinstance(v, str):
@@ -314,8 +359,12 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
     if tainted and outside and not AGENT_TOOL.search(name or ""):
         hits.append(("GP-0001", {"destinations": sorted({domain_of(d) for d in outside}), "tainted_by": tainted}))
 
-    if tainted and DESTRUCTIVE_TOOL.search(name or ""):
-        hits.append(("GP-0005", {"tool": name, "tainted_by": tainted}))
+    # A destructive tool is recognised by its name, and a shell has one name for every
+    # job it does, so the command itself is what says whether this one destroys anything.
+    destructive_shell = [c for c in commands_in(args) if DESTRUCTIVE_SHELL.search(c)]
+    if tainted and (DESTRUCTIVE_TOOL.search(name or "") or destructive_shell):
+        hits.append(("GP-0005", {"tool": name, "tainted_by": tainted,
+                                 "shell": bool(destructive_shell)}))
 
     if tainted and MEMORY_TOOL.search(name or "") and (has_instructions(blob) or URL_RE.search(blob)):
         hits.append(("GP-0004", {"tool": name, "tainted_by": tainted}))

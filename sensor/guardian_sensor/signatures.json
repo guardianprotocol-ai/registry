@@ -210,5 +210,11 @@
     "filepath",
     "notebook_path",
     "path"
+  ],
+  "command_keys": [
+    "code",
+    "cmd",
+    "command",
+    "script"
   ]
 }
