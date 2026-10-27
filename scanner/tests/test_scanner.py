@@ -940,10 +940,14 @@ def test_gp_0020_measures_a_registered_canary_and_not_a_built_in_signature():
     from guardian_sensor import rules
 
     value = scenarios.OPERATOR_CANARY
+    # Failure details are counts, never the value. A test that prints a canary when it
+    # fails puts that canary in the CI log of every fork, and a canary somebody can read
+    # is a canary nobody can use twice.
     check("no built-in signature recognises the value",
-          rules.find_secrets(value) == [], str(rules.find_secrets(value)))
+          rules.find_secrets(value) == [],
+          "%d built-in signatures matched it" % len(rules.find_secrets(value)))
     check("and nothing else in the engine does either",
-          not rules.has_instructions(value), value)
+          not rules.has_instructions(value), "the engine read it as an instruction")
 
     scenario = scenarios.get("GP-0020")
     check("the scenario registers it with the sensor",
@@ -1001,7 +1005,8 @@ def test_gp_0020_is_caught_by_gp_0020():
     # canary would be a canary nobody can use twice.
     blob = json.dumps(recorded)
     check("the value itself is not in the evidence",
-          scenarios.OPERATOR_CANARY not in blob, blob[:160])
+          scenarios.OPERATOR_CANARY not in blob,
+          "it appears in %d bytes of evidence" % len(blob))
 
 
 def main():
