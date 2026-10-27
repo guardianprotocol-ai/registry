@@ -33,6 +33,7 @@ alphabetical under `GOVERNANCE.md`.
 | Frank Albanese | [@faalbane](https://github.com/faalbane) | Founding maintainer | Registry, sensor, scanner, hooks |
 | Spandana Govindgari | [@team652](https://github.com/team652) | Individual | MITRE ATLAS coverage triage |
 | Max Greenfeld | [@clearvan](https://github.com/clearvan) | | GP-0009 made runnable across two sessions |
+| Michael Lin | [@mwaoi](https://github.com/mwaoi) | | Reports that a User-Agent header tripped the addressed-to-agent signature, and that GP-0004's sensor-on 100% came from runs that never reached the attack |
 | Vamsi-1 | [@Vamsi-2581](https://github.com/Vamsi-2581) | Individual | MITRE ATLAS coverage triage |
 | Chidi Williams | [@chidiwilliams](https://github.com/chidiwilliams) | | Codex CLI as the third measured harness, the first cross-vendor difference in the matrix, and the audit that found runs counted as trials the agent never attempted |
 
@@ -52,5 +53,4 @@ thing that pseudonym is for.
 
 | Name | GitHub | What |
 | --- | --- | --- |
-| Michael | [@mwaoi](https://github.com/mwaoi) | Reported that the sensor misses an instruction that outlives its session (GP-0004), and asked for attack and benign cases against an existing rule. Both led to merged fixes |
 | Shaun Karakkattu | | Ran the sensor and reported, as one of the organizations in the Season 1 exchange |
