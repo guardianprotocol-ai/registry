@@ -178,6 +178,46 @@ def test_a_secret_is_never_printed():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def test_a_server_added_at_user_scope_is_found_and_protected():
+    """Claude Code keeps per-project servers and a table of its own, and both count.
+
+    `claude mcp add --scope user` writes to the top level of the same file. Those
+    servers were invisible here while the command still reported "Protected", which is
+    worse than finding nothing: somebody would believe their agents were behind the
+    sensor when nothing was in front of them.
+
+    The reader and the writer also have to agree on what the top level table is called.
+    They did not, and once the reader found a user scoped server the write failed and
+    took the project scoped ones down with it.
+    """
+    document = {"mcpServers": {"notes": {"command": "npx", "args": ["notes-server"]}},
+                "projects": {"/work/alpha": {"mcpServers": {
+                    "files": {"command": "uvx", "args": ["files-server"]}}}}}
+    folder, path, previous = with_config(document)
+    try:
+        before = json.load(open(path, encoding="utf-8"))
+        out = io.StringIO()
+        protect_cli.main(["--yes"], out=out)
+        after = json.load(open(path, encoding="utf-8"))
+        check("the user scoped server is behind the sensor",
+              clients.is_wrapped(after["mcpServers"]["notes"]),
+              str(after["mcpServers"]["notes"]))
+        check("and the project scoped one still is too",
+              clients.is_wrapped(after["projects"]["/work/alpha"]["mcpServers"]["files"]),
+              str(after["projects"]["/work/alpha"]["mcpServers"]["files"]))
+        check("both were counted, not just one",
+              "2 MCP servers" in out.getvalue(), out.getvalue()[:80])
+        check("and nothing failed quietly",
+              "Could not change" not in out.getvalue(), out.getvalue()[:200])
+
+        protect_cli.main(["--remove", "--yes"], out=io.StringIO())
+        check("taking it out puts the file back as it was",
+              json.load(open(path, encoding="utf-8")) == before)
+    finally:
+        _restore(previous)
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def test_a_flat_config_works_too():
     """Desktop, Cursor and Windsurf keep one table rather than one per project."""
     folder, path, previous = with_config(

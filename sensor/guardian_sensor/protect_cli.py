@@ -61,8 +61,14 @@ def _backup(path):
 
 
 def _apply(document, client, where, name, entry):
-    """Put a changed entry back where it came from."""
-    if client["nested"]:
+    """Put a changed entry back where it came from.
+
+    A nested client has per-project tables and one of its own, so `where` is either a
+    project or the user scope sentinel. Writing the sentinel as though it were a project
+    is how this failed: the reader found a user scoped server and the writer could not
+    put it back.
+    """
+    if client["nested"] and where != clients.USER_SCOPE:
         node = document
         for step in client["nested"]:
             node = node[step]
