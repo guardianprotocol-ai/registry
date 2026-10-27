@@ -25,16 +25,23 @@ RUN_PY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))
                       "run.py")
 
 
+#: What a nested client's own top-level table is called when it is named for a person.
+#: Shared, because the half that finds a table and the half that writes to it have to
+#: agree on it: they did not, and the write failed on a table the reader had just found.
+USER_SCOPE = "user scope"
+
+
 def _home(*parts):
     return os.path.join(os.path.expanduser("~"), *parts)
 
 
 # name, where the config is, and how to reach the server tables inside it.
 #
-# "nested" means servers live under one key per project rather than at the top level,
+# "nested" means servers live under one key per project as well as at the top level,
 # which is how Claude Code keeps them: a server added in one directory is not a server
 # anywhere else, and wrapping the lot would reach into projects somebody did not ask
-# about. So each is offered separately and named by its project.
+# about. So each is offered separately and named by its project. A nested client also
+# keeps a table of its own, for servers added at user scope, and both are read.
 CLIENTS = (
     {"name": "claude-code", "path": _home(".claude.json"),
      "nested": ("projects",), "key": "mcpServers",
@@ -122,20 +129,23 @@ def tables(document, client):
     if document is None:
         return []
     found = []
+    # A client with per-project tables can also keep one of its own, and Claude Code does:
+    # `claude mcp add --scope user` writes to the top level of the same file. Those servers
+    # were invisible here, and the command still said "Protected", which is worse than
+    # finding nothing: somebody would believe their agents were behind the sensor.
+    table = document.get(client["key"])
+    if isinstance(table, dict) and table:
+        found.append((USER_SCOPE if client["nested"] else client["name"], table))
     if client["nested"]:
         node = document
         for step in client["nested"]:
             node = (node or {}).get(step)
             if not isinstance(node, dict):
-                return []
+                return found
         for where, settings in node.items():
             table = (settings or {}).get(client["key"])
             if isinstance(table, dict) and table:
                 found.append((where, table))
-        return found
-    table = document.get(client["key"])
-    if isinstance(table, dict) and table:
-        found.append((client["name"], table))
     return found
 
 
