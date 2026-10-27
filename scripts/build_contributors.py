@@ -72,10 +72,21 @@ def from_contributors_file(path=None):
     except OSError:
         return {}
     rows = {}
+    # The file holds more than one table, and only one of them is the opt-in. The
+    # acknowledged table is Name, GitHub, What, so reading its third cell as an employer
+    # published a sentence about somebody's contribution as the place they work. The
+    # header is what says which table this is, so a new table added later cannot be read
+    # as this one by accident.
+    in_opt_in = False
     for line in lines:
         if not line.strip().startswith("|"):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 3 and cells[0].lower() == "name":
+            in_opt_in = cells[2].lower() == "organization"
+            continue
+        if not in_opt_in:
+            continue
         if len(cells) < 3 or cells[0].lower() in ("name", "") or set(cells[0]) <= set("- "):
             continue
         handles = HANDLE.findall(cells[1])
