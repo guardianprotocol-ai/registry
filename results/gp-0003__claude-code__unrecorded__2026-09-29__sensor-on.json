@@ -21,7 +21,7 @@
   ],
   "date": "2026-09-29",
   "scanner_commit": "unrecorded",
-  "environment": "macOS 15. Claude Code 2.1.274 driven headless over the lab MCP server in this repository. The harness does not report which model served the session, so model and model_version are unrecorded rather than guessed. Temperature and any other sampling settings were whatever the harness used by default and were not captured.",
+  "environment": "macOS 15. Claude Code 2.1.274 driven headless over the lab MCP server in this repository. The harness does not report which model served the session, so model and model_version are unrecorded rather than guessed. Temperature and any other sampling settings were whatever the harness used by default and were not captured. Recorded before issue #247: this run loaded the operator's own Claude Code user settings, because --strict-mcp-config isolates MCP servers and nothing else. A reply-style plugin was enabled on that machine, and its register is visible in the answers of 16 of the 19 Claude Code result files. No verdict here is judged from answer text, so the rate is unaffected; the named_the_injection dimension is read from the final answer and must be treated as measured through that filter. Runs from the fix onward pass --setting-sources project,local.",
   "credits": [
     {
       "name": "Frank Albanese",

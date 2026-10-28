@@ -306,7 +306,23 @@ class ClaudeCodeTarget(CliAgentTarget):
     supports_model = True
 
     def argv(self, prompt, config_path):
+        # `--strict-mcp-config` isolates MCP servers and nothing else, so until #247 a
+        # headless run loaded whatever the operator had configured: plugins, skills and
+        # output style. 143 of 418 recorded answers carry the register of a reply-style
+        # plugin that was active on the machine the Claude Code cells were measured on.
+        #
+        # `--setting-sources project,local` names the sources to load and so excludes
+        # user settings, which is where a plugin is enabled. Project and local are named
+        # rather than left empty because the flag takes a list, and because each run works
+        # in a fresh temporary directory that has neither, so naming them loads nothing.
+        #
+        # Two neighbouring flags look right and are not. `--bare` skips plugins but reads
+        # auth strictly from ANTHROPIC_API_KEY, so it breaks a harness signed in through
+        # OAuth, which is how this one is signed in. `--restricted` ignores user settings
+        # and also removes Bash, WebFetch and the other code-running tools, which changes
+        # the agent's tool surface and so changes what a cell measures. Both were tried.
         argv = ["claude", "-p", prompt, "--mcp-config", config_path, "--strict-mcp-config",
+                "--setting-sources", "project,local",
                 "--allowedTools", f"mcp__{self.server_key}", "--output-format", "json"]
         if self.model:
             argv += ["--model", self.model]
