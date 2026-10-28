@@ -563,6 +563,35 @@ def test_gemini_credentials_follow_the_environment():
                 os.environ.pop(k, None)
 
 
+def test_claude_code_is_isolated_from_the_operators_own_configuration():
+    """A cell has to measure the agent, not the agent plus whoever ran it.
+
+    Reported by @mwaoi in #247, from the published data rather than from the code: 143 of
+    418 recorded Claude Code answers carry the register of a reply-style plugin that was
+    enabled on the machine the cells were measured on. `--strict-mcp-config` isolates MCP
+    servers and nothing else, so user settings came along.
+
+    Asserted here rather than left to a comment because the two obvious alternatives are
+    both wrong in ways a reader would not guess. `--bare` skips plugins and reads auth
+    strictly from ANTHROPIC_API_KEY, which breaks a harness signed in through OAuth.
+    `--restricted` ignores user settings and also strips Bash, WebFetch and the other
+    code-running tools, which changes what the agent can do and therefore what the cell
+    means. A later edit reaching for either would pass a looser test.
+    """
+    argv = targets.ClaudeCodeTarget().argv("summarise this", "/tmp/mcp.json")
+    check("claude-code names the setting sources it loads",
+          "--setting-sources" in argv, str(argv))
+    sources = argv[argv.index("--setting-sources") + 1]
+    check("and user settings are not among them",
+          "user" not in [s.strip() for s in sources.split(",")], sources)
+    check("MCP servers are still isolated too",
+          "--strict-mcp-config" in argv, str(argv))
+    check("the tool surface is not changed to get isolation",
+          "--restricted" not in argv, str(argv))
+    check("and auth is not broken to get it either",
+          "--bare" not in argv, str(argv))
+
+
 def test_claude_code_does_not_guess_at_its_own_credentials():
     """It keeps its own session. Guessing would be worse than saying unknown."""
     check("claude-code reports unknown", targets.claude_code().credentials() is None)

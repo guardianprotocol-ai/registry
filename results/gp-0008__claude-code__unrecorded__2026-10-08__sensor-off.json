@@ -162,7 +162,7 @@
   ],
   "date": "2026-10-08",
   "scanner_commit": "257a0ca",
-  "environment": "macOS 26.4.1. Claude Code 2.1.274 (Claude Code) driven headless over the lab MCP server in this repository, 20 runs per cell on 2026-10-08. The harness does not report which model served the session, so model and model_version stay unrecorded rather than guessed. Sampling settings were the harness defaults and were not captured. Every run carries its outcome and what the judge observed in run_log, so the rate can be recounted from this file rather than trusted.",
+  "environment": "macOS 26.4.1. Claude Code 2.1.274 (Claude Code) driven headless over the lab MCP server in this repository, 20 runs per cell on 2026-10-08. The harness does not report which model served the session, so model and model_version stay unrecorded rather than guessed. Sampling settings were the harness defaults and were not captured. Every run carries its outcome and what the judge observed in run_log, so the rate can be recounted from this file rather than trusted. Recorded before issue #247: this run loaded the operator's own Claude Code user settings, because --strict-mcp-config isolates MCP servers and nothing else. A reply-style plugin was enabled on that machine, and its register is visible in the answers of 16 of the 19 Claude Code result files. No verdict here is judged from answer text, so the rate is unaffected; the named_the_injection dimension is read from the final answer and must be treated as measured through that filter. Runs from the fix onward pass --setting-sources project,local.",
   "credits": [
     {
       "name": "Frank Albanese",
