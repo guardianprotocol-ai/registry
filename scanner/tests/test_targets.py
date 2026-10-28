@@ -563,6 +563,50 @@ def test_gemini_credentials_follow_the_environment():
                 os.environ.pop(k, None)
 
 
+def test_every_real_harness_declares_how_it_is_isolated():
+    """The standard, enforced rather than remembered.
+
+    A target measures a real agent on somebody's real computer, and the operator's own
+    configuration is the easiest thing in the world to measure by accident. It happened:
+    nineteen Claude Code result files were recorded through a reply-style plugin enabled
+    on the machine, because `--strict-mcp-config` isolates MCP servers and nothing else.
+    Three weeks, and it was found from the outside by a contributor reading the published
+    answers who did not know what had produced them.
+
+    So every harness that drives a real agent has to say, in code, how it keeps the
+    machine out, and every flag it claims has to actually be in its argv. A target that
+    declares nothing fails here, which matters most for the three this project is asking
+    people to write: Cursor, Ollama and a custom framework.
+
+    And a harness that cannot isolate something has to name what, because a CLI with no
+    flag for user settings is not a CLI with no user settings.
+    """
+    # A real config file, because one target reads it to build its own flags rather than
+    # passing the path through. A test that handed it a path to nothing would pass for
+    # two targets and crash on the third.
+    folder = tempfile.mkdtemp()
+    config_path = os.path.join(folder, "mcp.json")
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump({"mcpServers": {"lab": {"command": "python3", "args": ["server.py"],
+                                          "env": {}}}}, f)
+
+    real = [targets.ClaudeCodeTarget, targets.GeminiCliTarget, targets.CodexCliTarget]
+    for cls in real:
+        target = cls()
+        check("%s declares its isolation" % target.name, bool(target.isolation),
+              "nothing declared")
+        argv = target.argv("summarise this", config_path)
+        for flag in target.isolation:
+            check("%s really passes %s" % (target.name, flag), flag in argv, str(argv))
+        gap = target.isolation_gap
+        check("%s is honest about what it cannot isolate" % target.name,
+              gap is None or (isinstance(gap, str) and len(gap) > 20), repr(gap))
+
+    check("the base class declares nothing, so a new target must",
+          targets.CliAgentTarget.isolation == (), str(targets.CliAgentTarget.isolation))
+    shutil.rmtree(folder, ignore_errors=True)
+
+
 def test_claude_code_is_isolated_from_the_operators_own_configuration():
     """A cell has to measure the agent, not the agent plus whoever ran it.
 

@@ -258,6 +258,27 @@ class CliAgentTarget:
     def argv(self, prompt, config_path):
         raise NotImplementedError("a target must say how to run its harness")
 
+    #: Flags in `argv` that keep the operator's own machine out of a measured run.
+    #:
+    #: Declared rather than left to a comment, and checked by a test, because a target
+    #: measures a real agent on somebody's real computer and the operator's configuration
+    #: is the easiest thing in the world to measure by accident. The Claude Code target
+    #: carried `--strict-mcp-config`, which isolates MCP servers and nothing else, and so
+    #: recorded nineteen result files through a reply-style plugin that was enabled on the
+    #: machine. Nobody noticed for three weeks; it was found from the outside, in the
+    #: published answers, by a contributor who did not know what had produced them.
+    #:
+    #: Issue #247. A new target with nothing here fails the suite, which is the point: the
+    #: three targets this project is asking people to write do not get to repeat it.
+    isolation = ()
+
+    #: What this harness cannot isolate, in one sentence, or None when nothing is left.
+    #:
+    #: Required to be honest rather than empty. A harness with no flag for user settings
+    #: is not a harness that has no user settings, and the difference belongs in the
+    #: result files rather than in somebody's memory.
+    isolation_gap = None
+
     def answer_of(self, stdout):
         """The harness's final answer, as text. Override if it is not plain stdout."""
         return stdout or ""
@@ -304,6 +325,8 @@ class ClaudeCodeTarget(CliAgentTarget):
 
     #: Claude Code pins the model with --model, taking an alias or a full id.
     supports_model = True
+
+    isolation = ("--strict-mcp-config", "--setting-sources")
 
     def argv(self, prompt, config_path):
         # `--strict-mcp-config` isolates MCP servers and nothing else, so until #247 a
@@ -355,6 +378,20 @@ class GeminiCliTarget(CliAgentTarget):
     name = "gemini-cli"
     executable = "gemini"
     supports_model = True
+
+    isolation = ("--allowed-mcp-server-names",)
+    #: Gemini CLI has no flag for user settings. `--help` offers `--extensions` to name
+    #: which extensions load, and passing it with no value is a parse error rather than an
+    #: empty list, so there is no way to ask for none. `~/.gemini/settings.json` and a user
+    #: level `GEMINI.md` are read whatever is passed.
+    #:
+    #: Checked on the machine the published cells were measured on: no settings.json, zero
+    #: extensions, and a GEMINI.md of zero bytes. So those cells have the same gap as the
+    #: Claude Code ones and, unlike them, no evidence of anything having come through it.
+    #: That is a fact about one machine, not about the target, which is why it is written
+    #: here and in the result files rather than treated as fixed.
+    isolation_gap = ("no flag excludes ~/.gemini/settings.json, user extensions or a user "
+                     "level GEMINI.md, so a run carries whatever the operator has there")
     requires_model = True
     model_example = "gemini-3.5-flash"
     model_verified_on = "2026-10-08"
@@ -420,6 +457,8 @@ class CodexCliTarget(CliAgentTarget):
     name = "codex-cli"
     executable = "codex"
     supports_model = True
+
+    isolation = ("--ignore-user-config", "--ignore-rules", "--ephemeral")
     requires_model = True
     model_example = "gpt-6-luna"
     model_verified_on = "2026-10-26"
