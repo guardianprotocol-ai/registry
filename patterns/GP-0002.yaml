@@ -34,7 +34,7 @@ detection:
   logic: >
     Block an outbound tool call when its arguments match sensitive-data patterns and the
     destination is not allow-listed. Alert the operator with the call and the matched pattern.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Allow-list outbound destinations
   - Plant canary records to catch leaks early

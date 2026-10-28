@@ -44,7 +44,7 @@ detection:
     blobs are only flagged when what they conceal reads as instructions, so an ordinary
     page with a comment or an embedded image is left alone. This marks the session tainted,
     which is what the later action rules key on.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Strip invisible characters and hidden markup before content reaches the model
   - Show the agent and the reviewer the same text, so review means something

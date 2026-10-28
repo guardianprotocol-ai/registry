@@ -45,7 +45,7 @@ detection:
     make the file listing what the sensor watches for a worse secret store than the one it
     protects. A canary in baseline is reported and never blocks, whatever the mode, because
     it has not yet been shown that ordinary work leaves it alone.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Register values no legitimate process should ever touch, and leave each in baseline
     until a period of ordinary work has gone by without it firing

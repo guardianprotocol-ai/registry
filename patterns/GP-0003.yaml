@@ -36,7 +36,7 @@ detection:
   logic: >
     Alert when an approved tool's definition hash changes, and block its use until re-approved.
     Flag tool descriptions that contain instructions addressed to the assistant.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Pin tool definitions and re-approve on change
   - Review tool descriptions as code
