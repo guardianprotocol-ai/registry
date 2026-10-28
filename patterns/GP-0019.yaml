@@ -48,7 +48,7 @@ detection:
     listing, re-fingerprint and compare. A mismatch flags, and in block mode the next call
     to that tool is refused. The schema is inside the fingerprint for exactly this case: a
     parameter can be added without touching a single word of the description.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Pin the whole tool definition at approval, schema included, not only the description
   - Re-approve explicitly when a definition changes rather than accepting it silently

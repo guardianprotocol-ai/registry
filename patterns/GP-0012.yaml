@@ -39,7 +39,7 @@ detection:
     Block any tool call whose arguments carry the agent's system prompt canary, whether or
     not the session is tainted, and report it as a prompt leak rather than as a generic
     secret so the response is right. A canary is exact, so this does not misfire.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Plant a canary in every system prompt, so a leak is detectable at the boundary
   - Keep secrets and internal detail out of the system prompt

@@ -41,7 +41,7 @@ detection:
     While a session is tainted, flag a handoff to another agent whose payload reads as
     instructions. Block in enforcing mode. An ordinary handoff carrying a plain task is
     left alone, even while tainted, so normal delegation keeps working.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Carry the taint with the message, so the receiving agent knows the work came from outside content
   - Give delegated agents the narrowest tools the task needs, never the caller's full set

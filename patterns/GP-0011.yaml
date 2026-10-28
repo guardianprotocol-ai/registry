@@ -39,7 +39,7 @@ detection:
     budget, and block further repeats in enforcing mode. Many different calls to the same
     tool are ordinary work and are not counted together, so a busy agent is not penalised
     for being busy.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Give every agent session a call budget and a wall-clock limit
   - Make polling tools return a backoff the agent must honour

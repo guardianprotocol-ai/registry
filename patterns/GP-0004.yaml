@@ -44,7 +44,7 @@ detection:
     While a session is tainted, flag any call to a memory tool whose arguments contain
     instruction-like text or a url. Block in enforcing mode. A memory write of plain
     content, and any memory write in a session nothing has tainted, are left alone.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Keep memory written from outside content separate from memory the user dictated
   - Show the user what is being written to memory, and let them refuse it

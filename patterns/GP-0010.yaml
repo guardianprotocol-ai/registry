@@ -42,7 +42,7 @@ detection:
     Flag tool output that tries to install a source as trusted or promote one option over
     others. This is a flag, never a block: the same words appear in honest writing, and
     the finding is a prompt to look at what the agent then said, not a verdict.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Rank sources by a policy the agent cannot edit from content it reads
   - Show which sources an answer rests on, so a shifted answer is visible

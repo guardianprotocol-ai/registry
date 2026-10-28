@@ -1,5 +1,7 @@
 # Rule safety
 
+The measured false alarm rate for every rule, with its denominator and a 95% interval, is in [FALSE_ALARMS.md](FALSE_ALARMS.md), generated from the benign corpus.
+
 How the project keeps a bad rule from reaching the people the protocol protects. A rule can fail in two directions: it can stop catching an attack, or it can start blocking ordinary work. Both are checked automatically on every pull request, before anyone has to review the change.
 
 ## Automatic checks

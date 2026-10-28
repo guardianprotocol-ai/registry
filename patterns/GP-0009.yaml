@@ -45,7 +45,7 @@ detection:
     enforcing mode. Writing ordinary content to an ordinary path is left alone, and so is
     any write in a session nothing has tainted, because editing your own configuration is
     ordinary work.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Make agent configuration read-only to the agent
   - Require review for any change to a file that steers other agents

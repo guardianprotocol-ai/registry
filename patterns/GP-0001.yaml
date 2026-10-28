@@ -36,7 +36,7 @@ detection:
   logic: >
     Flag when a tool result contains instruction-like text and the next tool call is an
     unrequested action toward a new destination. Block when the action sends data outside.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0417
 mitigations:
   - Treat tool output as data, never as instructions
   - Require confirmation for actions that send data outside

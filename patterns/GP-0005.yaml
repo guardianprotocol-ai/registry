@@ -43,7 +43,7 @@ detection:
     While a session is tainted, flag any call to a destructive tool. Block in enforcing
     mode. A destructive call in a session nothing has tainted is ordinary work and is
     left alone, because the user asking to delete something is not an attack.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0417
 mitigations:
   - Require human confirmation for destructive tools, every time
   - Give agents credentials that cannot delete, and a separate path for deletions

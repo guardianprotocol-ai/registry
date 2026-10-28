@@ -40,7 +40,7 @@ detection:
     credentials, ssh keys, .env, .netrc, package manager tokens, kubeconfig, docker config
     and similar. Block in enforcing mode. The same read in a session nothing has tainted is
     left alone, because reading your own credentials is ordinary work.
-  false_alarm_rate: null
+  false_alarm_rate: 0.0
 mitigations:
   - Run agents in a sandbox where credential paths are not readable at all
   - Hold secrets in a broker the agent calls, never in files the agent can open
