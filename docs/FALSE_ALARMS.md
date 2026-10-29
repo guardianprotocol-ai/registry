@@ -43,6 +43,26 @@ not exist.
 | GP-0018 | no rule yet | | | |
 | GP-0019 | 0 | 24 | 0.0% | [0.00, 0.14] |
 | GP-0020 | 0 | 24 | 0.0% | [0.00, 0.14] |
+| GP-0021 | no rule yet | | | |
+| GP-0022 | no rule yet | | | |
+| GP-0023 | no rule yet | | | |
+| GP-0024 | no rule yet | | | |
+| GP-0025 | no rule yet | | | |
+| GP-0026 | no rule yet | | | |
+| GP-0027 | no rule yet | | | |
+| GP-0028 | no rule yet | | | |
+| GP-0029 | no rule yet | | | |
+| GP-0030 | no rule yet | | | |
+| GP-0031 | no rule yet | | | |
+| GP-0032 | no rule yet | | | |
+| GP-0033 | no rule yet | | | |
+| GP-0034 | no rule yet | | | |
+| GP-0035 | no rule yet | | | |
+| GP-0036 | no rule yet | | | |
+| GP-0037 | no rule yet | | | |
+| GP-0038 | no rule yet | | | |
+| GP-0039 | no rule yet | | | |
+| GP-0040 | no rule yet | | | |
 
 ## Known false alarms
 
