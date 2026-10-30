@@ -31,6 +31,7 @@ alphabetical under `GOVERNANCE.md`.
 | Arin Aeruva | [@arin30](https://github.com/arin30) | | GP-0002 given its own exfiltration scenario |
 | Rohit Agarwal | [@girantinas](https://github.com/girantinas) | | Three more Codex CLI conditions, and an access program recorded as its own condition |
 | Frank Albanese | [@faalbane](https://github.com/faalbane) | Founding maintainer | Registry, sensor, scanner, hooks |
+| David Olowomeye | [@greatdaveo](https://github.com/greatdaveo) | | GP-0020's canary generated per run, so a registered secret is no longer committed to a public repository |
 | Spandana Govindgari | [@team652](https://github.com/team652) | Individual | MITRE ATLAS coverage triage |
 | Max Greenfeld | [@clearvan](https://github.com/clearvan) | | GP-0009 made runnable across two sessions |
 | Michael Lin | [@mwaoi](https://github.com/mwaoi) | | Reports that a User-Agent header tripped the addressed-to-agent signature, and that GP-0004's sensor-on 100% came from runs that never reached the attack |
