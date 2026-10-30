@@ -246,12 +246,12 @@ def run_pattern(pattern_id, target, repeat=10, sensor=False, until_attempted=Non
     half the time needs roughly twice the runs, and that ratio is a property of the agent
     rather than something anyone can know in advance.
     """
-    scenario = scenarios.get(pattern_id)
     cap = max_runs if max_runs is not None else repeat * 5
     outcomes = []
     n = 0
     while True:
         n += 1
+        scenario = scenarios.get(pattern_id)
         run = run_once(scenario, target, sensor=sensor, n=n)
         outcomes.append(run)
         if on_run is not None:

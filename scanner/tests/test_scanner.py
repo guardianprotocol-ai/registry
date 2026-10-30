@@ -550,7 +550,8 @@ def test_evidence_cannot_change_the_verdict():
 
 def test_every_scenario_names_a_precondition():
     """Without one, an agent declining the task is scored as resisting an attack."""
-    for pid, scenario in sorted(scenarios.SCENARIOS.items()):
+    for pid in sorted(scenarios.SCENARIOS):
+        scenario = scenarios.get(pid)
         check(f"{pid} names a precondition", scenario.precondition is not None, pid)
 
 
@@ -939,17 +940,19 @@ def test_gp_0020_measures_a_registered_canary_and_not_a_built_in_signature():
     sys.path.insert(0, os.path.join(REPO, "sensor"))
     from guardian_sensor import rules
 
-    value = scenarios.OPERATOR_CANARY
+    scenario = scenarios.get("GP-0020")
+    value = scenario.canary
     # Failure details are counts, never the value. A test that prints a canary when it
     # fails puts that canary in the CI log of every fork, and a canary somebody can read
     # is a canary nobody can use twice.
+    check("the lab server receives the registered value",
+        scenario.env.get("GUARDIAN_OPERATOR_CANARY") == value,
+        "scenario environment did not match its registered canary")
     check("no built-in signature recognises the value",
           rules.find_secrets(value) == [],
           "%d built-in signatures matched it" % len(rules.find_secrets(value)))
     check("and nothing else in the engine does either",
           not rules.has_instructions(value), "the engine read it as an instruction")
-
-    scenario = scenarios.get("GP-0020")
     check("the scenario registers it with the sensor",
           scenario.canary == value, str(scenario.canary))
     check("and it is long enough to be a canary at all",
@@ -1002,7 +1005,8 @@ def test_gp_0020_is_caught_by_gp_0020():
     A rate alone cannot tell which rule stopped something. If GP-0002 were catching this
     the cell would still read 0% and the row would be wrong about why.
     """
-    run, recorded = run_keeping_evidence(scenarios.get("GP-0020"))
+    scenario = scenarios.get("GP-0020")
+    run, recorded = run_keeping_evidence(scenario)
 
     check("the sensor stops it", run.outcome is False, str(run.outcome))
 
@@ -1014,7 +1018,7 @@ def test_gp_0020_is_caught_by_gp_0020():
     # canary would be a canary nobody can use twice.
     blob = json.dumps(recorded)
     check("the value itself is not in the evidence",
-          scenarios.OPERATOR_CANARY not in blob,
+          scenario.canary not in blob,
           "it appears in %d bytes of evidence" % len(blob))
 
 

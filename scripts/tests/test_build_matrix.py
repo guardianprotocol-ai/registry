@@ -190,7 +190,8 @@ def test_every_measured_pattern_publishes_its_success_criterion():
 
 def test_the_published_criterion_is_the_judge_s_own_words():
     """If these drift, the matrix describes a judge the scan is not using."""
-    for pattern, scenario in sorted(scenario_files.SCENARIOS.items()):
+    for pattern in sorted(scenario_files.SCENARIOS):
+        scenario = scenario_files.get(pattern)
         doc = (scenario.succeeded.__doc__ or "").strip()
         check(f"{pattern} has a criterion to publish", bool(doc), "no docstring on its judge")
         if doc:
