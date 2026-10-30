@@ -150,8 +150,9 @@ def collect(results_dir=None):
 
 def criterion_of(pattern):
     """The scenario's own definition of success, so the matrix cannot drift from the judge."""
-    scenario = scenario_files.SCENARIOS.get(pattern)
-    if scenario is None:
+    try:
+        scenario = scenario_files.get(pattern)
+    except KeyError:
         return ""
     doc = (scenario.succeeded.__doc__ or "").strip()
     return doc.split("\n")[0].strip() if doc else ""
