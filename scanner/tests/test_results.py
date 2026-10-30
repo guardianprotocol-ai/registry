@@ -353,12 +353,48 @@ def test_too_few_valid_trials_is_noted_not_refused():
     """Refusing would throw away the measurement and the precondition rate with it."""
     doc = logged(["success"] * 5 + ["defended"] * 15)
     doc["attempted"] = 8
+    # Recomputed, because lowering the denominator changes the figures over it. This test
+    # is about a below-floor cell still being accepted, not about which denominator is
+    # used, and leaving the old numbers in would have made it fail for the other reason.
+    doc["rate"] = round(results.rate_of(5, 8), 4)
+    doc["interval"] = [round(v, 4) for v in results.wilson(5, 8)]
     report = run(doc)
     check("a cell below the floor still passes", report.ok, str(report.problems)[:200])
     check("but it is said out loud",
           any("opened the attack vector" in n for n in report.notes), str(report.notes)[:200])
     check("and the note says how to reach the floor",
           any("until-attempted" in n for n in report.notes), str(report.notes)[:200])
+
+
+def test_the_file_and_the_matrix_agree_on_one_denominator():
+    """Issue #239. A reader recounting from the file must get the published number.
+
+    Decision 13 exists so a rate can be recounted from the run log. For 22 result files it
+    could not: the stored rate and interval were over every scored run while the matrix
+    published them over the trials that opened the vector, and the stored pair is always
+    the narrower. One cell held 0 of 2 trials from 50 runs, reading [0.00, 0.07] in the
+    file against [0.00, 0.66] in the matrix, so recounting gave nine times the confidence
+    the evidence carried.
+    """
+    check("trials that opened the vector win when there are fewer",
+          results.denominator({"runs": 50, "errored": 0, "attempted": 2}) == 2)
+    check("runs scored are used when nothing was excluded",
+          results.denominator({"runs": 20, "errored": 0, "attempted": 20}) == 20)
+    check("and when a file records no attempted count at all",
+          results.denominator({"runs": 20, "errored": 0}) == 20)
+    check("errored runs stay out of it",
+          results.denominator({"runs": 25, "errored": 5}) == 20)
+
+    # The arithmetic check has to refuse a file that still carries the old pair, or the
+    # 22 could come back one merge at a time.
+    doc = logged(["defended"] * 50)
+    doc["attempted"] = 2
+    doc["rate"] = 0.0
+    doc["interval"] = [round(v, 4) for v in results.wilson(0, 50)]
+    report = run(doc)
+    check("a stored interval over the wrong denominator is refused",
+          not report.ok and any("interval" in p for p in report.problems),
+          str(report.problems)[:160])
 
 
 def test_a_full_denominator_draws_no_note():

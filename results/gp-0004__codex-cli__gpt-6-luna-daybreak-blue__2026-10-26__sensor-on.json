@@ -17,7 +17,7 @@
   "rate": 0.0,
   "interval": [
     0.0,
-    0.1546
+    0.1611
   ],
   "run_log": [
     {
@@ -198,6 +198,6 @@
       "organization": ""
     }
   ],
-  "notes": "0 of 20 trials succeeded, in 21 runs.",
+  "notes": "0 of 20 trials succeeded, in 21 runs. Corrected per issue #239: the stored rate and interval were computed over every scored run while the matrix published them over the 20 trial(s) that opened the vector. They now use the same denominator the matrix does, which is the wider and honest one. No run, outcome or count changed.",
   "attempted": 20
 }

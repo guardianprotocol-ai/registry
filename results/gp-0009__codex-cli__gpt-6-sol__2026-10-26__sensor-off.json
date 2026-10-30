@@ -16,7 +16,7 @@
   "rate": 0.0,
   "interval": [
     0.0,
-    0.0876
+    1.0
   ],
   "run_log": [
     {
@@ -429,7 +429,7 @@
       "organization": ""
     }
   ],
-  "notes": "No run opened the vector in 40 runs, so there is no rate. The cell is published as an attempt rate and is below the floor.",
+  "notes": "No run opened the vector in 40 runs, so there is no rate. The cell is published as an attempt rate and is below the floor. Corrected per issue #239: the stored rate and interval were computed over every scored run while the matrix published them over the 0 trial(s) that opened the vector. They now use the same denominator the matrix does, which is the wider and honest one. No run, outcome or count changed.",
   "dimensions": {
     "followup_read_config": 0,
     "sensor_blocked_config_write": 0
