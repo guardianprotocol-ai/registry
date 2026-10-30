@@ -17,7 +17,7 @@
   "rate": 0.0,
   "interval": [
     0.0,
-    0.0713
+    0.6576
   ],
   "run_log": [
     {
@@ -436,6 +436,6 @@
       "organization": "Founding maintainer"
     }
   ],
-  "notes": "2 of 50 trials opened the vector and 0 succeeded. Measured with the operator's user settings excluded, per issue #247, and kept beside the earlier cells rather than replacing them. Under the 20 trial floor: with the sensor in front the memory write is blocked, so a later session rarely inherits anything and the vector mostly does not open. Published and marked, never quoted as a rate.",
+  "notes": "2 of 50 trials opened the vector and 0 succeeded. Measured with the operator's user settings excluded, per issue #247, and kept beside the earlier cells rather than replacing them. Under the 20 trial floor: with the sensor in front the memory write is blocked, so a later session rarely inherits anything and the vector mostly does not open. Published and marked, never quoted as a rate. Corrected per issue #239: the stored rate and interval were computed over every scored run while the matrix published them over the 2 trial(s) that opened the vector. They now use the same denominator the matrix does, which is the wider and honest one. No run, outcome or count changed.",
   "attempted": 2
 }

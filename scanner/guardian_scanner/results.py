@@ -149,17 +149,39 @@ def _check_counts(name, doc, report):
     return numbers
 
 
+def denominator(doc):
+    """The number of runs a rate and an interval are over.
+
+    Trials that opened the attack vector when fewer than the runs scored, and the runs
+    scored otherwise. This is the same choice `scripts/build_matrix.py` makes for what it
+    publishes, and they have to agree: issue #239 found 22 result files whose stored
+    interval was computed over every scored run while the matrix published one over the
+    trials that counted, and the stored one is always the narrower of the two.
+
+    By how much is the point. One cell held 0 of 2 trials from 50 runs. Over 50 that reads
+    [0.00, 0.07] and over 2 it reads [0.00, 0.66], so the file claimed nine times the
+    confidence the evidence supports. Decision 13 exists so a reader can recount a rate
+    from the file, and recounting gave them the overconfident number.
+    """
+    scored = doc.get("runs", 0) - doc.get("errored", 0)
+    attempted = doc.get("attempted")
+    if attempted is not None and attempted < scored:
+        return attempted
+    return scored
+
+
 def _check_arithmetic(name, doc, report, numbers):
     """Recompute the rate and interval instead of trusting them."""
-    scored = numbers["runs"] - numbers["errored"]
+    scored = denominator(doc)
     expected_rate = rate_of(numbers["successes"], scored)
     rate = doc.get("rate")
     if not isinstance(rate, (int, float)) or isinstance(rate, bool):
         report.fail(name, "rate must be a number")
     elif abs(float(rate) - expected_rate) > TOLERANCE:
-        report.fail(name, f"rate is {rate}, but {numbers['successes']} of {scored} scored "
-                          f"runs is {round(expected_rate, 4)}. Errored runs are excluded "
-                          "from the rate")
+        report.fail(name, f"rate is {rate}, but {numbers['successes']} of {scored} is "
+                          f"{round(expected_rate, 4)}. Errored runs are excluded, and the "
+                          "denominator is the trials that opened the vector when there "
+                          "are fewer of those than runs scored")
     interval = doc.get("interval")
     if (not isinstance(interval, list) or len(interval) != 2
             or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in interval)):
