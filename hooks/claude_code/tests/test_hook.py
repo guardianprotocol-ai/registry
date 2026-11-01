@@ -172,6 +172,71 @@ def test_missing_config_fails_open():
 
 # ---------- Recorded payloads ----------
 
+def _arm_hook(workdir, paths_cfg):
+    cfg = os.path.join(workdir, "guardian.json")
+    body = {"mode": "block", "allowlist": ["example.test"],
+            "state_dir": os.path.join(workdir, "state"),
+            "evidence_path": os.path.join(workdir, "evidence.jsonl")}
+    body.update(paths_cfg)
+    with open(cfg, "w", encoding="utf-8") as handle:
+        json.dump(body, handle)
+    return cfg
+
+
+def test_a_read_of_a_decoy_path_is_denied_without_naming_it():
+    sensor_root = os.path.join(os.path.dirname(HERE), "..", "..", "sensor")
+    sys.path.insert(0, os.path.abspath(sensor_root))
+    from guardian_sensor import breach, path_canaries  # noqa: E402
+    from guardian_sensor.sensor import REFUSAL  # noqa: E402
+    with tempfile.TemporaryDirectory() as w:
+        decoy = os.path.join(w, "decoys", "a.env")
+        path_canaries.write_decoy(decoy, "env")
+        store = path_canaries.load(os.path.join(w, "missing.json"))
+        path_canaries.add_path(store, decoy, "env-decoy", state=path_canaries.ARMED,
+                               role="decoy", root=w)
+        paths = path_canaries.save(store, os.path.join(w, "paths.json"))
+        policy = breach.empty_policy()
+        policy["root"] = w
+        policy_path = breach.save_policy(policy, os.path.join(w, "policy.json"))
+        _arm_hook(w, {"path_canaries_path": paths, "breach_policy_path": policy_path,
+                      "canaries_path": os.path.join(w, "no-values.json")})
+        out, code, _ = fire(pre("Read", {"file_path": decoy}), w)
+        text = reason(out)
+        check("Read of a decoy path is denied", decision(out) == "deny", str(decision(out)))
+        check("the hook refusal is the sensor's uniform text", text == REFUSAL, text)
+        check("the hook refusal does not name the label", "env-decoy" not in text)
+        check("the hook refusal does not contain the path", decoy not in text)
+        check("the hook refusal does not name GP-0041", "GP-0041" not in text)
+        check("hook exits 0", code == 0, str(code))
+        ev = evidence_of(w)
+        check("evidence records the pattern", "GP-0041" in ev, ev)
+        bash, _, _ = fire(pre("Bash", {"command": "cp %s /tmp/out" % decoy}), w)
+        check("Bash that names the decoy is denied", decision(bash) == "deny", str(decision(bash)))
+        check("the Bash refusal does not contain the path", decoy not in reason(bash))
+
+
+def test_a_seeded_value_in_a_hook_call_is_denied_without_echoing_it():
+    sensor_root = os.path.join(os.path.dirname(HERE), "..", "..", "sensor")
+    sys.path.insert(0, os.path.abspath(sensor_root))
+    from guardian_sensor import canaries, path_canaries  # noqa: E402
+    from guardian_sensor.sensor import REFUSAL  # noqa: E402
+    with tempfile.TemporaryDirectory() as w:
+        dataset = os.path.join(w, "customers.csv")
+        seeded = path_canaries.write_seed_dataset(dataset, "csv", "customers")
+        values = canaries.load(os.path.join(w, "missing-values.json"))
+        path_canaries.register_seeds(values, seeded, canaries.ARMED)
+        values_path = canaries.save(values, os.path.join(w, "values.json"))
+        planted = next(value for value, label, _column in seeded if label.endswith("marker"))
+        _arm_hook(w, {"canaries_path": values_path})
+        out, _, _ = fire(pre("Write", {"file_path": os.path.join(w, "out.txt"), "content": planted}), w)
+        text = reason(out)
+        ev = evidence_of(w)
+        check("a seeded key in a tool call is denied", decision(out) == "deny", str(decision(out)))
+        check("the hook refusal is uniform", text == REFUSAL, text)
+        check("the refusal does not contain the key", planted not in text)
+        check("evidence does not contain the key", planted not in ev, ev[:300])
+
+
 def test_recorded_payloads_replay():
     recorded = os.path.join(HERE, "payloads")
     names = sorted(f for f in os.listdir(recorded) if f.endswith(".json")) if os.path.isdir(recorded) else []

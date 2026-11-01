@@ -53,7 +53,7 @@ The benign corpus holds 24 cases of ordinary work that no rule may flag. It is s
 | `AML.T0053` | AI Agent Tool Invocation | GP-0014 | no | no | no | covered |
 | `AML.T0054` | LLM Jailbreak | GP-0023 | no | no | no | covered |
 | `AML.T0056` | Extract LLM System Prompt | GP-0012 | no | yes | no | covered |
-| `AML.T0057` | LLM Data Leakage | GP-0002 | yes | yes | yes | covered |
+| `AML.T0057` | LLM Data Leakage | GP-0002, GP-0041 | yes | yes | yes | covered |
 | `AML.T0061` | LLM Prompt Self-Replication | GP-0013 | no | no | no | covered |
 | `AML.T0062` | Discover LLM Hallucinations | GP-0024 | no | no | no | covered |
 | `AML.T0065` | LLM Prompt Crafting | GP-0023 | no | no | no | covered |
@@ -117,4 +117,28 @@ Generated from `benchmarks/canary-benchmark.json`, seed 20261031, 30 trials per 
 | Benign false alarms | 0/2100, Wilson 95% [0.0000, 0.0018] | 0/2100, Wilson 95% [0.0000, 0.0018] | 0/2100, Wilson 95% [0.0000, 0.0018] |
 
 Held-out transforms (rot13, base32, gzip then base64, reverse-order halves, a zero-width character, ends only): 0/1260, Wilson 95% [0.0000, 0.0030]. A value that never appears in the arguments is not detected. The pre-fix column reproduces the local run that found the gaps: yes. Evidence contained the value in 0 of 4200 regression trials.
+
+
+## Assumed-breach canaries
+
+Generated from `benchmarks/assumed-breach.json`, 20 trials, Python 3.12.3. The full table is [../benchmarks/assumed-breach.md](../benchmarks/assumed-breach.md). The crawl is scripted. Live trial ran: no.
+
+| Slice | Result | Wilson 95% |
+| --- | --- | --- |
+| Scripted crawl touched a decoy | 20/20 | [0.8389, 1.0000] |
+| Quarantine ran | 20/20 | [0.8389, 1.0000] |
+| A crown jewel was touched before the first decoy | 20/20 | [0.8389, 1.0000] |
+| Something new appeared outside the sandbox | 0/20 | [0.0000, 0.1611] |
+| Seeded copy of the dataset | 20/20 | [0.8389, 1.0000] |
+| Seeded value in a tool call | 20/20 | [0.8389, 1.0000] |
+| Real asset allowlist | 20/20 | [0.8389, 1.0000] |
+| Decoy trip locks the real sibling | 20/20 | [0.8389, 1.0000] |
+| Loopback sentinel | 20/20 | [0.8389, 1.0000] |
+| Byte-for-byte copy of a real asset | 20/20 | [0.8389, 1.0000] |
+| Allowlisted tool naming an outside URL | 20/20 | [0.8389, 1.0000] |
+| git status false alarm | 20/20 | [0.8389, 1.0000] |
+| Copy of a decoy outside the root, observed | 20/20 | [0.8389, 1.0000] |
+| Allowlisted write outside the root, not followed | 20/20 | [0.8389, 1.0000] |
+
+A descriptor opened before the watch is not seen. The poll backend misses a read when the access time does not move, and the `poll_read` probe depends on access-time updates being on. Timing medians depend on the machine. An allowlisted process can write bytes outside the root, and the watcher does not follow them. The limits are in [../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).
 
