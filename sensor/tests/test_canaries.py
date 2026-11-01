@@ -368,11 +368,11 @@ def test_the_measured_gaps_are_found():
     import urllib.parse
     value = "cnry" + "ab" * 14
     padded = "abcdEFGHijklMNOPQRSTUVWX12+/ab=="
-    password = "Pw.abcdefghij+klmnop/qrst"
+    dotted = "Pw.abcdefghij+klmnop/qrst"
     store = fresh()
     canaries.add(store, value, "plain")
     canaries.add(store, padded, "padded")
-    canaries.add(store, password, "password")
+    canaries.add(store, dotted, "dotted")
 
     def found(text, label):
         hits = canaries.matches(store, text)
@@ -388,10 +388,10 @@ def test_the_measured_gaps_are_found():
     check("a URL path segment is found",
           found("http://127.0.0.1:8765/collect/%s" % value, "plain"))
     check("a value that contains a slash is found in a path",
-          found("http://127.0.0.1:8765/collect/%s" % password, "password"))
+          found("http://127.0.0.1:8765/collect/%s" % dotted, "dotted"))
     check("key:VALUE is found", found("key:%s" % value, "plain"))
     check("a trailing period on a dotted value is found",
-          found("The key is %s." % password, "password"))
+          found("The key is %s." % dotted, "dotted"))
     check("base64 of the value is found",
           found(b64.b64encode(value.encode()).decode(), "plain"))
     check("hex of the value is found",
@@ -416,10 +416,10 @@ def test_an_encoded_name_and_value_pair_is_found():
     import base64 as b64
     import binascii
     value = "cnry" + "ab" * 14
-    password = "Pw.abcdefghij+klmnop/qrst"
+    dotted = "Pw.abcdefghij+klmnop/qrst"
     store = fresh()
     canaries.add(store, value, "plain")
-    canaries.add(store, password, "password")
+    canaries.add(store, dotted, "dotted")
 
     def labels(text):
         return [h["label"] for h in canaries.matches(store, text)]
@@ -427,9 +427,9 @@ def test_an_encoded_name_and_value_pair_is_found():
     basic = b64.b64encode(("agent:%s" % value).encode()).decode()
     check("an HTTP Basic credential is found",
           "plain" in labels("Authorization: Basic %s" % basic))
-    wrapped = b64.b64encode(("token=%s" % password).encode()).decode()
+    wrapped = b64.b64encode(("token=%s" % dotted).encode()).decode()
     check("base64 of token=VALUE is found for a value with a slash",
-          "password" in labels(wrapped))
+          "dotted" in labels(wrapped))
     check("0x-prefixed hex is found",
           "plain" in labels("0x" + binascii.hexlify(value.encode()).decode()))
     unrelated = b64.b64encode(b"agent:cnry-not-the-registered-one").decode()
