@@ -140,5 +140,5 @@ Generated from `benchmarks/assumed-breach.json`, 20 trials, Python 3.12.3. The f
 | Copy of a decoy outside the root, observed | 20/20 | [0.8389, 1.0000] |
 | Allowlisted write outside the root, not followed | 20/20 | [0.8389, 1.0000] |
 
-A descriptor opened before the watch is not seen. The poll backend misses a read when the access time does not move. An allowlisted process can write bytes outside the root, and the watcher does not follow them. The limits are in [../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).
+A descriptor opened before the watch is not seen. The poll backend misses a read when the access time does not move, and the `poll_read` probe depends on access-time updates being on. Timing medians depend on the machine. An allowlisted process can write bytes outside the root, and the watcher does not follow them. The limits are in [../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).
 

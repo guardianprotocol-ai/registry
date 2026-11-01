@@ -43,11 +43,11 @@ def _hold(comm, path):
 def _decoy_box(backend="auto", allow=None, content=True):
     root = tempfile.mkdtemp(prefix="guardian-probe-")
     path = os.path.join(root, "decoy.bin")
-    path_canaries.write_decoy(path, "weights")
+    _fields, _token, digest = path_canaries.write_decoy(path, "weights")
     store = path_canaries.load(os.path.join(root, "missing-path.json"))
     path_canaries.add_path(
         store, path, "weights-decoy", state=path_canaries.ARMED, role="decoy",
-        root=root, content=content)
+        root=root, content=content, decoy_hash=digest)
     policy = breach.empty_policy()
     policy["root"] = root
     if allow:
@@ -177,8 +177,8 @@ def _probe_hardlink_inside():
             remaining = open(link, "rb").read()
         elif os.path.exists(box["path"]):
             remaining = open(box["path"], "rb").read()
-        emptied = remaining == b""
-        return _row(caught and emptied,
+        kept = remaining != b""
+        return _row(caught and kept,
                     "trip %s, bytes left on the other name: %d" % (caught, len(remaining)))
     finally:
         _stop(box)
@@ -193,9 +193,11 @@ def _probe_hardlink_outside():
         subprocess.run(["cat", link], capture_output=True)
         caught = _tripped(box)
         blob = open(link, "rb").read() if os.path.exists(link) else b"missing"
-        # The outside directory entry is not deleted. Truncating the decoy inode
-        # empties it. We do not walk the machine looking for other names.
-        return _row(caught and blob == b"",
+        # The outside directory entry is not deleted. A second link means the
+        # bytes are not bait we can empty, so they stay. We do not walk the
+        # machine looking for other names.
+        kept = blob not in (b"", b"missing")
+        return _row(caught and kept and os.path.exists(link),
                     "trip %s, outside name still exists %s, bytes %d" % (
                         caught, os.path.exists(link), len(blob) if blob != b"missing" else -1))
     finally:
@@ -349,7 +351,7 @@ def _probe_symlink_escape():
         victim = os.path.join(outside, "victim.txt")
         with open(victim, "w", encoding="utf-8") as handle:
             handle.write("leave this alone\n")
-        os.chmod(victim, 0o644)
+        os.chmod(victim, 0o600)
         before = os.stat(victim).st_mode
         decoy = os.path.join(root, "decoy.env")
         path_canaries.write_decoy(decoy, "env")
@@ -379,7 +381,7 @@ def _probe_sentinel():
         sibling = os.path.join(root, "models", "weights.bin")
         with open(sibling, "wb") as handle:
             handle.write(b"crown jewel\n")
-        os.chmod(sibling, 0o644)
+        os.chmod(sibling, 0o600)
         store = path_canaries.load(os.path.join(root, "missing-path.json"))
         policy = breach.empty_policy()
         policy["root"] = root
@@ -533,7 +535,7 @@ def _probe_sibling_lock():
         sibling = os.path.join(box["root"], "models", "weights.bin")
         with open(sibling, "wb") as handle:
             handle.write(b"crown jewel\n")
-        os.chmod(sibling, 0o644)
+        os.chmod(sibling, 0o600)
         box["policy"]["siblings"] = {"weights-decoy": ["models/weights.bin"]}
         subprocess.run(["cat", box["path"]], capture_output=True)
         caught = _tripped(box)

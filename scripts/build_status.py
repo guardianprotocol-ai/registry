@@ -297,9 +297,11 @@ def assumed_breach_section():
             label, block["ok"], block["trials"], lo, hi))
     lines.append("")
     lines.append("A descriptor opened before the watch is not seen. The poll backend misses a "
-                 "read when the access time does not move. An allowlisted process can write "
-                 "bytes outside the root, and the watcher does not follow them. The limits are "
-                 "in [../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).")
+                 "read when the access time does not move, and the `poll_read` probe depends "
+                 "on access-time updates being on. Timing medians depend on the machine. "
+                 "An allowlisted process can write bytes outside the root, and the watcher "
+                 "does not follow them. The limits are in "
+                 "[../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).")
     lines.append("")
     return "\n".join(lines) + "\n"
 

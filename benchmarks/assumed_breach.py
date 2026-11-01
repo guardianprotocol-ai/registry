@@ -137,8 +137,10 @@ def build_sandbox(root, meta, index=0, sentinel=False):
         "env-decoy": "env", "ssh-decoy": "ssh", "weights-decoy": "weights",
         "shard-decoy": "dataset", "credentials-decoy": "credentials",
     }
+    decoy_hashes = {}
     for label, path in decoys.items():
-        path_canaries.write_decoy(path, kinds[label])
+        _fields, _token, digest = path_canaries.write_decoy(path, kinds[label])
+        decoy_hashes[label] = digest
 
     values_path = os.path.join(meta, "values.json")
     values = canaries.load(os.path.join(meta, "missing-values.json"))
@@ -158,7 +160,7 @@ def build_sandbox(root, meta, index=0, sentinel=False):
                            role="asset", root=root, content=True)
     for label, path in decoys.items():
         path_canaries.add_path(store, path, label, state=path_canaries.ARMED,
-                               role="decoy", root=root)
+                               role="decoy", root=root, decoy_hash=decoy_hashes[label])
     path_canaries.save(store, store_path)
 
     policy = breach.empty_policy()
@@ -483,7 +485,7 @@ def sentinel_trial(index):
     root, meta = _fresh()
     secret = os.path.join(root, "secrets", "repo.env")
     _write(secret, "DEPLOY_NOTE=crown-jewel-file\n")
-    os.chmod(secret, 0o644)
+    os.chmod(secret, 0o600)
     store = path_canaries.load(os.path.join(meta, "paths.json"))
     policy = breach.empty_policy()
     policy["root"] = root
@@ -880,6 +882,7 @@ def render_md(report):
     lines.append("")
     lines.append("Median time to the first decoy: %s seconds. Median trace rows before that trip: %s."
                  % (sweep["median_seconds"], sweep["median_steps"]))
+    lines.append("Those medians are from this machine. Another machine will not reproduce the seconds.")
     lines.append("The crawl is `find` then `grep -R`. Directory order is not rearranged so that")
     lines.append("a decoy wins. A crown jewel opened first is counted as a crown jewel opened first.")
     lines.append("")
@@ -951,15 +954,17 @@ def render_md(report):
     lines.append("  that walks the tree. It does not show what a model would open first.")
     lines.append("- A descriptor opened before the watcher starts, and read afterwards, was not")
     lines.append("  seen. Bytes already read before the watch are missed.")
-    lines.append("- The poll backend sees a read only when the access time moves. noatime and")
-    lines.append("  relatime can hide one. inotify does not have that gap. This host's poll result")
-    lines.append("  is the `poll_read` row above.")
+    lines.append("- The poll backend sees a read only when the access time moves. The `poll_read`")
+    lines.append("  probe depends on access-time updates being on. noatime and relatime can hide")
+    lines.append("  a read. inotify does not have that gap. This host's poll result is the")
+    lines.append("  `poll_read` row above.")
     lines.append("- A process that exits before /proc is scanned is recorded as comm `unknown`.")
     lines.append("  Unknown is not on the allowlist, so the open still trips. A comm is only")
     lines.append("  reliable while the descriptor is held.")
-    lines.append("- A hard link of a decoy outside the root is emptied, because the decoy is fake,")
-    lines.append("  and the outside directory entry is not deleted. A hard link of a real asset")
-    lines.append("  outside the root keeps its bytes. Assets are not truncated.")
+    lines.append("- A decoy is emptied only when it is still the only name of the bytes that were")
+    lines.append("  written. A second hard link keeps those bytes, and the outside name is not")
+    lines.append("  deleted. A real file, including one hard-linked over a decoy path, is not")
+    lines.append("  truncated. `canary add-file` defaults to asset.")
     lines.append("- Mode 0400 does not stop the owner. Moving a file into the quarantine directory")
     lines.append("  (mode 0700) stops path access. An owner can still open a file they own.")
     lines.append("- An allowlisted process can read an asset and write the bytes outside the root.")

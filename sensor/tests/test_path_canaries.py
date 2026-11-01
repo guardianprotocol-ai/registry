@@ -7,6 +7,7 @@ out of the root.
 
 Run from the sensor folder:  python3 tests/test_path_canaries.py
 """
+import io
 import json
 import os
 import stat
@@ -17,7 +18,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
-from guardian_sensor import breach, canaries, path_canaries, sensor  # noqa: E402
+from guardian_sensor import breach, canaries, canary_cli, path_canaries, sensor  # noqa: E402
 
 failures = []
 
@@ -31,14 +32,16 @@ def check(name, condition, detail=""):
 def test_the_path_is_not_stored():
     with tempfile.TemporaryDirectory() as root:
         path = os.path.join(root, "decoys", "a.env")
-        _fields, token = path_canaries.write_decoy(path, "env")
+        _fields, token, digest = path_canaries.write_decoy(path, "env")
         store = path_canaries.load(os.path.join(root, "missing.json"))
         path_canaries.add_path(store, path, "env-decoy", state=path_canaries.ARMED,
                                role="decoy", root=root)
         saved = path_canaries.save(store, os.path.join(root, "paths.json"))
         raw = open(saved, encoding="utf-8").read()
+        file_hash, _size = path_canaries.hash_file(path)
         check("the path is absent from the file", path not in raw)
         check("the decoy token is absent from the file", token not in raw)
+        check("write_decoy returns a digest of the bytes it wrote", digest == file_hash)
         check("the label is present", "env-decoy" in raw)
         check("the file is owner only", stat.S_IMODE(os.stat(saved).st_mode) == 0o600)
 
@@ -156,7 +159,7 @@ def test_quarantine_does_not_follow_a_path_out_of_the_root():
         victim = os.path.join(outside, "victim.txt")
         with open(victim, "w", encoding="utf-8") as handle:
             handle.write("leave this alone\n")
-        os.chmod(victim, 0o644)
+        os.chmod(victim, 0o600)
         before = os.stat(victim).st_mode
         policy = breach.empty_policy()
         policy["root"] = root
@@ -316,6 +319,79 @@ def test_path_canary_end_to_end_does_not_reach_the_sink():
         check("the path did not reach the sink", not leaked)
         check("evidence records GP-0041 without the value of a weights file",
               "GP-0041" in evidence and "FAKE-WEIGHTS" not in evidence)
+
+
+def _quarantine(root, path, entry):
+    policy = breach.empty_policy()
+    policy["root"] = root
+    policy["response"] = breach.RESPONSE_QUARANTINE
+    hit = dict(entry)
+    hit["access_path"] = path
+    return breach.contain(policy, hit, reason="read")
+
+
+def test_add_file_default_role_keeps_real_bytes():
+    with tempfile.TemporaryDirectory() as root:
+        path = os.path.join(root, "models", "real.bin")
+        os.makedirs(os.path.dirname(path))
+        body = b"real-weights-not-bait\n"
+        with open(path, "wb") as handle:
+            handle.write(body)
+        os.chmod(path, 0o600)
+        paths = os.path.join(root, "paths.json")
+        policy_path = os.path.join(root, "policy.json")
+        rc = canary_cli.add_file([
+            path, "--label", "myweights", "--armed", "--root", root,
+            "--paths", paths, "--policy", policy_path,
+        ], out=io.StringIO())
+        check("add-file succeeds", rc == 0)
+        store = path_canaries.load(paths)
+        entry = path_canaries.by_label(store, "myweights")
+        check("the default role is asset", entry is not None and entry["role"] == "asset",
+              str(entry))
+        record = _quarantine(root, path, entry)
+        moved = record["moved_to"]
+        check("the real file was moved", bool(moved) and os.path.isfile(moved), record["action"])
+        check("real bytes survived the default role", open(moved, "rb").read() == body)
+
+
+def test_a_hard_link_to_a_real_file_is_not_truncated():
+    with tempfile.TemporaryDirectory() as root:
+        real = os.path.join(root, "models", "real.bin")
+        os.makedirs(os.path.dirname(real))
+        body = b"crown-jewel-bytes\n"
+        with open(real, "wb") as handle:
+            handle.write(body)
+        os.chmod(real, 0o600)
+        decoy = os.path.join(root, "decoys", "weights.bin")
+        _fields, _token, digest = path_canaries.write_decoy(decoy, "weights")
+        os.remove(decoy)
+        os.link(real, decoy)
+        store = path_canaries.load(os.path.join(root, "missing.json"))
+        entry = path_canaries.add_path(
+            store, decoy, "weights-decoy", state=path_canaries.ARMED, role="decoy",
+            root=root, decoy_hash=digest)
+        record = _quarantine(root, decoy, entry)
+        check("the real file still has its bytes", open(real, "rb").read() == body)
+        moved = record["moved_to"]
+        check("the quarantined name was not emptied",
+              bool(moved) and os.path.isfile(moved) and open(moved, "rb").read() == body,
+              record["action"])
+
+
+def test_a_lone_decoy_that_still_matches_is_emptied():
+    with tempfile.TemporaryDirectory() as root:
+        decoy = os.path.join(root, "decoys", "weights.bin")
+        _fields, _token, digest = path_canaries.write_decoy(decoy, "weights")
+        store = path_canaries.load(os.path.join(root, "missing.json"))
+        entry = path_canaries.add_path(
+            store, decoy, "weights-decoy", state=path_canaries.ARMED, role="decoy",
+            root=root, decoy_hash=digest)
+        record = _quarantine(root, decoy, entry)
+        moved = record["moved_to"]
+        check("a matching single-link decoy is emptied",
+              bool(moved) and os.path.isfile(moved) and open(moved, "rb").read() == b"",
+              record["action"])
 
 
 def main():

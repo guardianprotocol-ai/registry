@@ -148,18 +148,23 @@ dataset was copied. Filler rows in the same file are not canaries. The value is 
 the canary file, the audit, or the refusal.
 
 **A real file.** `canary add-file` registers a path that already exists, again as a
-digest. An asset takes an allowlist: only the named process may read it, and a
+digest. The default role is asset, so a file registered without `--role` is not bait.
+An asset takes an allowlist: only the named process may read it, and a
 byte-for-byte copy is a trip even for that process. A tool call that names a destination
 outside the sandbox is a trip even when the tool is allowlisted. The path is not stored.
 
 **A decoy beside the real file.** `canary decoy` writes a fake env file, SSH key, weights
-file, dataset shard or credentials file, and refuses to overwrite anything. The policy
-names the real files that sit next to it. When the decoy is opened, those siblings are
-made read-only. The decoy is emptied, so a hard link loses the bait. A real file is not
-emptied.
+file, dataset shard or credentials file, and refuses to overwrite anything. It records
+a digest of the bytes it wrote. The policy names the real files that sit next to it.
+When the decoy is opened, those siblings are made read-only. The decoy is emptied only
+when it is still the only name of those bytes. A second hard link, or a file whose
+bytes no longer match, is moved and made mode 0400, and the bytes stay. A real file
+is not emptied.
 
 `canary watch` runs the OS watcher on a root you name. On Linux that is inotify. Where
-that cannot be opened, it polls. A trip quarantines inside the root and writes a local
+that cannot be opened, it polls. The poll backend, and the `poll_read` probe, see a
+read only when access-time updates are on. A noatime or relatime mount can hide one.
+A trip quarantines inside the root and writes a local
 audit. A path that resolves outside the root is refused. The sensor and the client hook
 refuse the tool call before it runs, with the same text as every other rule.
 

@@ -115,7 +115,7 @@ def _existing(store, digest, fold_label=None):
 
 
 def add_path(store, path, label, state=BASELINE, role="decoy", root=None,
-             content=False):
+             content=False, decoy_hash=None):
     """Register a file by its path. Returns the entry, which does not contain the path."""
     if role not in ROLES:
         raise PathCanaryError("role must be one of %s" % ", ".join(ROLES))
@@ -149,6 +149,13 @@ def add_path(store, path, label, state=BASELINE, role="decoy", root=None,
         "role": role,
         "length": len(absolute),
     }
+    if decoy_hash is not None:
+        if (not isinstance(decoy_hash, str) or len(decoy_hash) != 64
+                or any(char not in "0123456789abcdef" for char in decoy_hash)):
+            raise PathCanaryError("a decoy digest must be a sha256 hex string")
+        # The digest of the bytes `canary decoy` wrote. Not a path, and not a
+        # reason to truncate a file that no longer matches it.
+        entry["decoy_hash"] = decoy_hash
     if content and os.path.isfile(real) and not os.path.islink(path):
         file_hash, size = hash_file(real)
         if file_hash:
@@ -500,20 +507,18 @@ def write_decoy(path, kind, token=None, sentinel_url=None):
             "refusing to overwrite an existing file. add-file registers a file that is "
             "already there without changing it.")
     fields, body, token = render_decoy(kind, token=token, sentinel_url=sentinel_url)
+    raw = body if isinstance(body, bytes) else body.encode("utf-8")
+    digest = hashlib.sha256(raw).hexdigest()
     parent = os.path.dirname(path)
     if parent:
         os.makedirs(parent, exist_ok=True)
-    if isinstance(body, bytes):
-        with open(path, "wb") as handle:
-            handle.write(body)
-    else:
-        with open(path, "w", encoding="utf-8") as handle:
-            handle.write(body)
+    with open(path, "wb") as handle:
+        handle.write(raw)
     try:
         os.chmod(path, 0o600)
     except OSError:
         pass
-    return fields, token
+    return fields, token, digest
 
 
 def _filler_row(index):

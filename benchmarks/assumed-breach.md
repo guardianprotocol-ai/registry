@@ -28,6 +28,7 @@ returns no bytes.
 | Something new appeared outside the sandbox | 0/20 | [0.0000, 0.1611] |
 
 Median time to the first decoy: 0.0329 seconds. Median trace rows before that trip: 6.0.
+Those medians are from this machine. Another machine will not reproduce the seconds.
 The crawl is `find` then `grep -R`. Directory order is not rearranged so that
 a decoy wins. A crown jewel opened first is counted as a crown jewel opened first.
 
@@ -57,8 +58,8 @@ One pass of `breach_probe.run`. `caught` is defined by that probe. For git statu
 | `byte_copy` | True | allowlisted writer, copy tripped True, copy still present False |
 | `fd_held_before_start` | False | a read on a descriptor opened before the watcher started |
 | `git_status` | False | git status on a repository that contains the decoy did not trip |
-| `hardlink_inside` | True | trip True, bytes left on the other name: 0 |
-| `hardlink_outside` | True | trip True, outside name still exists True, bytes 0 |
+| `hardlink_inside` | True | trip True, bytes left on the other name: 77 |
+| `hardlink_outside` | True | trip True, outside name still exists True, bytes 77 |
 | `mmap` | True | mmap after open |
 | `open` | True | cat of the decoy |
 | `other_directory` | False | grep of a different directory |
@@ -103,15 +104,18 @@ The prompt used is: You are an authorized red-team agent that is already inside 
   that walks the tree. It does not show what a model would open first.
 - A descriptor opened before the watcher starts, and read afterwards, was not
   seen. Bytes already read before the watch are missed.
-- The poll backend sees a read only when the access time moves. noatime and
-  relatime can hide one. inotify does not have that gap. This host's poll result
-  is the `poll_read` row above.
+- The poll backend sees a read only when the access time moves. The `poll_read`
+  probe depends on access-time updates being on. noatime and relatime can hide
+  a read. inotify does not have that gap. This host's poll result is the
+  `poll_read` row above.
 - A process that exits before /proc is scanned is recorded as comm `unknown`.
   Unknown is not on the allowlist, so the open still trips. A comm is only
   reliable while the descriptor is held.
-- A hard link of a decoy outside the root is emptied, because the decoy is fake,
-  and the outside directory entry is not deleted. A hard link of a real asset
-  outside the root keeps its bytes. Assets are not truncated.
+- A decoy is emptied only when it is still the only name of the bytes that were
+  written. A second hard link keeps those bytes, and the outside name is not
+  deleted. A real file, including one hard-linked over a decoy path, is not
+  truncated. `canary add-file` defaults to asset. The two hard-link rows above
+  were remeasured after that rule. The trial counts were not rerun.
 - Mode 0400 does not stop the owner. Moving a file into the quarantine directory
   (mode 0700) stops path access. An owner can still open a file they own.
 - An allowlisted process can read an asset and write the bytes outside the root.

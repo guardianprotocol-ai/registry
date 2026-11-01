@@ -17,10 +17,12 @@ miss a read that does not change the file. inotify does not have that gap.
 """
 import ctypes
 import ctypes.util
+import hmac
 import json
 import os
 import select
 import socket
+import stat
 import struct
 import threading
 import time
@@ -200,13 +202,36 @@ def _readonly(path, root):
     return "readonly"
 
 
+def _original_decoy(path, hit):
+    """True only for the single name of the bytes `canary decoy` wrote.
+
+    A second link, or bytes that no longer match that digest, is not bait.
+    Truncating it would destroy whatever the name points at now.
+    """
+    if not path or not isinstance(hit, dict) or hit.get("role") != "decoy":
+        return False
+    expected = hit.get("decoy_hash")
+    if not isinstance(expected, str) or len(expected) != 64:
+        return False
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return False
+    if stat.S_ISLNK(info.st_mode) or info.st_nlink != 1:
+        return False
+    digest, _size = path_canaries.hash_file(path)
+    if not isinstance(digest, str) or len(digest) != len(expected):
+        return False
+    return hmac.compare_digest(digest, expected)
+
+
 def _move_into(path, root, quarantine_dir, label, truncate):
     """Move a directory entry into the quarantine directory.
 
     chmod follows symlinks, so a link whose target is outside the root is renamed
-    and never chmod'd. Truncation is only for decoys, and only after the target is
-    shown to be inside the root: a decoy is fake, and emptying the inode also empties
-    hard links that point at it from outside the root.
+    and never chmod'd. Truncation happens only when the caller has already shown
+    that this is still the single name of the decoy that was written. Anything
+    else is made mode 0400 and moved, and the bytes stay.
     """
     if not path or not os.path.lexists(path):
         return "missing", None
@@ -282,7 +307,7 @@ def contain(policy, hit, tool=None, process=None, reason="", audit_path=None,
             else:
                 action, moved_to = _move_into(
                     access, root, quarantine_dir_of(policy), label,
-                    truncate=(role == "decoy"))
+                    truncate=_original_decoy(access, hit))
         for relative in (policy.get("siblings") or {}).get(label) or []:
             sibling = _sibling_path(root, relative)
             if sibling is None:

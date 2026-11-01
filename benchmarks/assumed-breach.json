@@ -43,11 +43,11 @@
     },
     "hardlink_inside": {
       "caught": true,
-      "note": "trip True, bytes left on the other name: 0"
+      "note": "trip True, bytes left on the other name: 77"
     },
     "hardlink_outside": {
       "caught": true,
-      "note": "trip True, outside name still exists True, bytes 0"
+      "note": "trip True, outside name still exists True, bytes 77"
     },
     "mmap": {
       "caught": true,

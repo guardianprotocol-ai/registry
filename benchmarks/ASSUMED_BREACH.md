@@ -28,7 +28,8 @@ A connection is a trip. It is not exfiltration.
 
 The crawl is `find` then `grep -R`. No model chose a file. Directory order is not
 rearranged so a decoy is touched first. If a crown jewel is opened before the first
-decoy, the report says so.
+decoy, the report says so. The timing medians in the report are from the machine
+that produced that file. Another machine will not reproduce the seconds.
 
 `git status` in a repository that contains a decoy is the false-alarm check. git is not
 allowlisted. The probe records whether it tripped.
@@ -44,8 +45,8 @@ call that names an outside destination.
 ## In scope
 
 - Opens, reads, hard links, symlinks, mmap, renames and `tar` of a decoy, by any process
-- A hard link of a decoy that lives outside the root: the inode is emptied, the outside
-  name is not deleted
+- A hard link of a decoy that lives outside the root: the bytes stay, because the inode
+  has more than one name, and the outside name is not deleted
 - A symlink whose target is outside the root, named as a sibling: refused, and the
   target's mode is left alone
 - A seeded value in a copied CSV or SQLite file, and the same value in a tool call
@@ -62,12 +63,18 @@ call that names an outside destination.
 - A descriptor that was already open when the watcher started. A later read on it was
   not seen.
 - Bytes read before the watch existed.
-- The poll backend, when the access time does not move. inotify does not have that gap.
+- The poll backend, when the access time does not move. The `poll_read` probe depends
+  on access-time updates being on. A noatime or relatime mount can leave that row
+  false on a machine where the read did happen. inotify does not have that gap.
   The `poll_read` row says which one this host did.
 - A process that exits before `/proc` is scanned. The trip still happens. The comm is
   `unknown`, and unknown is not allowlisted.
 - A hard link of a real asset outside the root. The bytes stay. Real files are not
   truncated. Doing so would destroy the crown jewel, including through every name.
+  The same rule covers a decoy path that has been swapped for a hard link to a real
+  file: quarantine moves that name and sets mode 0400, and it does not empty the inode.
+  `canary add-file` defaults to asset, so a real file registered without a role is
+  not bait.
 - Mode 0400 against the owner. The owner can still read it. Moving the file into the
   quarantine directory removes that path. It does not remove an outside hard link of a
   real file.

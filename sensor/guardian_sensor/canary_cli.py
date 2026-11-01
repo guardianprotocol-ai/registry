@@ -198,7 +198,8 @@ def add_file(argv, out=sys.stdout):
     ap.add_argument("path")
     ap.add_argument("--label", required=True)
     ap.add_argument("--root", default=None, help="sandbox root. A path that resolves outside it is refused")
-    ap.add_argument("--role", default="decoy", choices=path_canaries.ROLES)
+    ap.add_argument("--role", default="asset", choices=path_canaries.ROLES,
+                    help="defaults to asset, so a real file is not treated as bait")
     ap.add_argument("--armed", action="store_true")
     ap.add_argument("--never-leaves", action="store_true",
                     help="store a digest of the file bytes and treat a copy as a trip")
@@ -248,12 +249,12 @@ def decoy(argv, out=sys.stdout):
     ap.add_argument("--values", default=canaries.DEFAULT_PATH)
     a = ap.parse_args(argv)
     try:
-        _fields, token = path_canaries.write_decoy(
+        _fields, token, digest = path_canaries.write_decoy(
             a.path, a.kind, sentinel_url=a.sentinel_url)
         store = path_canaries.load(a.paths)
         entry = path_canaries.add_path(
             store, a.path, a.label, state=_state(a.armed), role="decoy", root=a.root,
-            content=True)
+            content=True, decoy_hash=digest)
         if a.sentinel_url:
             path_canaries.add_sentinel(
                 store, a.sentinel_url, a.label + "-sentinel", state=_state(a.armed))
