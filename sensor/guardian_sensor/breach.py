@@ -85,6 +85,9 @@ def empty_policy():
             "path": "/crown-jewels-internal",
         },
         "audit_path": None,
+        # Set by a drill or a lab run. Live traffic leaves this false, so a sighting
+        # built from the evidence is marked live unless the operator said otherwise.
+        "drill": False,
     }
 
 
@@ -112,8 +115,10 @@ def load_policy(path=None):
     for key in ("siblings", "assets", "seeds", "sentinel"):
         if not isinstance(policy[key], dict):
             raise BreachError("%s must be an object" % key)
-    if policy["sentinel"].get("host") not in (None, "127.0.0.1"):
-        raise BreachError("the sentinel listens on 127.0.0.1 only")
+    sentinel_host = policy["sentinel"].get("host")
+    if sentinel_host not in (None, "127.0.0.1") and not rfc1918_host(sentinel_host):
+        raise BreachError(
+            "the sentinel listens on 127.0.0.1 or an RFC1918 address, never on a public address")
     return policy
 
 
@@ -487,19 +492,52 @@ def resolve_labels(store, root, limit=10000):
     return table
 
 
+def rfc1918_host(host):
+    """True for 10/8, 172.16/12 and 192.168/16.
+
+    The wildcard address, a public address, a name and IPv6 are false. The sentinel
+    uses this so a lab can bind an address inside an isolated network, and a public
+    address is refused before the socket exists.
+    """
+    if not isinstance(host, str):
+        return False
+    parts = host.split(".")
+    if len(parts) != 4:
+        return False
+    try:
+        nums = [int(part) for part in parts]
+    except ValueError:
+        return False
+    if any(num < 0 or num > 255 for num in nums):
+        return False
+    if nums[0] == 10:
+        return True
+    if nums[0] == 172 and 16 <= nums[1] <= 31:
+        return True
+    if nums[0] == 192 and nums[1] == 168:
+        return True
+    return False
+
+
 class Sentinel:
     """A decoy listener. It accepts a connection, records it, and serves nothing."""
 
     def __init__(self, host="127.0.0.1", port=0, on_connect=None):
-        if host != "127.0.0.1":
-            raise BreachError("the sentinel listens on 127.0.0.1 only")
-        self.host = "127.0.0.1"
+        if host != "127.0.0.1" and not rfc1918_host(host):
+            raise BreachError(
+                "the sentinel listens on 127.0.0.1 or an RFC1918 address, never on a public address")
+        if host == "127.0.0.1":
+            bind_host = "127.0.0.1"
+        else:
+            parts = [int(part) for part in host.split(".")]
+            bind_host = "%d.%d.%d.%d" % (parts[0], parts[1], parts[2], parts[3])
+        self.host = bind_host
         self.events = []
         self._on = on_connect
         self._stop = threading.Event()
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._sock.bind(("127.0.0.1", int(port or 0)))
+        self._sock.bind((bind_host, int(port or 0)))
         self._sock.listen(16)
         self._sock.settimeout(0.2)
         self.port = self._sock.getsockname()[1]
@@ -541,7 +579,9 @@ class Sentinel:
                 conn.close()
             except OSError:
                 pass
-            if self._on and peer == "127.0.0.1":
+            # Any completed handshake is the event. Nothing is read and nothing is
+            # sent. The bind address is what keeps the socket off the public internet.
+            if self._on:
                 try:
                     self._on(event)
                 except Exception:
@@ -572,7 +612,7 @@ class Watcher:
     """
 
     def __init__(self, root, store, policy=None, value_store=None, audit_path=None,
-                 evidence_path=None, backend="auto"):
+                 evidence_path=None, backend="auto", on_record=None):
         if not root or not os.path.isdir(root):
             raise BreachError("the watcher needs a directory to watch")
         self.root = os.path.realpath(root)
@@ -606,6 +646,7 @@ class Watcher:
         self._seen_trace = set()
         self._done = set()
         self.observe_paths = []
+        self.on_record = on_record
 
     def start(self):
         self._index()
@@ -989,9 +1030,16 @@ class Watcher:
         if self.evidence_path:
             action = "blocked" if record["action"] in (
                 "quarantined", "readonly", "moved-link", "siblings-locked") else "flagged"
-            write_evidence(
+            evidence = write_evidence(
                 self.evidence_path, ["GP-0041"], action,
-                evidence_detail(hit, via, process=process, reason=reason))
+                evidence_detail(hit, via, process=process, reason=reason),
+                drill=bool(self.policy.get("drill")))
+            if self.on_record and evidence:
+                try:
+                    self.on_record(evidence)
+                except Exception:
+                    # Sharing the sighting must not undo the local quarantine.
+                    pass
 
     def _scan_written(self, path):
         if self._ignored(path) or self._is_self(path):
@@ -1071,7 +1119,8 @@ class Watcher:
         }
         hit["access_path"] = None
         hit["state"] = hit.get("state") or path_canaries.ARMED
-        # The peer is loopback. Record the connection, not a payload.
+        # Record the connection, not a payload. The peer is whoever completed
+        # the handshake. The socket has already been closed.
         process = {"pid": None, "comm": "connect:%s" % (event.get("peer") or "unknown")}
         self._trip(hit, reason="connection to the decoy endpoint", via="sentinel",
                    honor_allow=False, process=process)

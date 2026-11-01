@@ -413,8 +413,8 @@ def _probe_sentinel_bind():
     try:
         breach.Sentinel(host=wildcard, port=0)
     except breach.BreachError:
-        return _row(True, "a non-loopback bind is refused")
-    return _row(False, "a non-loopback bind was accepted")
+        return _row(True, "a wildcard bind is refused")
+    return _row(False, "a wildcard bind was accepted")
 
 
 def _probe_poll_unlink():

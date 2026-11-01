@@ -97,6 +97,17 @@ that file. Limits are in [benchmarks/ASSUMED_BREACH.md](benchmarks/ASSUMED_BREAC
 python3 benchmarks/assumed_breach.py
 ```
 
+The same hosts, separated only by network namespaces, are measured in
+[benchmarks/multi-host-breach.md](benchmarks/multi-host-breach.md). A workstation, a data
+server, a repo host and a hub share a private bridge and have no default route. The sweep
+is scripted. The next host was not locked before arrival (0 of 20). Download counts in
+that table are one run and vary with timing. As written, `--live` will not work from
+those namespaces. Limits are in [benchmarks/MULTI_HOST.md](benchmarks/MULTI_HOST.md).
+
+```bash
+python3 benchmarks/multi_host_breach.py
+```
+
 **Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
 
 New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.
