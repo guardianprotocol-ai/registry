@@ -358,7 +358,7 @@ def _probe_symlink_escape():
         os.symlink(victim, os.path.join(root, "link-out"))
         policy = breach.empty_policy()
         policy["root"] = root
-        policy["siblings"] = {"d": ["link-out", "nope/../../etc/passwd"]}
+        policy["siblings"] = {"d": ["link-out", "nope/../../etc/hostname"]}
         record = breach.contain(policy, {
             "label": "d", "state": path_canaries.ARMED, "role": "decoy",
             "kind": "path", "access_path": decoy}, reason="probe")

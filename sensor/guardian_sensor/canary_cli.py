@@ -7,7 +7,6 @@ the machine can read it. That is a small detail and it is the whole point of the
 Python 3.9+ standard library only.
 """
 import argparse
-import getpass
 import os
 import sys
 
@@ -20,14 +19,41 @@ from . import path_canaries
 COMMANDS = ("add", "list", "arm", "remove", "add-file", "decoy", "seed", "watch")
 
 
+def _read_hidden(stream):
+    """One line from a terminal with echo off.
+
+    The terminal change is undone before this returns. If the stream is not a
+    terminal, the line is read as it stands.
+    """
+    try:
+        import termios
+    except ImportError:
+        return stream.readline().rstrip("\n")
+    try:
+        fd = stream.fileno()
+        saved = termios.tcgetattr(fd)
+    except (AttributeError, OSError, termios.error):
+        return stream.readline().rstrip("\n")
+    try:
+        hidden = termios.tcgetattr(fd)
+        hidden[3] = hidden[3] & ~termios.ECHO
+        termios.tcsetattr(fd, termios.TCSADRAIN, hidden)
+        sys.stderr.write("Paste the canary value (not shown): ")
+        sys.stderr.flush()
+        line = stream.readline()
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, saved)
+    return line.rstrip("\n")
+
+
 def _read_value(stream=None, prompt=True):
-    """The secret, from a terminal prompt or from a pipe. Never echoed, never an argument."""
+    """The value, from a terminal prompt or from a pipe. Never echoed, never an argument."""
     stream = stream if stream is not None else sys.stdin
     if not stream.isatty():
         return stream.readline().rstrip("\n")
     if not prompt:
         return ""
-    return getpass.getpass("Paste the canary value (not shown): ")
+    return _read_hidden(stream)
 
 
 def add(argv, out=sys.stdout, stream=None):

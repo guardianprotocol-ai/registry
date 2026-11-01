@@ -70,7 +70,7 @@ def _digest(value, salt):
     An unsalted digest of an API key is as good as the key to anyone holding a rainbow table
     of the vendor's key space, and vendors publish their key formats.
     """
-    return hmac.new(bytes.fromhex(salt), value.encode("utf-8"), hashlib.sha256).hexdigest()  # codeql[py/weak-sensitive-data-hashing]
+    return hmac.new(bytes.fromhex(salt), value.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def load(path=DEFAULT_PATH):

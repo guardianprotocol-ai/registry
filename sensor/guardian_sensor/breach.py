@@ -17,6 +17,7 @@ miss a read that does not change the file. inotify does not have that gap.
 """
 import ctypes
 import ctypes.util
+import hashlib
 import hmac
 import json
 import os
@@ -202,36 +203,68 @@ def _readonly(path, root):
     return "readonly"
 
 
-def _original_decoy(path, hit):
-    """True only for the single name of the bytes `canary decoy` wrote.
+def _hash_fd(fd, limit):
+    """SHA-256 of the bytes behind an open descriptor, or None past the cap."""
+    digest = hashlib.sha256()
+    size = 0
+    os.lseek(fd, 0, os.SEEK_SET)
+    while True:
+        chunk = os.read(fd, 65536)
+        if not chunk:
+            break
+        size += len(chunk)
+        if size > limit:
+            return None
+        digest.update(chunk)
+    return digest.hexdigest()
 
-    A second link, or bytes that no longer match that digest, is not bait.
-    Truncating it would destroy whatever the name points at now.
+
+def _empty_original_decoy(path, hit):
+    """Truncate a decoy on the descriptor that just showed it is still the bait.
+
+    The link count and the digest are read from that descriptor, and the
+    truncate uses it too. A check on the path, then a later open, can empty
+    whatever the name points at by then. A second link, or bytes that no
+    longer match the digest `canary decoy` wrote, is not bait.
     """
     if not path or not isinstance(hit, dict) or hit.get("role") != "decoy":
-        return False
+        return
     expected = hit.get("decoy_hash")
     if not isinstance(expected, str) or len(expected) != 64:
-        return False
+        return
+    flags = os.O_RDWR
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
     try:
-        info = os.lstat(path)
+        fd = os.open(path, flags)
     except OSError:
-        return False
-    if stat.S_ISLNK(info.st_mode) or info.st_nlink != 1:
-        return False
-    digest, _size = path_canaries.hash_file(path)
-    if not isinstance(digest, str) or len(digest) != len(expected):
-        return False
-    return hmac.compare_digest(digest, expected)
+        return
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            return
+        digest = _hash_fd(fd, path_canaries.MAX_CONTENT_BYTES)
+        if not isinstance(digest, str) or len(digest) != len(expected):
+            return
+        if not hmac.compare_digest(digest, expected):
+            return
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            return
+        os.ftruncate(fd, 0)
+    except OSError:
+        return
+    finally:
+        os.close(fd)
 
 
-def _move_into(path, root, quarantine_dir, label, truncate):
+def _move_into(path, root, quarantine_dir, label, hit):
     """Move a directory entry into the quarantine directory.
 
     chmod follows symlinks, so a link whose target is outside the root is renamed
-    and never chmod'd. Truncation happens only when the caller has already shown
-    that this is still the single name of the decoy that was written. Anything
-    else is made mode 0400 and moved, and the bytes stay.
+    and never chmod'd. A regular file is emptied only when the same descriptor
+    still shows one link and the decoy digest. Anything else is made mode 0400
+    and moved, and the bytes stay.
     """
     if not path or not os.path.lexists(path):
         return "missing", None
@@ -256,12 +289,7 @@ def _move_into(path, root, quarantine_dir, label, truncate):
         target = os.path.realpath(path)
         if not inside(target, root):
             return "refused", None
-        if truncate:
-            fd = os.open(target, os.O_WRONLY)
-            try:
-                os.ftruncate(fd, 0)
-            finally:
-                os.close(fd)
+        _empty_original_decoy(path, hit)
         os.chmod(target, 0o400)
         os.rename(path, dest)
     except OSError:
@@ -306,8 +334,7 @@ def contain(policy, hit, tool=None, process=None, reason="", audit_path=None,
                 action = _readonly(access, root)
             else:
                 action, moved_to = _move_into(
-                    access, root, quarantine_dir_of(policy), label,
-                    truncate=_original_decoy(access, hit))
+                    access, root, quarantine_dir_of(policy), label, hit)
         for relative in (policy.get("siblings") or {}).get(label) or []:
             sibling = _sibling_path(root, relative)
             if sibling is None:

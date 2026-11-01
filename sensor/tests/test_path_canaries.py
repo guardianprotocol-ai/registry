@@ -163,7 +163,7 @@ def test_quarantine_does_not_follow_a_path_out_of_the_root():
         before = os.stat(victim).st_mode
         policy = breach.empty_policy()
         policy["root"] = root
-        policy["siblings"] = {"d": ["nope/../../etc/passwd"]}
+        policy["siblings"] = {"d": ["nope/../../etc/hostname"]}
         record = breach.contain(policy, {
             "label": "d", "state": path_canaries.ARMED, "role": "asset",
             "kind": "path", "access_path": victim,
@@ -391,6 +391,67 @@ def test_a_lone_decoy_that_still_matches_is_emptied():
         moved = record["moved_to"]
         check("a matching single-link decoy is emptied",
               bool(moved) and os.path.isfile(moved) and open(moved, "rb").read() == b"",
+              record["action"])
+
+
+def test_emptying_a_decoy_uses_the_descriptor_it_checked():
+    with tempfile.TemporaryDirectory() as root:
+        decoy = os.path.join(root, "decoys", "weights.bin")
+        _fields, _token, digest = path_canaries.write_decoy(decoy, "weights")
+        store = path_canaries.load(os.path.join(root, "missing.json"))
+        entry = path_canaries.add_path(
+            store, decoy, "weights-decoy", state=path_canaries.ARMED, role="decoy",
+            root=root, decoy_hash=digest)
+        order = []
+        real_fstat = os.fstat
+        real_ftruncate = os.ftruncate
+
+        def wrapped_fstat(fd):
+            order.append(("stat", fd))
+            return real_fstat(fd)
+
+        def wrapped_ftruncate(fd, length):
+            order.append(("trunc", fd))
+            return real_ftruncate(fd, length)
+
+        os.fstat = wrapped_fstat
+        os.ftruncate = wrapped_ftruncate
+        try:
+            record = _quarantine(root, decoy, entry)
+        finally:
+            os.fstat = real_fstat
+            os.ftruncate = real_ftruncate
+        truncs = [fd for kind, fd in order if kind == "trunc"]
+        stats_before = []
+        for kind, fd in order:
+            if kind == "trunc":
+                break
+            if kind == "stat":
+                stats_before.append(fd)
+        moved = record["moved_to"]
+        check("the truncate used the descriptor that was stat'd",
+              len(truncs) == 1 and truncs[0] in stats_before, str(order))
+        check("that descriptor's file is empty afterwards",
+              bool(moved) and os.path.isfile(moved) and open(moved, "rb").read() == b"",
+              record["action"])
+
+
+def test_a_decoy_whose_bytes_changed_is_not_emptied():
+    with tempfile.TemporaryDirectory() as root:
+        decoy = os.path.join(root, "decoys", "weights.bin")
+        _fields, _token, digest = path_canaries.write_decoy(decoy, "weights")
+        replacement = b"replaced-crown-jewel\n"
+        with open(decoy, "wb") as handle:
+            handle.write(replacement)
+        os.chmod(decoy, 0o600)
+        store = path_canaries.load(os.path.join(root, "missing.json"))
+        entry = path_canaries.add_path(
+            store, decoy, "weights-decoy", state=path_canaries.ARMED, role="decoy",
+            root=root, decoy_hash=digest)
+        record = _quarantine(root, decoy, entry)
+        moved = record["moved_to"]
+        check("bytes that no longer match the digest are kept",
+              bool(moved) and os.path.isfile(moved) and open(moved, "rb").read() == replacement,
               record["action"])
 
 
