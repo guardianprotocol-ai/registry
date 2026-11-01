@@ -3,7 +3,7 @@
     "elapsed_seconds": 78.1,
     "fast": false,
     "live": {
-      "api_key_env_set": false,
+      "external_key_present": false,
       "binaries_on_path": {
         "aider": false,
         "claude": false,

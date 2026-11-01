@@ -249,15 +249,15 @@ def test_a_seeded_value_in_a_tool_call_locks_the_dataset_and_hides_the_value():
             policy["seeds"][entry["label"]] = home["label"]
         policy_path = breach.save_policy(policy, os.path.join(root, "policy.json"))
         instance = _sensor(root, store_path, policy_path, values_path)
-        api_key = next(value for value, label, _column in seeded if label.endswith("api-key"))
-        reply = _call(instance, "send_message", {"to": "ops@example.test", "body": "key " + api_key})
+        planted = next(value for value, label, _column in seeded if label.endswith("marker"))
+        reply = _call(instance, "send_message", {"to": "ops@example.test", "body": "key " + planted})
         text = reply["result"]["content"][0]["text"]
         evidence = open(instance.cfg["evidence_path"], encoding="utf-8").read()
         stored = open(values_path, encoding="utf-8").read()
         check("a seeded value in a tool call blocks", reply["result"]["isError"] is True)
-        check("the refusal does not contain the value", api_key not in text)
-        check("evidence does not contain the value", api_key not in evidence, evidence[:400])
-        check("the value store does not contain the value", api_key not in stored)
+        check("the refusal does not contain the value", planted not in text)
+        check("evidence does not contain the value", planted not in evidence, evidence[:400])
+        check("the value store does not contain the value", planted not in stored)
         check("evidence records GP-0020", "GP-0020" in evidence)
         check("the dataset was quarantined", not os.path.exists(dataset))
 

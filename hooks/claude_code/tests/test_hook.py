@@ -226,15 +226,15 @@ def test_a_seeded_value_in_a_hook_call_is_denied_without_echoing_it():
         values = canaries.load(os.path.join(w, "missing-values.json"))
         path_canaries.register_seeds(values, seeded, canaries.ARMED)
         values_path = canaries.save(values, os.path.join(w, "values.json"))
-        api_key = next(value for value, label, _column in seeded if label.endswith("api-key"))
+        planted = next(value for value, label, _column in seeded if label.endswith("marker"))
         _arm_hook(w, {"canaries_path": values_path})
-        out, _, _ = fire(pre("Write", {"file_path": os.path.join(w, "out.txt"), "content": api_key}), w)
+        out, _, _ = fire(pre("Write", {"file_path": os.path.join(w, "out.txt"), "content": planted}), w)
         text = reason(out)
         ev = evidence_of(w)
         check("a seeded key in a tool call is denied", decision(out) == "deny", str(decision(out)))
         check("the hook refusal is uniform", text == REFUSAL, text)
-        check("the refusal does not contain the key", api_key not in text)
-        check("evidence does not contain the key", api_key not in ev, ev[:300])
+        check("the refusal does not contain the key", planted not in text)
+        check("evidence does not contain the key", planted not in ev, ev[:300])
 
 
 def test_recorded_payloads_replay():

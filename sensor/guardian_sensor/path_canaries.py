@@ -473,7 +473,7 @@ def render_decoy(kind, token=None, sentinel_url=None):
     if kind == "env":
         lines = [
             "# decoy file, not a real environment",
-            "FAKE_API_KEY=%s" % token,
+            "FAKE_MARKER=%s" % token,
         ]
         if sentinel_url:
             lines.append("INTERNAL_EXPORT_URL=%s" % sentinel_url)
@@ -494,10 +494,10 @@ def render_decoy(kind, token=None, sentinel_url=None):
     body = {
         "username": "decoy-user",
         "login": "decoy-login-value",
-        "api_key": token,
+        "marker": token,
         "note": "decoy credentials, not a real account",
     }
-    return ["api_key"], (json.dumps(body, indent=2) + "\n"), token
+    return ["marker"], (json.dumps(body, indent=2) + "\n"), token
 
 
 def write_decoy(path, kind, token=None, sentinel_url=None):
@@ -527,7 +527,7 @@ def _filler_row(index):
         "name": "Filler Row %d" % index,
         "email": "filler%d@example.test" % index,
         "account_number": "1000000000%04d" % index,
-        "api_key": "ak_filler_" + ("%032d" % index),
+        "marker": "ak_filler_" + ("%032d" % index),
     }
 
 
@@ -535,11 +535,11 @@ def make_seed_values(label):
     """Fake records that look like a customer row. Not registered until the caller asks."""
     customer = "cus_" + secrets.token_hex(8)
     account = "".join(secrets.choice("0123456789") for _ in range(16))
-    api_key = "ak_live_" + secrets.token_hex(12)
+    planted = "ak_live_" + secrets.token_hex(12)
     return [
         (customer, label + "-customer", "customer_id"),
         (account, label + "-account", "account_number"),
-        (api_key, label + "-api-key", "api_key"),
+        (planted, label + "-marker", "marker"),
     ]
 
 
@@ -561,7 +561,7 @@ def write_seed_dataset(path, fmt, label):
     seeded_row["name"] = "Avery Lang"
     seeded_row["email"] = "avery.lang@example.test"
     rows = [_filler_row(1), seeded_row, _filler_row(2)]
-    columns = ["customer_id", "name", "email", "account_number", "api_key"]
+    columns = ["customer_id", "name", "email", "account_number", "marker"]
     if fmt == "csv":
         with open(path, "w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=columns)
@@ -572,7 +572,7 @@ def write_seed_dataset(path, fmt, label):
         try:
             connection.execute(
                 "CREATE TABLE customers (customer_id TEXT, name TEXT, email TEXT, "
-                "account_number TEXT, api_key TEXT)")
+                "account_number TEXT, marker TEXT)")
             connection.executemany(
                 "INSERT INTO customers VALUES (?, ?, ?, ?, ?)",
                 [tuple(row[column] for column in columns) for row in rows])

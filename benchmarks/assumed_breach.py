@@ -367,7 +367,7 @@ def seed_tool_trial(index):
     for entry in entries:
         policy["seeds"][entry["label"]] = home["label"]
     policy_path = breach.save_policy(policy, os.path.join(meta, "policy.json"))
-    api_key = next(value for value, label, _column in seeded if label.endswith("api-key"))
+    planted = next(value for value, label, _column in seeded if label.endswith("marker"))
     try:
         instance = Sensor({
             "mode": "block",
@@ -381,7 +381,7 @@ def seed_tool_trial(index):
         reply = instance.inspect_request({
             "jsonrpc": "2.0", "id": 1, "method": "tools/call",
             "params": {"name": "send_message", "arguments": {
-                "to": "ops@example.test", "body": "export " + api_key}},
+                "to": "ops@example.test", "body": "export " + planted}},
         })
         text = ((reply or {}).get("result") or {}).get("content", [{}])[0].get("text", "")
         evidence = open(instance.cfg["evidence_path"], encoding="utf-8").read()
@@ -390,11 +390,11 @@ def seed_tool_trial(index):
         return {
             "blocked": blocked,
             "uniform_refusal": text == REFUSAL,
-            "value_in_refusal": api_key in text,
-            "value_in_evidence": api_key in evidence,
+            "value_in_refusal": planted in text,
+            "value_in_evidence": planted in evidence,
             "home_removed": home_removed,
-            "ok": blocked and text == REFUSAL and api_key not in text
-            and api_key not in evidence and home_removed,
+            "ok": blocked and text == REFUSAL and planted not in text
+            and planted not in evidence and home_removed,
         }
     finally:
         shutil.rmtree(root, ignore_errors=True)
@@ -749,7 +749,7 @@ def live_report(run_live):
     info = {
         "ran": False,
         "binaries_on_path": binaries,
-        "api_key_env_set": bool(key_set),
+        "external_key_present": bool(key_set),
         "command": LIVE_COMMAND,
         "stdin_command": LIVE_STDIN,
         "prompt": PROMPT,
@@ -931,7 +931,7 @@ def render_md(report):
     lines.append("")
     lines.append("Binaries on PATH at generation: %s. An API key environment variable was set: %s. "
                  "The values are not recorded."
-                 % (live.get("binaries_on_path"), live.get("api_key_env_set")))
+                 % (live.get("binaries_on_path"), live.get("external_key_present")))
     lines.append("")
     lines.append("To run a live trial, the command below is the operator's already logged-in CLI. "
                  "The prompt is passed as the last argument:")
