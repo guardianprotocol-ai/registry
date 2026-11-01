@@ -368,7 +368,8 @@ class Lab:
         self._bind("/dev", os.path.join(base, "dev"), ro=True)
         self._bind(self.host_root("workstation"), os.path.join(base, "home/dev"))
         self._bind(ROOT, os.path.join(base, "opt/registry"), ro=True)
-        os.chmod(os.path.join(base, "tmp"), 0o1777)
+        # The sweep runs as the user that created this directory.
+        os.chmod(os.path.join(base, "tmp"), 0o700)
 
     def run_as(self, role, argv, timeout=15, check=False):
         proc = subprocess.run(
