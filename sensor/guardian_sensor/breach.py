@@ -466,13 +466,13 @@ class Sentinel:
     def __init__(self, host="127.0.0.1", port=0, on_connect=None):
         if host != "127.0.0.1":
             raise BreachError("the sentinel listens on 127.0.0.1 only")
-        self.host = host
+        self.host = "127.0.0.1"
         self.events = []
         self._on = on_connect
         self._stop = threading.Event()
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._sock.bind((host, int(port or 0)))
+        self._sock.bind(("127.0.0.1", int(port or 0)))
         self._sock.listen(16)
         self._sock.settimeout(0.2)
         self.port = self._sock.getsockname()[1]

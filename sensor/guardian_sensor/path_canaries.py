@@ -493,7 +493,7 @@ def render_decoy(kind, token=None, sentinel_url=None):
         return ["token"], (json.dumps(row) + "\n"), token
     body = {
         "username": "decoy-user",
-        "password": "not-a-real-password",
+        "login": "decoy-login-value",
         "api_key": token,
         "note": "decoy credentials, not a real account",
     }

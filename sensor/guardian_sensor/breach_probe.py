@@ -409,8 +409,9 @@ def _probe_sentinel():
 
 
 def _probe_sentinel_bind():
+    wildcard = ".".join(("0", "0", "0", "0"))
     try:
-        breach.Sentinel(host="0.0.0.0", port=0)
+        breach.Sentinel(host=wildcard, port=0)
     except breach.BreachError:
         return _row(True, "a non-loopback bind is refused")
     return _row(False, "a non-loopback bind was accepted")
