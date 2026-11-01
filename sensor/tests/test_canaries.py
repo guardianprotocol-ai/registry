@@ -409,6 +409,33 @@ def test_the_measured_gaps_are_found():
                            prior=canaries.fragments("part2 " + value[16:])) == [])
 
 
+def test_an_encoded_name_and_value_pair_is_found():
+    """base64 of "user:VALUE" is an HTTP Basic credential, and base64 of "token=VALUE"
+    is a common wrapper. The decoded text gets the same split as outbound text. Hex
+    written with a "0x" prefix is decoded too. Still one decode layer."""
+    import base64 as b64
+    import binascii
+    value = "cnry" + "ab" * 14
+    password = "Pw.abcdefghij+klmnop/qrst"
+    store = fresh()
+    canaries.add(store, value, "plain")
+    canaries.add(store, password, "password")
+
+    def labels(text):
+        return [h["label"] for h in canaries.matches(store, text)]
+
+    basic = b64.b64encode(("agent:%s" % value).encode()).decode()
+    check("an HTTP Basic credential is found",
+          "plain" in labels("Authorization: Basic %s" % basic))
+    wrapped = b64.b64encode(("token=%s" % password).encode()).decode()
+    check("base64 of token=VALUE is found for a value with a slash",
+          "password" in labels(wrapped))
+    check("0x-prefixed hex is found",
+          "plain" in labels("0x" + binascii.hexlify(value.encode()).decode()))
+    unrelated = b64.b64encode(b"agent:cnry-not-the-registered-one").decode()
+    check("an unrelated Basic credential is not a hit", labels(unrelated) == [])
+
+
 def test_an_entry_written_before_the_fold_digest_still_matches_exactly():
     """Older files have no fold and no length. Exact text still matches. A case-only
     copy does not, until the operator registers the value again, because the fold

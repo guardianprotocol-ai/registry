@@ -314,9 +314,11 @@ def _decoded(token):
             blobs.append(base64.urlsafe_b64decode(padded))
         except Exception:
             pass
-    if len(token) >= MIN_LENGTH * 2 and len(token) % 2 == 0 and _HEX.match(token):
+    # "0x" is how hex is often written. The prefix is not part of the bytes.
+    hexed = token[2:] if token[:2] in ("0x", "0X") else token
+    if len(hexed) >= MIN_LENGTH * 2 and len(hexed) % 2 == 0 and _HEX.match(hexed):
         try:
-            blobs.append(bytes.fromhex(token))
+            blobs.append(bytes.fromhex(hexed))
         except ValueError:
             pass
     seen = set()
@@ -407,19 +409,26 @@ def matches(store, text, prior=None, pieces=None):
             hit(rev, False)
             hit(rev.casefold(), True)
 
+    def consider_with_windows(value):
+        consider(value)
+        for window in _windows(value, lengths):
+            consider(window)
+
     for surface in _surfaces(text):
         for token in tokens(surface):
             for candidate in _parts(token):
                 if len(candidate) < MIN_LENGTH:
                     continue
-                consider(candidate)
-                for window in _windows(candidate, lengths):
-                    consider(window)
+                consider_with_windows(candidate)
                 for decoded in _decoded(candidate):
-                    consider(decoded)
+                    consider_with_windows(decoded)
+                    # The decoded text gets the same split and windows as outbound
+                    # text, so base64 of "user:VALUE" (an HTTP Basic credential) or of
+                    # "token=VALUE" is found. Still one decode layer.
                     for inner in tokens(decoded):
-                        if inner != decoded and len(inner) >= MIN_LENGTH:
-                            consider(inner)
+                        for part in _parts(inner):
+                            if part != decoded and len(part) >= MIN_LENGTH:
+                                consider_with_windows(part)
             if len(found) == len(rows):
                 return found
     # Nothing to join with on the first call. Computing the pieces anyway is a full

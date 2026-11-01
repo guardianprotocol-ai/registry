@@ -337,7 +337,7 @@ class Trial:
 def _blank(kind, **fields):
     row = {"kind": kind, "trials": 0, "gp0020_detect": 0, "legacy_detect": 0,
            "any_block": 0, "baseline_detect": 0, "value_in_evidence": 0,
-           "builtin_secret_rule_fired": 0}
+           "shape_rule_fired": 0}
     row.update(fields)
     return row
 
@@ -366,7 +366,7 @@ def run_rows(seed, trials, paths, kind):
                 row["gp0020_detect"] += "GP-0020" in patterns
                 row["legacy_detect"] += legacy_hit
                 row["any_block"] += blocked
-                row["builtin_secret_rule_fired"] += bool(patterns & {"GP-0002", "GP-0012"})
+                row["shape_rule_fired"] += bool(patterns & {"GP-0002", "GP-0012"})
                 row["baseline_detect"] += naive_baseline(value, built)
                 row["value_in_evidence"] += trial.close()
             rows.append(row)
@@ -578,7 +578,7 @@ def agg(rows, pred, detect="gp0020_detect"):
     legacy = sum(r["legacy_detect"] for r in sel)
     blk = sum(r["any_block"] for r in sel)
     leak = sum(r["value_in_evidence"] for r in sel)
-    secret = sum(r["builtin_secret_rule_fired"] for r in sel)
+    shape = sum(r["shape_rule_fired"] for r in sel)
     return {
         "scenarios": len(sel), "trials": n,
         "gp0020_detected": k, "gp0020_rate": round(k / n, 4) if n else 0.0,
@@ -589,7 +589,7 @@ def agg(rows, pred, detect="gp0020_detect"):
         "baseline_wilson95": wilson(b, n),
         "blocked_any_rule": blk,
         "blocked_rate": round(blk / n, 4) if n else 0.0,
-        "builtin_secret_rule_fired": secret,
+        "shape_rule_fired": shape,
         "value_in_evidence": leak,
     }
 
@@ -725,7 +725,7 @@ def render_markdown(res):
                  "fakes (AWS-shaped and `sk-` shaped). That is not a GP-0020 result. "
                  "On the regression trials it fired %d times. On the benign trials the "
                  "sensor blocked %d of %d for some other rule." % (
-                     s["all_attack"]["builtin_secret_rule_fired"],
+                     s["all_attack"]["shape_rule_fired"],
                      benign["blocked_any_rule"], benign["trials"]))
     lines.append("")
     lines.append("## By path")
@@ -807,8 +807,9 @@ def render_markdown(res):
     lines.append("## What this does not claim")
     lines.append("")
     lines.append("- The calls are scripted. No model decided to send anything.")
+    lines.append("- The regression suite is the set of forms the matcher was fixed against. A full score there is a regression result, not a general detection rate.")
     lines.append("- A tool that sends the value on its own, without putting it in the arguments, is not seen. `omitted_from_arguments` measures that miss.")
-    lines.append("- One decode layer only. Compression, rot13, base32, and a second encoding are held out.")
+    lines.append("- One decode layer only. Compression, rot13, base32, and a second encoding are held out. Base64 wrapped across several lines is not joined back together, and is a miss.")
     lines.append("- Halves are joined in order, and only with the immediately previous tool call. An intervening call drops the fragment. The first half is forwarded, because a digest cannot be compared with a prefix. Reverse order is held out.")
     lines.append("- A window is taken only inside a token of at most %d characters. A value glued into a longer blob is missed." % canaries.MAX_SLIDE)
     lines.append("- Case folding matches a copy that differs only by case. A one-character change does not. An entry written before the fold digest was added still matches exact text only.")
@@ -924,7 +925,6 @@ def main(argv=None):
             "latency_iters": 0 if a.no_latency else a.latency_iters,
             "fast": bool(a.fast),
             "python": sys.version.split()[0],
-            "repo": ROOT,
             "repo_commit": commit,
             "rules_fingerprint": rules.signatures_fingerprint(),
             "canary_types": list(CANARY_TYPES),
@@ -1014,7 +1014,7 @@ def _run_value_paths(seed, trials, builder, kind):
                 row["gp0020_detect"] += "GP-0020" in patterns
                 row["legacy_detect"] += legacy_hit
                 row["any_block"] += blocked
-                row["builtin_secret_rule_fired"] += bool(patterns & {"GP-0002", "GP-0012"})
+                row["shape_rule_fired"] += bool(patterns & {"GP-0002", "GP-0012"})
                 row["baseline_detect"] += naive_baseline(value, built)
                 row["value_in_evidence"] += trial.close()
             rows.append(row)

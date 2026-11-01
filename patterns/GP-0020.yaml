@@ -45,7 +45,8 @@ detection:
     length is stored so a value glued inside a short carrier can be found at that width.
     A token is tried whole, with a trailing period removed, and in the pieces left by a
     separator, with base64 padding kept. JSON strings are decoded first, percent-encoding
-    is decoded, and one layer of base64 or hex is decoded. The reverse of a token is tried.
+    is decoded, and one layer of base64 or hex is decoded, with the decoded text split
+    the same way. The reverse of a token is tried.
     A fragment of the previous tool call is joined, in order, to a fragment of this one.
     Hashing the whole body instead would miss a value inside a larger message. A canary in
     baseline is reported and never blocks, whatever the mode, because it has not yet been

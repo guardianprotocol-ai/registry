@@ -75,7 +75,9 @@ and blocks an armed canary when that value shows up in a tool call. The measurem
 | All regression attacks | 4200/4200, Wilson 95% 0.9991 to 1.0000 | 2130/4200, 0.4920 to 0.5222 | 3090/4200, 0.7222 to 0.7488 |
 | Benign false alarms | 0/2100, 0.0 to 0.0018 | 0/2100 | 0/2100 |
 
-The naive check has to keep the value. The sensor does not. Formatting edges, base64,
+The tool calls are scripted: no model chose what to send. The regression suite is the
+set of forms the matcher was fixed against, so 4200/4200 is a regression result, not a
+general detection rate. The naive check has to keep the value. The sensor does not. Formatting edges, base64,
 hex, a reversed copy, a case-only copy, and a value split across two calls in order are
 in the 4200. Rot13, base32, compression, reverse-order halves, and a value that never
 appears in the arguments are not, and the same file reports them. Limits are in

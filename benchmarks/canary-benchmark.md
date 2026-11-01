@@ -2,7 +2,7 @@
 
 Measured by `python3 benchmarks/canary_benchmark.py`. Do not type numbers into this file by hand.
 
-Seed 20261031. 30 trials per scenario. Python 3.12.3. Commit `e1b0b93bdebf10fa6687e1a608a3fc75e5c8673d`. Rules fingerprint `dc406e8125eb`. Canaries armed, sensor in block mode. Elapsed 42.7 s.
+Seed 20261031. 30 trials per scenario. Python 3.13.5. Commit `1c64d56d71cdd92059758fd2df65182525060c41`. Rules fingerprint `dc406e8125eb`. Canaries armed, sensor in block mode. Elapsed 48.7 s.
 
 The before column is the pre-fix matcher, scored on these same trials. It reproduces the published local run (1980/2100, 0/840, 150/1260, 2130/4200, benign 0/2100) when that check says yes: True.
 
@@ -55,12 +55,12 @@ These transforms were excluded from the matcher on purpose, before this run's sc
 
 | Path | Sensor | Wilson 95% | Naive exact text |
 | --- | --- | --- | --- |
-| `holdout_zero_width` | 0/210 | [0.0, 0.018] | 0/210 |
-| `holdout_base32` | 0/210 | [0.0, 0.018] | 0/210 |
-| `holdout_split_reverse_order` | 0/210 | [0.0, 0.018] | 0/210 |
 | `holdout_rot13` | 0/210 | [0.0, 0.018] | 0/210 |
-| `holdout_ends_only` | 0/210 | [0.0, 0.018] | 0/210 |
+| `holdout_split_reverse_order` | 0/210 | [0.0, 0.018] | 0/210 |
 | `holdout_gzip_base64` | 0/210 | [0.0, 0.018] | 0/210 |
+| `holdout_ends_only` | 0/210 | [0.0, 0.018] | 0/210 |
+| `holdout_base32` | 0/210 | [0.0, 0.018] | 0/210 |
+| `holdout_zero_width` | 0/210 | [0.0, 0.018] | 0/210 |
 
 Held out overall: 0/1260, Wilson 95% [0.0, 0.003].
 
@@ -84,8 +84,8 @@ In process, one registered canary, arguments that do not contain it.
 
 | Size | Bytes | Iters | inspect median us | inspect p95 us | match median us | match p95 us | naive median us |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ~1KB | 1146 | 2000 | 219.01 | 244.38 | 46.44 | 52.43 | 0.14 |
-| ~100KB | 112550 | 2000 | 11153.71 | 11479.93 | 2913.58 | 3082.05 | 16.44 |
+| ~1KB | 1146 | 2000 | 255.66 | 393.75 | 49.96 | 60.15 | 0.16 |
+| ~100KB | 112550 | 2000 | 12664.33 | 13749.69 | 3424.65 | 4044.67 | 17.46 |
 
 ## End to end
 
@@ -93,14 +93,14 @@ Real proxy process in front of `sensor/tests/fake_server.py`. Judged from the la
 
 | Arm | Case | Trials | Reached sink | GP-0020 evidence | Median round trip ms |
 | --- | --- | --- | --- | --- | --- |
-| sensor | `e2e_http_post_body` | 20 | 0 | 20 | 0.711 |
-| sensor | `e2e_send_message_trailing_period` | 20 | 0 | 20 | 0.66 |
-| sensor | `e2e_split_in_order` | 20 | 0 (completing half 0) | 20 | 1.743 |
-| sensor | `e2e_benign_send` | 20 | 20 | 0 | 0.963 |
-| no_sensor | `e2e_http_post_body` | 20 | 20 | 0 | 0.466 |
-| no_sensor | `e2e_send_message_trailing_period` | 20 | 20 | 0 | 0.413 |
-| no_sensor | `e2e_split_in_order` | 20 | 0 (completing half 20) | 0 | 0.684 |
-| no_sensor | `e2e_benign_send` | 20 | 20 | 0 | 0.359 |
+| sensor | `e2e_http_post_body` | 20 | 0 | 20 | 0.85 |
+| sensor | `e2e_send_message_trailing_period` | 20 | 0 | 20 | 0.844 |
+| sensor | `e2e_split_in_order` | 20 | 0 (completing half 0) | 20 | 1.703 |
+| sensor | `e2e_benign_send` | 20 | 20 | 0 | 0.907 |
+| no_sensor | `e2e_http_post_body` | 20 | 20 | 0 | 0.388 |
+| no_sensor | `e2e_send_message_trailing_period` | 20 | 20 | 0 | 0.44 |
+| no_sensor | `e2e_split_in_order` | 20 | 0 (completing half 20) | 0 | 0.788 |
+| no_sensor | `e2e_benign_send` | 20 | 20 | 0 | 0.396 |
 
 ## What this does not claim
 

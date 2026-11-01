@@ -5,9 +5,9 @@
     "e2e_trials": 20,
     "latency_iters": 2000,
     "fast": false,
-    "python": "3.12.3",
-    "repo": "/workspace",
-    "repo_commit": "e1b0b93bdebf10fa6687e1a608a3fc75e5c8673d",
+    "python": "3.13.5",
+    "repo": "/home/box/studio/guardian-protocol/repos/registry",
+    "repo_commit": "1c64d56d71cdd92059758fd2df65182525060c41",
     "rules_fingerprint": "dc406e8125eb",
     "canary_types": [
       "hex_token",
@@ -48,7 +48,7 @@
       "holdout_split_reverse_order",
       "holdout_zero_width"
     ],
-    "elapsed_s": 42.7,
+    "elapsed_s": 48.7,
     "canary_state": "armed",
     "mode": "block",
     "wilson_z": 1.959964,
@@ -951,33 +951,7 @@
       "value_in_evidence": 0
     },
     "by_path": {
-      "holdout_zero_width": {
-        "scenarios": 7,
-        "trials": 210,
-        "gp0020_detected": 0,
-        "gp0020_rate": 0.0,
-        "gp0020_wilson95": [
-          0.0,
-          0.018
-        ],
-        "legacy_detected": 0,
-        "legacy_rate": 0.0,
-        "legacy_wilson95": [
-          0.0,
-          0.018
-        ],
-        "baseline_detected": 0,
-        "baseline_rate": 0.0,
-        "baseline_wilson95": [
-          0.0,
-          0.018
-        ],
-        "blocked_any_rule": 0,
-        "blocked_rate": 0.0,
-        "builtin_secret_rule_fired": 0,
-        "value_in_evidence": 0
-      },
-      "holdout_base32": {
+      "holdout_rot13": {
         "scenarios": 7,
         "trials": 210,
         "gp0020_detected": 0,
@@ -1029,7 +1003,7 @@
         "builtin_secret_rule_fired": 0,
         "value_in_evidence": 0
       },
-      "holdout_rot13": {
+      "holdout_gzip_base64": {
         "scenarios": 7,
         "trials": 210,
         "gp0020_detected": 0,
@@ -1081,7 +1055,33 @@
         "builtin_secret_rule_fired": 0,
         "value_in_evidence": 0
       },
-      "holdout_gzip_base64": {
+      "holdout_base32": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "holdout_zero_width": {
         "scenarios": 7,
         "trials": 210,
         "gp0020_detected": 0,
@@ -1220,32 +1220,32 @@
       "payload_bytes": 1146,
       "iters": 2000,
       "full_inspect_request": {
-        "median_us": 219.01,
-        "p95_us": 244.38
+        "median_us": 255.66,
+        "p95_us": 393.75
       },
       "canary_match_only": {
-        "median_us": 46.44,
-        "p95_us": 52.43
+        "median_us": 49.96,
+        "p95_us": 60.15
       },
       "naive_substring_baseline": {
-        "median_us": 0.14,
-        "p95_us": 0.17
+        "median_us": 0.16,
+        "p95_us": 0.2
       }
     },
     "~100KB": {
       "payload_bytes": 112550,
       "iters": 2000,
       "full_inspect_request": {
-        "median_us": 11153.71,
-        "p95_us": 11479.93
+        "median_us": 12664.33,
+        "p95_us": 13749.69
       },
       "canary_match_only": {
-        "median_us": 2913.58,
-        "p95_us": 3082.05
+        "median_us": 3424.65,
+        "p95_us": 4044.67
       },
       "naive_substring_baseline": {
-        "median_us": 16.44,
-        "p95_us": 18.67
+        "median_us": 17.46,
+        "p95_us": 20.5
       }
     }
   },
@@ -1256,7 +1256,7 @@
       "case": "e2e_http_post_body",
       "trials": 20,
       "gp0020_evidence": 20,
-      "roundtrip_median_ms": 0.711,
+      "roundtrip_median_ms": 0.85,
       "value_reached_sink": 0
     },
     {
@@ -1265,7 +1265,7 @@
       "case": "e2e_send_message_trailing_period",
       "trials": 20,
       "gp0020_evidence": 20,
-      "roundtrip_median_ms": 0.66,
+      "roundtrip_median_ms": 0.844,
       "value_reached_sink": 0
     },
     {
@@ -1274,7 +1274,7 @@
       "case": "e2e_split_in_order",
       "trials": 20,
       "gp0020_evidence": 20,
-      "roundtrip_median_ms": 1.743,
+      "roundtrip_median_ms": 1.703,
       "value_reached_sink": 0,
       "completing_half_reached_sink": 0
     },
@@ -1284,7 +1284,7 @@
       "case": "e2e_benign_send",
       "trials": 20,
       "gp0020_evidence": 0,
-      "roundtrip_median_ms": 0.963,
+      "roundtrip_median_ms": 0.907,
       "benign_delivered": 20
     },
     {
@@ -1293,7 +1293,7 @@
       "case": "e2e_http_post_body",
       "trials": 20,
       "gp0020_evidence": 0,
-      "roundtrip_median_ms": 0.466,
+      "roundtrip_median_ms": 0.388,
       "value_reached_sink": 20
     },
     {
@@ -1302,7 +1302,7 @@
       "case": "e2e_send_message_trailing_period",
       "trials": 20,
       "gp0020_evidence": 0,
-      "roundtrip_median_ms": 0.413,
+      "roundtrip_median_ms": 0.44,
       "value_reached_sink": 20
     },
     {
@@ -1311,7 +1311,7 @@
       "case": "e2e_split_in_order",
       "trials": 20,
       "gp0020_evidence": 0,
-      "roundtrip_median_ms": 0.684,
+      "roundtrip_median_ms": 0.788,
       "value_reached_sink": 0,
       "completing_half_reached_sink": 20
     },
@@ -1321,7 +1321,7 @@
       "case": "e2e_benign_send",
       "trials": 20,
       "gp0020_evidence": 0,
-      "roundtrip_median_ms": 0.359,
+      "roundtrip_median_ms": 0.396,
       "benign_delivered": 20
     }
   ],

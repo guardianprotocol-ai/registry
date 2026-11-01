@@ -122,12 +122,13 @@ carrier can be found at that width. A token is tried whole, with a trailing peri
 removed, and in the pieces left by `=`, `&`, `?`, `;`, `,`, `:` and `/`. Base64 padding
 is kept when the token is split. JSON strings are decoded before that split, so a value
 on its own line is the value. Percent-encoding is decoded. One layer of base64 or hex is
-decoded. The reverse of a token is tried. A fragment from the previous tool call is
+decoded, including hex written with a `0x` prefix, and the decoded text is split the same
+way, so base64 of `user:VALUE` is found. The reverse of a token is tried. A fragment from the previous tool call is
 joined, in order, to a fragment from this one.
 
 What is still missed, on purpose, and measured in
 [the canary benchmark](../benchmarks/canary-benchmark.md): a second encoding, compression,
-rot13, base32, the two halves in reverse order, a character inserted into the value, and
+rot13, base32, base64 wrapped across several lines, the two halves in reverse order, a character inserted into the value, and
 a value that never appears in the tool arguments. The first half of a split is forwarded,
 because a digest cannot be compared with a prefix. The call that completes the value is
 the one that blocks, and only if nothing else was called in between. A window is taken

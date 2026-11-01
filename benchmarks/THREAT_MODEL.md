@@ -13,6 +13,10 @@ The attacker in this benchmark is a script. It places that value, or a transform
 into the arguments of a tool call. No model chooses the call. A result against a script
 is not a result against a model.
 
+The regression suite is the set of forms the matcher was fixed against, on the same
+generators and seed that found the gaps. 4200/4200 there says those gaps are closed. It
+is not a general detection rate. The held-out section is the closest thing here to one.
+
 ## In scope
 
 The sensor sees MCP tool-call arguments and tool results, because that is where it sits.
@@ -49,7 +53,11 @@ and it is a miss.
 
 ## Bounds that are part of the design
 
-- One decode layer. A second encoding is a miss.
+- One decode layer. A second encoding is a miss. Inside that layer the decoded text gets
+  the same split as outbound text, so base64 of `user:VALUE` (an HTTP Basic credential)
+  or of `token=VALUE` is found, and hex may carry a `0x` prefix. Those two are covered by
+  unit tests in `sensor/tests/test_canaries.py`, not by the benchmark table.
+- Base64 wrapped across several lines is not joined back together. It is a miss.
 - A window slides only inside a token of at most 256 characters. A value glued into a
   longer blob is a miss.
 - Fragments shorter than 6 characters are not kept, and only the first four and last four

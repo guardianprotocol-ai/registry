@@ -214,7 +214,10 @@ def canary_benchmark_section():
     lines.append("Generated from `benchmarks/canary-benchmark.json`, seed %s, %s trials "
                  "per scenario, Python %s. The full table is "
                  "[../benchmarks/canary-benchmark.md](../benchmarks/canary-benchmark.md). "
-                 "GP-0020 only. The value is not stored." % (
+                 "GP-0020 only. The value is not stored. The tool calls are scripted: "
+                 "no model chose them. The regression suite is the set of forms the "
+                 "matcher was fixed against, so a full score there is a regression "
+                 "result, not a general detection rate." % (
                      meta["seed"], meta["trials_per_scenario"], meta["python"]))
     lines.append("")
     lines.append("| Slice | Sensor | Pre-fix matcher | Naive exact text |")
