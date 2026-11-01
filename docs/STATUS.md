@@ -103,3 +103,18 @@ The benign corpus holds 24 cases of ordinary work that no rule may flag. It is s
 | `AML.T0133` | Discover AI Agent Runtime Capabilities | GP-0031 | no | no | no | covered |
 
 Open a technique's issue to claim it. If none of the 7 open ones look right, [PROGRAM.md](../PROGRAM.md) lists the other phases.
+
+## Canary benchmark
+
+Generated from `benchmarks/canary-benchmark.json`, seed 20261031, 30 trials per scenario, Python 3.12.3. The full table is [../benchmarks/canary-benchmark.md](../benchmarks/canary-benchmark.md). GP-0020 only. The value is not stored.
+
+| Slice | Sensor | Pre-fix matcher | Naive exact text |
+| --- | --- | --- | --- |
+| Designed carriers | 2100/2100, Wilson 95% [0.9982, 1.0000] | 1980/2100, Wilson 95% [0.9321, 0.9520] | 2100/2100, Wilson 95% [0.9982, 1.0000] |
+| Formatting edges | 840/840, Wilson 95% [0.9954, 1.0000] | 0/840, Wilson 95% [0.0000, 0.0046] | 840/840, Wilson 95% [0.9954, 1.0000] |
+| Encodings and a split across two calls | 1260/1260, Wilson 95% [0.9970, 1.0000] | 150/1260, Wilson 95% [0.1023, 0.1381] | 150/1260, Wilson 95% [0.1023, 0.1381] |
+| All regression attacks | 4200/4200, Wilson 95% [0.9991, 1.0000] | 2130/4200, Wilson 95% [0.4920, 0.5222] | 3090/4200, Wilson 95% [0.7222, 0.7488] |
+| Benign false alarms | 0/2100, Wilson 95% [0.0000, 0.0018] | 0/2100, Wilson 95% [0.0000, 0.0018] | 0/2100, Wilson 95% [0.0000, 0.0018] |
+
+Held-out transforms (rot13, base32, gzip then base64, reverse-order halves, a zero-width character, ends only): 0/1260, Wilson 95% [0.0000, 0.0030]. A value that never appears in the arguments is not detected. The pre-fix column reproduces the local run that found the gaps: yes. Evidence contained the value in 0 of 4200 regression trials.
+

@@ -194,6 +194,13 @@ def test_the_committed_status_page_is_current():
     check("docs/STATUS.md matches the repository", build_status.main(["--check"]) == 0)
 
 
+def test_the_canary_benchmark_is_on_the_status_page():
+    text = build_status.build()
+    check("the status page carries the canary benchmark", "Canary benchmark" in text, text[-400:])
+    check("the section is read from the benchmark file",
+          "canary-benchmark.json" in text)
+
+
 def test_the_page_names_every_agent_runtime_technique():
     text = build_status.build()
     runtime = coverage.agent_runtime(coverage.load())

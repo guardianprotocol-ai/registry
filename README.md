@@ -64,6 +64,27 @@ The words above are used precisely. [docs/GLOSSARY.md](docs/GLOSSARY.md) says wh
 
 **Season 1 runs October 5 to October 29, 2026.** [PROGRAM.md](PROGRAM.md) is the one page that says what we are doing, what you can pick up without asking, and when it ships. Live progress is in [docs/STATUS.md](docs/STATUS.md), generated from this repository.
 
+## Canary detection
+
+An operator registers a value. The sensor stores a salted digest of it, never the value,
+and blocks an armed canary when that value shows up in a tool call. The measurement is
+[benchmarks/canary-benchmark.md](benchmarks/canary-benchmark.md), seed 20261031, 30 trials.
+
+| Slice | Sensor | Pre-fix matcher | Naive exact text |
+| --- | --- | --- | --- |
+| All regression attacks | 4200/4200, Wilson 95% 0.9991 to 1.0000 | 2130/4200, 0.4920 to 0.5222 | 3090/4200, 0.7222 to 0.7488 |
+| Benign false alarms | 0/2100, 0.0 to 0.0018 | 0/2100 | 0/2100 |
+
+The naive check has to keep the value. The sensor does not. Formatting edges, base64,
+hex, a reversed copy, a case-only copy, and a value split across two calls in order are
+in the 4200. Rot13, base32, compression, reverse-order halves, and a value that never
+appears in the arguments are not, and the same file reports them. Limits are in
+[benchmarks/THREAT_MODEL.md](benchmarks/THREAT_MODEL.md).
+
+```bash
+python3 benchmarks/canary_benchmark.py --seed 20261031 --trials 30 --e2e-trials 20 --latency-iters 2000
+```
+
 **Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
 
 New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.

@@ -103,6 +103,36 @@ What this does not stop: somebody running several senders with different member 
 answer to that is proof of possession at enrolment, which is a Season 2 problem and should
 be solved when there is something worth attacking.
 
+## Running it yourself
+
+The public endpoint is:
+
+```
+https://guardianprotocol.network/season1/sightings
+```
+
+A deployment that cannot send there runs the loopback receiver in this folder and points
+`share` at it. The document is the same either way. It is counts. A canary is not a field
+in that document, and the sensor builds the document from the pattern, the action and the
+time. The value is not read.
+
+```bash
+python3 receiver/local_server.py --bind 127.0.0.1 --port 8766 --store sightings.jsonl
+python3 -m guardian_sensor share --endpoint http://127.0.0.1:8766/sightings
+```
+
+The process refuses any address except `127.0.0.1`. It stores a file, overwrites a repeat
+instead of adding, and refuses a body that carries a field outside the allow-list. It does
+not check a delete signature. The cloud receiver does. Do not publish this process.
+
+```bash
+python3 receiver/local_server.py --self-check
+```
+
+That posts a real sightings document built from an evidence record whose detail contains a
+canary value, checks the stored file does not contain the value, and checks that a document
+with the value in an extra field is refused and not stored.
+
 ## Running the tests
 
 ```

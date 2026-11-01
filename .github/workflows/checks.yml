@@ -45,6 +45,7 @@ jobs:
           python3 -VV
           python3 -c "import sys; want='${{ matrix.python-version }}'; got='.'.join(map(str, sys.version_info[:2])); assert got == want, f'expected {want}, running {got}'"
 
+      # Includes the fast canary benchmark and the private receiver self-check.
       - name: Run every check
         run: python3 check.py
 

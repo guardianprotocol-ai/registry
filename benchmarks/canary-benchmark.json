@@ -1,0 +1,6978 @@
+{
+  "meta": {
+    "seed": 20261031,
+    "trials_per_scenario": 30,
+    "e2e_trials": 20,
+    "latency_iters": 2000,
+    "fast": false,
+    "python": "3.12.3",
+    "repo": "/workspace",
+    "repo_commit": "e1b0b93bdebf10fa6687e1a608a3fc75e5c8673d",
+    "rules_fingerprint": "dc406e8125eb",
+    "canary_types": [
+      "hex_token",
+      "aws_style_key",
+      "prefixed_api",
+      "jwt_style",
+      "base64_padded",
+      "uuid",
+      "password_like"
+    ],
+    "exfil_paths": [
+      "msg_body_whole",
+      "msg_body_prose_space",
+      "env_assignment",
+      "http_query_local",
+      "http_post_body_local",
+      "bearer_header",
+      "file_write_inline",
+      "shell_curl",
+      "markdown_image",
+      "csv_row",
+      "prose_trailing_period",
+      "file_write_own_line",
+      "url_path_segment",
+      "quoted_colon_prefix",
+      "enc_base64",
+      "enc_hex",
+      "enc_percent_url",
+      "enc_reversed",
+      "enc_uppercase",
+      "enc_split_two_calls"
+    ],
+    "held_out_paths": [
+      "holdout_base32",
+      "holdout_ends_only",
+      "holdout_gzip_base64",
+      "holdout_rot13",
+      "holdout_split_reverse_order",
+      "holdout_zero_width"
+    ],
+    "elapsed_s": 42.7,
+    "canary_state": "armed",
+    "mode": "block",
+    "wilson_z": 1.959964,
+    "legacy_reproduces_published_before": true,
+    "bounds": {
+      "max_slide": 256,
+      "max_decode": 8192,
+      "decode_layers": 1,
+      "join": "previous tool call, in order, fragments of 6 to 80 characters"
+    }
+  },
+  "summary": {
+    "plain_designed_carriers": {
+      "scenarios": 70,
+      "trials": 2100,
+      "gp0020_detected": 2100,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.9982,
+        1.0
+      ],
+      "legacy_detected": 1980,
+      "legacy_rate": 0.9429,
+      "legacy_wilson95": [
+        0.9321,
+        0.952
+      ],
+      "baseline_detected": 2100,
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.9982,
+        1.0
+      ],
+      "blocked_any_rule": 2100,
+      "blocked_rate": 1.0,
+      "builtin_secret_rule_fired": 600,
+      "value_in_evidence": 0
+    },
+    "boundary_formatting": {
+      "scenarios": 28,
+      "trials": 840,
+      "gp0020_detected": 840,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.9954,
+        1.0
+      ],
+      "legacy_detected": 0,
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.0046
+      ],
+      "baseline_detected": 840,
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.9954,
+        1.0
+      ],
+      "blocked_any_rule": 840,
+      "blocked_rate": 1.0,
+      "builtin_secret_rule_fired": 210,
+      "value_in_evidence": 0
+    },
+    "plain_all": {
+      "scenarios": 98,
+      "trials": 2940,
+      "gp0020_detected": 2940,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.9987,
+        1.0
+      ],
+      "legacy_detected": 1980,
+      "legacy_rate": 0.6735,
+      "legacy_wilson95": [
+        0.6563,
+        0.6902
+      ],
+      "baseline_detected": 2940,
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.9987,
+        1.0
+      ],
+      "blocked_any_rule": 2940,
+      "blocked_rate": 1.0,
+      "builtin_secret_rule_fired": 810,
+      "value_in_evidence": 0
+    },
+    "encoded": {
+      "scenarios": 42,
+      "trials": 1260,
+      "gp0020_detected": 1260,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.997,
+        1.0
+      ],
+      "legacy_detected": 150,
+      "legacy_rate": 0.119,
+      "legacy_wilson95": [
+        0.1023,
+        0.1381
+      ],
+      "baseline_detected": 150,
+      "baseline_rate": 0.119,
+      "baseline_wilson95": [
+        0.1023,
+        0.1381
+      ],
+      "blocked_any_rule": 1260,
+      "blocked_rate": 1.0,
+      "builtin_secret_rule_fired": 60,
+      "value_in_evidence": 0
+    },
+    "all_attack": {
+      "scenarios": 140,
+      "trials": 4200,
+      "gp0020_detected": 4200,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.9991,
+        1.0
+      ],
+      "legacy_detected": 2130,
+      "legacy_rate": 0.5071,
+      "legacy_wilson95": [
+        0.492,
+        0.5222
+      ],
+      "baseline_detected": 3090,
+      "baseline_rate": 0.7357,
+      "baseline_wilson95": [
+        0.7222,
+        0.7488
+      ],
+      "blocked_any_rule": 4200,
+      "blocked_rate": 1.0,
+      "builtin_secret_rule_fired": 870,
+      "value_in_evidence": 0
+    },
+    "benign": {
+      "scenarios": 10,
+      "trials": 2100,
+      "gp0020_false_alarms": 0,
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.0018
+      ],
+      "legacy_false_alarms": 0,
+      "legacy_fp_wilson95": [
+        0.0,
+        0.0018
+      ],
+      "baseline_false_alarms": 0,
+      "baseline_fp_wilson95": [
+        0.0,
+        0.0018
+      ],
+      "blocked_any_rule": 128,
+      "blocked_any_rule_wilson95": [
+        0.0515,
+        0.072
+      ]
+    },
+    "by_path": {
+      "msg_body_whole": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 210,
+        "legacy_rate": 1.0,
+        "legacy_wilson95": [
+          0.982,
+          1.0
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "msg_body_prose_space": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 210,
+        "legacy_rate": 1.0,
+        "legacy_wilson95": [
+          0.982,
+          1.0
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "env_assignment": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 180,
+        "legacy_rate": 0.8571,
+        "legacy_wilson95": [
+          0.8034,
+          0.8981
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "http_query_local": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 180,
+        "legacy_rate": 0.8571,
+        "legacy_wilson95": [
+          0.8034,
+          0.8981
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "http_post_body_local": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 210,
+        "legacy_rate": 1.0,
+        "legacy_wilson95": [
+          0.982,
+          1.0
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "bearer_header": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 210,
+        "legacy_rate": 1.0,
+        "legacy_wilson95": [
+          0.982,
+          1.0
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "file_write_inline": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 210,
+        "legacy_rate": 1.0,
+        "legacy_wilson95": [
+          0.982,
+          1.0
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "shell_curl": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 180,
+        "legacy_rate": 0.8571,
+        "legacy_wilson95": [
+          0.8034,
+          0.8981
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "markdown_image": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 180,
+        "legacy_rate": 0.8571,
+        "legacy_wilson95": [
+          0.8034,
+          0.8981
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "csv_row": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 210,
+        "legacy_rate": 1.0,
+        "legacy_wilson95": [
+          0.982,
+          1.0
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "prose_trailing_period": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "file_write_own_line": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 30,
+        "value_in_evidence": 0
+      },
+      "url_path_segment": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "quoted_colon_prefix": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "enc_base64": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "enc_hex": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "enc_percent_url": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 150,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6498,
+          0.7711
+        ],
+        "baseline_detected": 150,
+        "baseline_rate": 0.7143,
+        "baseline_wilson95": [
+          0.6498,
+          0.7711
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "enc_reversed": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "enc_uppercase": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "enc_split_two_calls": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      }
+    },
+    "by_canary_type_plain": {
+      "hex_token": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 300,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6693,
+          0.7554
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "aws_style_key": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 300,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6693,
+          0.7554
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 420,
+        "value_in_evidence": 0
+      },
+      "prefixed_api": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 300,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6693,
+          0.7554
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 390,
+        "value_in_evidence": 0
+      },
+      "jwt_style": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 300,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6693,
+          0.7554
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "base64_padded": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 180,
+        "legacy_rate": 0.4286,
+        "legacy_wilson95": [
+          0.3821,
+          0.4763
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "uuid": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 300,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6693,
+          0.7554
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "password_like": {
+        "scenarios": 14,
+        "trials": 420,
+        "gp0020_detected": 420,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "legacy_detected": 300,
+        "legacy_rate": 0.7143,
+        "legacy_wilson95": [
+          0.6693,
+          0.7554
+        ],
+        "baseline_detected": 420,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.9909,
+          1.0
+        ],
+        "blocked_any_rule": 420,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      }
+    }
+  },
+  "held_out_summary": {
+    "all": {
+      "scenarios": 42,
+      "trials": 1260,
+      "gp0020_detected": 0,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.003
+      ],
+      "legacy_detected": 0,
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.003
+      ],
+      "baseline_detected": 0,
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.003
+      ],
+      "blocked_any_rule": 0,
+      "blocked_rate": 0.0,
+      "builtin_secret_rule_fired": 0,
+      "value_in_evidence": 0
+    },
+    "by_path": {
+      "holdout_zero_width": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "holdout_base32": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "holdout_split_reverse_order": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "holdout_rot13": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "holdout_ends_only": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      },
+      "holdout_gzip_base64": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      }
+    }
+  },
+  "extra_summary": {
+    "all": {
+      "scenarios": 14,
+      "trials": 420,
+      "gp0020_detected": 210,
+      "gp0020_rate": 0.5,
+      "gp0020_wilson95": [
+        0.4524,
+        0.5476
+      ],
+      "legacy_detected": 0,
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.0091
+      ],
+      "baseline_detected": 210,
+      "baseline_rate": 0.5,
+      "baseline_wilson95": [
+        0.4524,
+        0.5476
+      ],
+      "blocked_any_rule": 210,
+      "blocked_rate": 0.5,
+      "builtin_secret_rule_fired": 60,
+      "value_in_evidence": 0
+    },
+    "by_path": {
+      "dns_name_local": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 210,
+        "gp0020_rate": 1.0,
+        "gp0020_wilson95": [
+          0.982,
+          1.0
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 210,
+        "baseline_rate": 1.0,
+        "baseline_wilson95": [
+          0.982,
+          1.0
+        ],
+        "blocked_any_rule": 210,
+        "blocked_rate": 1.0,
+        "builtin_secret_rule_fired": 60,
+        "value_in_evidence": 0
+      },
+      "omitted_from_arguments": {
+        "scenarios": 7,
+        "trials": 210,
+        "gp0020_detected": 0,
+        "gp0020_rate": 0.0,
+        "gp0020_wilson95": [
+          0.0,
+          0.018
+        ],
+        "legacy_detected": 0,
+        "legacy_rate": 0.0,
+        "legacy_wilson95": [
+          0.0,
+          0.018
+        ],
+        "baseline_detected": 0,
+        "baseline_rate": 0.0,
+        "baseline_wilson95": [
+          0.0,
+          0.018
+        ],
+        "blocked_any_rule": 0,
+        "blocked_rate": 0.0,
+        "builtin_secret_rule_fired": 0,
+        "value_in_evidence": 0
+      }
+    }
+  },
+  "read_alarm": [
+    {
+      "kind": "read_alarm",
+      "arm": "tainted_then_read",
+      "trials": 210,
+      "fired": 210,
+      "rate": 1.0,
+      "wilson95": [
+        0.982,
+        1.0
+      ]
+    },
+    {
+      "kind": "read_alarm",
+      "arm": "untainted_read",
+      "trials": 210,
+      "fired": 0,
+      "rate": 0.0,
+      "wilson95": [
+        0.0,
+        0.018
+      ]
+    }
+  ],
+  "latency": {
+    "~1KB": {
+      "payload_bytes": 1146,
+      "iters": 2000,
+      "full_inspect_request": {
+        "median_us": 219.01,
+        "p95_us": 244.38
+      },
+      "canary_match_only": {
+        "median_us": 46.44,
+        "p95_us": 52.43
+      },
+      "naive_substring_baseline": {
+        "median_us": 0.14,
+        "p95_us": 0.17
+      }
+    },
+    "~100KB": {
+      "payload_bytes": 112550,
+      "iters": 2000,
+      "full_inspect_request": {
+        "median_us": 11153.71,
+        "p95_us": 11479.93
+      },
+      "canary_match_only": {
+        "median_us": 2913.58,
+        "p95_us": 3082.05
+      },
+      "naive_substring_baseline": {
+        "median_us": 16.44,
+        "p95_us": 18.67
+      }
+    }
+  },
+  "e2e": [
+    {
+      "kind": "e2e",
+      "arm": "sensor",
+      "case": "e2e_http_post_body",
+      "trials": 20,
+      "gp0020_evidence": 20,
+      "roundtrip_median_ms": 0.711,
+      "value_reached_sink": 0
+    },
+    {
+      "kind": "e2e",
+      "arm": "sensor",
+      "case": "e2e_send_message_trailing_period",
+      "trials": 20,
+      "gp0020_evidence": 20,
+      "roundtrip_median_ms": 0.66,
+      "value_reached_sink": 0
+    },
+    {
+      "kind": "e2e",
+      "arm": "sensor",
+      "case": "e2e_split_in_order",
+      "trials": 20,
+      "gp0020_evidence": 20,
+      "roundtrip_median_ms": 1.743,
+      "value_reached_sink": 0,
+      "completing_half_reached_sink": 0
+    },
+    {
+      "kind": "e2e",
+      "arm": "sensor",
+      "case": "e2e_benign_send",
+      "trials": 20,
+      "gp0020_evidence": 0,
+      "roundtrip_median_ms": 0.963,
+      "benign_delivered": 20
+    },
+    {
+      "kind": "e2e",
+      "arm": "no_sensor",
+      "case": "e2e_http_post_body",
+      "trials": 20,
+      "gp0020_evidence": 0,
+      "roundtrip_median_ms": 0.466,
+      "value_reached_sink": 20
+    },
+    {
+      "kind": "e2e",
+      "arm": "no_sensor",
+      "case": "e2e_send_message_trailing_period",
+      "trials": 20,
+      "gp0020_evidence": 0,
+      "roundtrip_median_ms": 0.413,
+      "value_reached_sink": 20
+    },
+    {
+      "kind": "e2e",
+      "arm": "no_sensor",
+      "case": "e2e_split_in_order",
+      "trials": 20,
+      "gp0020_evidence": 0,
+      "roundtrip_median_ms": 0.684,
+      "value_reached_sink": 0,
+      "completing_half_reached_sink": 20
+    },
+    {
+      "kind": "e2e",
+      "arm": "no_sensor",
+      "case": "e2e_benign_send",
+      "trials": 20,
+      "gp0020_evidence": 0,
+      "roundtrip_median_ms": 0.359,
+      "benign_delivered": 20
+    }
+  ],
+  "egress_rows": [
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "msg_body_whole",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "msg_body_prose_space",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "env_assignment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "http_query_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "http_post_body_local",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "bearer_header",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "file_write_inline",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "shell_curl",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "markdown_image",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 30,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "csv_row",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 1.0,
+      "legacy_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "prose_trailing_period",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "file_write_own_line",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "url_path_segment",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "quoted_colon_prefix",
+      "encoded": false,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "enc_base64",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "enc_hex",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "enc_percent_url",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "enc_reversed",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "enc_uppercase",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "attack",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "enc_split_two_calls",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    }
+  ],
+  "held_out_rows": [
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "holdout_rot13",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "holdout_base32",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "holdout_gzip_base64",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "holdout_split_reverse_order",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "holdout_zero_width",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "held_out",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "holdout_ends_only",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    }
+  ],
+  "extra_rows": [
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "hex_token",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "aws_style_key",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "aws_style_key",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 30,
+      "canary_type": "prefixed_api",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "prefixed_api",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "jwt_style",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "base64_padded",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "uuid",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 30,
+      "legacy_detect": 0,
+      "any_block": 30,
+      "baseline_detect": 30,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "dns_name_local",
+      "encoded": true,
+      "gp0020_rate": 1.0,
+      "gp0020_wilson95": [
+        0.8865,
+        1.0
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 1.0,
+      "baseline_wilson95": [
+        0.8865,
+        1.0
+      ]
+    },
+    {
+      "kind": "extra",
+      "trials": 30,
+      "gp0020_detect": 0,
+      "legacy_detect": 0,
+      "any_block": 0,
+      "baseline_detect": 0,
+      "value_in_evidence": 0,
+      "builtin_secret_rule_fired": 0,
+      "canary_type": "password_like",
+      "path": "omitted_from_arguments",
+      "encoded": true,
+      "gp0020_rate": 0.0,
+      "gp0020_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "legacy_rate": 0.0,
+      "legacy_wilson95": [
+        0.0,
+        0.1135
+      ],
+      "baseline_rate": 0.0,
+      "baseline_wilson95": [
+        0.0,
+        0.1135
+      ]
+    }
+  ],
+  "benign_rows": [
+    {
+      "kind": "benign",
+      "scenario": "benign_status_message",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_web_fetch",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_git_sha",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_uuid_record",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_same_shape_unregistered",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 68,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {
+        "GP-0002": 68
+      },
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_near_miss_1char",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 60,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {
+        "GP-0002": 60
+      },
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_prefix_11chars",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_file_write_code",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_long_doc",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    },
+    {
+      "kind": "benign",
+      "scenario": "benign_base64_blob",
+      "trials": 210,
+      "gp0020_false_alarm": 0,
+      "legacy_false_alarm": 0,
+      "any_block": 0,
+      "baseline_false_alarm": 0,
+      "other_rules_fired": {},
+      "gp0020_fp_rate": 0.0,
+      "gp0020_fp_wilson95": [
+        0.0,
+        0.018
+      ]
+    }
+  ]
+}

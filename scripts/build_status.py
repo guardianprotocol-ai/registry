@@ -187,8 +187,69 @@ def render(items):
     return "\n".join(lines) + "\n"
 
 
+def _pair(detected, trials, interval):
+    lo, hi = interval
+    return "%d/%d, Wilson 95%% [%.4f, %.4f]" % (detected, trials, lo, hi)
+
+
+def canary_benchmark_section():
+    """The measured canary numbers, read from the benchmark file so this page cannot drift.
+
+    Absent file, absent section content beyond the fact that it has not been recorded.
+    The technique table above is unchanged: this is not a results/ scanner file.
+    """
+    path = os.path.join(ROOT, "benchmarks", "canary-benchmark.json")
+    lines = ["", "## Canary benchmark", ""]
+    if not os.path.exists(path):
+        lines.append("No `benchmarks/canary-benchmark.json` is in the tree. "
+                     "Generate it with `python3 benchmarks/canary_benchmark.py`.")
+        return "\n".join(lines)
+    with open(path, encoding="utf-8") as handle:
+        doc = json.load(handle)
+    summary = doc["summary"]
+    meta = doc["meta"]
+    attack = summary["all_attack"]
+    benign = summary["benign"]
+    held = doc["held_out_summary"]["all"]
+    lines.append("Generated from `benchmarks/canary-benchmark.json`, seed %s, %s trials "
+                 "per scenario, Python %s. The full table is "
+                 "[../benchmarks/canary-benchmark.md](../benchmarks/canary-benchmark.md). "
+                 "GP-0020 only. The value is not stored." % (
+                     meta["seed"], meta["trials_per_scenario"], meta["python"]))
+    lines.append("")
+    lines.append("| Slice | Sensor | Pre-fix matcher | Naive exact text |")
+    lines.append("| --- | --- | --- | --- |")
+    for label, key in (
+            ("Designed carriers", "plain_designed_carriers"),
+            ("Formatting edges", "boundary_formatting"),
+            ("Encodings and a split across two calls", "encoded"),
+            ("All regression attacks", "all_attack")):
+        block = summary[key]
+        lines.append("| %s | %s | %s | %s |" % (
+            label,
+            _pair(block["gp0020_detected"], block["trials"], block["gp0020_wilson95"]),
+            _pair(block["legacy_detected"], block["trials"], block["legacy_wilson95"]),
+            _pair(block["baseline_detected"], block["trials"], block["baseline_wilson95"])))
+    lines.append("| Benign false alarms | %s | %s | %s |" % (
+        _pair(benign["gp0020_false_alarms"], benign["trials"], benign["gp0020_fp_wilson95"]),
+        _pair(benign["legacy_false_alarms"], benign["trials"], benign["legacy_fp_wilson95"]),
+        _pair(benign["baseline_false_alarms"], benign["trials"], benign["baseline_fp_wilson95"])))
+    lines.append("")
+    reproduced = "yes" if meta.get("legacy_reproduces_published_before") else "no"
+    lines.append("Held-out transforms (rot13, base32, gzip then base64, reverse-order "
+                 "halves, a zero-width character, ends only): %s. "
+                 "A value that never appears in the arguments is not detected. "
+                 "The pre-fix column reproduces the local run that found the gaps: %s. "
+                 "Evidence contained the value in %d of %d regression trials." % (
+                     _pair(held["gp0020_detected"], held["trials"], held["gp0020_wilson95"]),
+                     reproduced,
+                     attack["value_in_evidence"], attack["trials"]))
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def build(coverage_path=None, results_dir=None):
-    return render(collect(coverage_path, results_dir))
+    return render(collect(coverage_path, results_dir)) + canary_benchmark_section()
 
 
 def main(argv=None):
