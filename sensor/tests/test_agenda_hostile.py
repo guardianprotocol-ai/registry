@@ -201,6 +201,14 @@ def test_nothing_in_the_remote_path_opens_a_socket():
             continue
         body = open(os.path.join(package, name), encoding="utf-8").read()
         for needle in banned:
+            # The breach watcher has one listener: a decoy endpoint. It refuses every
+            # host except 127.0.0.1 before it binds, and it serves nothing. Every other
+            # file in the package still must not listen.
+            if name == "breach.py" and needle == ".listen(":
+                check("breach.py listens only as the loopback sentinel",
+                      'if host != "127.0.0.1"' in body and ".listen(" in body,
+                      "the host check is missing")
+                continue
             check(f"{name} does not bring in {needle}", needle not in body,
                   f"{name} contains {needle}")
 

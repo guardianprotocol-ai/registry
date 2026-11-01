@@ -63,6 +63,7 @@ not exist.
 | GP-0038 | no rule yet | | | |
 | GP-0039 | no rule yet | | | |
 | GP-0040 | no rule yet | | | |
+| GP-0041 | 0 | 24 | 0.0% | [0.00, 0.14] |
 
 ## Known false alarms
 

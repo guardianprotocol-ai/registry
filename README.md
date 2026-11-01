@@ -87,6 +87,16 @@ appears in the arguments are not, and the same file reports them. Limits are in
 python3 benchmarks/canary_benchmark.py --seed 20261031 --trials 30 --e2e-trials 20 --latency-iters 2000
 ```
 
+The same idea applies to files, not only to values. A seeded row inside a dataset, a real
+file that only one process may read, and a decoy whose trip locks the real file next to
+it are measured in [benchmarks/assumed-breach.md](benchmarks/assumed-breach.md). The crawl
+is scripted. The live command, for a machine with an agent CLI already logged in, is in
+that file. Limits are in [benchmarks/ASSUMED_BREACH.md](benchmarks/ASSUMED_BREACH.md).
+
+```bash
+python3 benchmarks/assumed_breach.py
+```
+
 **Want to contribute?** [START_HERE.md](START_HERE.md) gets you set up in about 15 minutes and points you to a first task.
 
 New to the design? Read [ARCHITECTURE.md](ARCHITECTURE.md): the three domains of defense (actions, words, thoughts), how the registry, scan, sensor and network fit together, and the roadmap.

@@ -136,6 +136,46 @@ only inside a token of at most 256 characters. Values shorter than twelve charac
 values containing spaces, are refused rather than silently never matched. An entry written
 before the case-fold digest was added still matches the exact text only.
 
+## Files, seeded rows, and the real assets
+
+A value canary fires when the value shows up in a tool call. Three more placements
+cover the file itself.
+
+**A seeded row.** `canary seed` writes a fake customer, a fake account number and a fake
+API key into a CSV or a SQLite file, and stores only the digests. The dataset is supposed
+to contain them. A copy of that file, or the same value in a tool call, is evidence the
+dataset was copied. Filler rows in the same file are not canaries. The value is not in
+the canary file, the audit, or the refusal.
+
+**A real file.** `canary add-file` registers a path that already exists, again as a
+digest. An asset takes an allowlist: only the named process may read it, and a
+byte-for-byte copy is a trip even for that process. A tool call that names a destination
+outside the sandbox is a trip even when the tool is allowlisted. The path is not stored.
+
+**A decoy beside the real file.** `canary decoy` writes a fake env file, SSH key, weights
+file, dataset shard or credentials file, and refuses to overwrite anything. The policy
+names the real files that sit next to it. When the decoy is opened, those siblings are
+made read-only. The decoy is emptied, so a hard link loses the bait. A real file is not
+emptied.
+
+`canary watch` runs the OS watcher on a root you name. On Linux that is inotify. Where
+that cannot be opened, it polls. A trip quarantines inside the root and writes a local
+audit. A path that resolves outside the root is refused. The sensor and the client hook
+refuse the tool call before it runs, with the same text as every other rule.
+
+```bash
+python3 -m guardian_sensor canary decoy --kind weights --path decoys/weights.bin --label weights-decoy --root . --armed
+python3 -m guardian_sensor canary seed --dataset data/customers.csv --format csv --label customers --root . --armed
+python3 -m guardian_sensor canary add-file models/weights.bin --label production-weights --role asset --root . --armed --never-leaves --allow-process trainer
+python3 -m guardian_sensor canary watch --root .
+```
+
+The measurement, including what a scripted crawl does and the command for a live trial, is
+[benchmarks/assumed-breach.md](../benchmarks/assumed-breach.md). The limits are in
+[benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md). A descriptor opened before
+the watch is not seen. An allowlisted process can write bytes outside the root, and the
+watcher does not follow them.
+
 ## Fire drill
 
 The fastest way to see the sensor work, and the way to join the exchange without waiting to

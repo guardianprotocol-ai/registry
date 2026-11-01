@@ -251,8 +251,63 @@ def canary_benchmark_section():
     return "\n".join(lines) + "\n"
 
 
+def assumed_breach_section():
+    """The assumed-breach numbers, read from the benchmark file so this page cannot drift."""
+    path = os.path.join(ROOT, "benchmarks", "assumed-breach.json")
+    lines = ["", "## Assumed-breach canaries", ""]
+    if not os.path.exists(path):
+        lines.append("No `benchmarks/assumed-breach.json` is in the tree. "
+                     "Generate it with `python3 benchmarks/assumed_breach.py`.")
+        return "\n".join(lines) + "\n"
+    with open(path, encoding="utf-8") as handle:
+        doc = json.load(handle)
+    meta = doc["meta"]
+    sweep = doc["slices"]["scripted_sweep"]
+    live = meta.get("live") or {}
+    lines.append("Generated from `benchmarks/assumed-breach.json`, %d trials, Python %s. "
+                 "The full table is [../benchmarks/assumed-breach.md](../benchmarks/assumed-breach.md). "
+                 "The crawl is scripted. Live trial ran: %s."
+                 % (meta["trials"], meta["python"], "yes" if live.get("ran") else "no"))
+    lines.append("")
+    lines.append("| Slice | Result | Wilson 95% |")
+    lines.append("| --- | --- | --- |")
+    n = sweep["trials"]
+    for label, key in (
+            ("Scripted crawl touched a decoy", "decoy_tripped"),
+            ("Quarantine ran", "quarantined"),
+            ("A crown jewel was touched before the first decoy", "crown_before"),
+            ("Something new appeared outside the sandbox", "left_sandbox")):
+        k = sweep[key]
+        lo, hi = sweep[key + "_wilson95"]
+        lines.append("| %s | %d/%d | [%.4f, %.4f] |" % (label, k, n, lo, hi))
+    for label, key in (
+            ("Seeded copy of the dataset", "seed_copy"),
+            ("Seeded value in a tool call", "seed_tool_call"),
+            ("Real asset allowlist", "asset_allow"),
+            ("Decoy trip locks the real sibling", "sibling_quarantine"),
+            ("Loopback sentinel", "sentinel"),
+            ("Byte-for-byte copy of a real asset", "never_leaves_copy"),
+            ("Allowlisted tool naming an outside URL", "never_leaves_tool"),
+            ("git status false alarm", "git_status"),
+            ("Copy of a decoy outside the root, observed", "exfil_copy"),
+            ("Allowlisted write outside the root, not followed", "allowlisted_exfil")):
+        block = doc["slices"][key]
+        lo, hi = block["ok_wilson95"]
+        lines.append("| %s | %d/%d | [%.4f, %.4f] |" % (
+            label, block["ok"], block["trials"], lo, hi))
+    lines.append("")
+    lines.append("A descriptor opened before the watch is not seen. The poll backend misses a "
+                 "read when the access time does not move. An allowlisted process can write "
+                 "bytes outside the root, and the watcher does not follow them. The limits are "
+                 "in [../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def build(coverage_path=None, results_dir=None):
-    return render(collect(coverage_path, results_dir)) + canary_benchmark_section()
+    return (render(collect(coverage_path, results_dir))
+            + canary_benchmark_section()
+            + assumed_breach_section())
 
 
 def main(argv=None):

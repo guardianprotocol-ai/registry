@@ -27,8 +27,10 @@ import subprocess
 import sys
 import threading
 
+from . import breach
 from . import canaries
 from . import home
+from . import path_canaries
 from . import rules
 
 # Under the member's data directory, not relative to wherever an agent happened to start
@@ -46,6 +48,8 @@ def default_config():
         "evidence_path": home.path("evidence.jsonl"),
         "max_repeat": 10,            # identical calls allowed per session (GP-0011)
         "canaries_path": home.path("canaries.json"),
+        "path_canaries_path": home.path("path-canaries.json"),
+        "breach_policy_path": home.path("breach-policy.json"),
     }
 
 
@@ -100,6 +104,17 @@ class Sensor:
             sys.stderr.write("[guardian] canary file unusable, registered canaries are NOT "
                              "being watched for: %s\n" % e)
             self.canaries = {"canaries": []}
+        try:
+            self.path_canaries = path_canaries.load(self.cfg.get("path_canaries_path"))
+        except path_canaries.PathCanaryError as e:
+            sys.stderr.write("[guardian] path canary file unusable, registered paths are NOT "
+                             "being watched for: %s\n" % e)
+            self.path_canaries = {"paths": []}
+        try:
+            self.breach_policy = breach.load_policy(self.cfg.get("breach_policy_path"))
+        except breach.BreachError as e:
+            sys.stderr.write("[guardian] breach policy unusable, quarantine is off: %s\n" % e)
+            self.breach_policy = breach.empty_policy()
         # Whether a baseline exists. The first listing is the operator approving the server
         # as it stands, so every tool in it is pinned. Every listing after that is compared
         # against the baseline, which is the only moment a tool appearing can be seen as an
@@ -199,6 +214,20 @@ class Sensor:
         for c in hit_canaries:
             found.append(("GP-0020", canaries.redacted(c)))
 
+        # A path, file or sentinel canary. The same uniform refusal as every other rule:
+        # the answer does not say which path was the decoy.
+        path_hits = path_canaries.hits_in_call(
+            self.path_canaries, args, self.breach_policy,
+            cwd=self.cfg.get("cwd"), tool_name=name)
+        armed_paths = [h for h in path_hits if h.get("state") == path_canaries.ARMED]
+        for hit in path_hits:
+            path_detail = path_canaries.redacted(hit)
+            path_detail["via"] = "tool"
+            path_detail["tool"] = name
+            if hit.get("access_path"):
+                path_detail["access_path"] = hit["access_path"]
+            found.append(("GP-0041", path_detail))
+
         for pid, d in found:
             detail.update(d)
         hits = [pid for pid, _ in found]
@@ -214,15 +243,55 @@ class Sensor:
         # Compared as a set. An earlier version compared the list, so two canaries firing at
         # once produced ["GP-0020", "GP-0020"], missed the comparison and blocked. Baseline
         # quietly stopped being baseline on the day an operator registered a second canary,
-        # which is precisely the surprise this is here to prevent.
-        if set(hits) == {"GP-0020"} and not armed:
+        # which is precisely the surprise this is here to prevent. Path canaries follow the
+        # same rule: only an armed one blocks, and only a canary blocks when no other rule fired.
+        if set(hits) <= {"GP-0020", "GP-0041"} and not armed and not armed_paths:
             action = "flagged"
         self.evidence(sorted(set(hits)), action, detail)
+        if action == "blocked":
+            self._quarantine_hits(name, armed, armed_paths)
         if action == "flagged":
             return None
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "isError": True,
             "content": [{"type": "text", "text": _refusal(hits)}]}}
+
+    def _quarantine_hits(self, tool_name, armed_values, armed_paths):
+        """Move or lock what an armed canary named. Failures are logged, not raised.
+
+        The call is already going to be refused. Quarantine is the local effect on the
+        file. A seed value has no path of its own: the policy maps its label to the
+        dataset label, and that file is what gets locked.
+        """
+        try:
+            resolved = breach.resolve_labels(self.path_canaries, self.breach_policy.get("root"))
+        except (OSError, breach.BreachError):
+            resolved = {}
+        for hit in armed_paths:
+            try:
+                breach.contain(
+                    self.breach_policy, hit, tool=tool_name,
+                    reason="tool call named a registered path", backend="tool")
+            except (OSError, breach.BreachError) as exc:
+                sys.stderr.write("[guardian] quarantine failed: %s\n" % exc)
+        for entry in armed_values:
+            home_label = (self.breach_policy.get("seeds") or {}).get(entry["label"])
+            home_path = resolved.get(home_label) if home_label else None
+            if not home_path:
+                continue
+            home_entry = path_canaries.by_label(self.path_canaries, home_label) or {
+                "label": home_label, "state": path_canaries.ARMED, "role": "seed-home",
+                "kind": path_canaries.KIND_PATH}
+            home_hit = dict(home_entry)
+            home_hit["access_path"] = home_path
+            home_hit["state"] = path_canaries.ARMED
+            home_hit["role"] = "asset"
+            try:
+                breach.contain(
+                    self.breach_policy, home_hit, tool=tool_name,
+                    reason="a seeded record appeared in a tool call", backend="tool")
+            except (OSError, breach.BreachError) as exc:
+                sys.stderr.write("[guardian] quarantine failed: %s\n" % exc)
 
     # ---------- server -> client ----------
     def inspect_response(self, msg):
@@ -323,7 +392,7 @@ COMMANDS = (
     ("protect", "put the sensor in front of the MCP servers your agents actually use"),
     ("verify", "check that protected servers still work and are really protected"),
     ("measure", "measure a real agent on this machine against the registry's attacks"),
-    ("canary", "register values the sensor should watch for: add, list, arm, remove"),
+    ("canary", "register values and files to watch: add, add-file, decoy, seed, list, arm, remove, watch"),
     ("enroll", "take part in scheduled exercises. Installs once, then nothing"),
     ("agenda", "run a published exercise when its time has come. Safe to run often"),
     ("report", "build an anonymized sightings file, previewing it first"),

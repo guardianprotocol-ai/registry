@@ -336,6 +336,7 @@ RULES = {
     "GP-0012": "Outbound content contains the agent's own system prompt canary",
     "GP-0019": "A tool appeared on an approved server, or its input schema changed, after approval",
     "GP-0020": "A canary the operator registered appeared in outbound tool arguments",
+    "GP-0041": "A registered file, path or sentinel canary was touched, or a seeded record appeared outside its dataset",
 }
 
 

@@ -84,3 +84,7 @@ Sightings are counts. The public receiver is
 `python3 receiver/local_server.py`, bound to `127.0.0.1`, and `share --endpoint` points
 at it. Neither endpoint is given the canary. The document is built from the pattern, the
 action and the time.
+
+Path canaries, seeded rows and real-file invariants are a different measurement. Their
+threat model is [ASSUMED_BREACH.md](ASSUMED_BREACH.md) and their numbers are
+[assumed-breach.md](assumed-breach.md).

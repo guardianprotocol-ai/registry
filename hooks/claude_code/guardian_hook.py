@@ -32,7 +32,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "sensor"))
-from guardian_sensor import rules  # noqa: E402
+from guardian_sensor import breach, canaries, path_canaries, rules  # noqa: E402
+from guardian_sensor.sensor import REFUSAL  # noqa: E402
 
 DEFAULT_CONFIG = {
     "mode": "block",                 # "block" or "monitor"
@@ -119,6 +120,40 @@ def handle_pre(payload, cfg, store):
 
     found = rules.check_call(name, args, state, cfg)
     store.save(state)
+
+    value_hits = []
+    path_hits = []
+    # Only when the operator pointed the hook at a store. An unset path must not fall
+    # through to a home directory this process happens to share with a person.
+    if cfg.get("canaries_path"):
+        try:
+            value_store = canaries.load(cfg["canaries_path"])
+        except canaries.CanaryError:
+            value_store = {"canaries": []}
+        value_hits = canaries.matches(value_store, rules.text_of(args))
+        for entry in value_hits:
+            found.append(("GP-0020", canaries.redacted(entry)))
+    policy = None
+    if cfg.get("breach_policy_path"):
+        try:
+            policy = breach.load_policy(cfg["breach_policy_path"])
+        except breach.BreachError:
+            policy = None
+    if cfg.get("path_canaries_path"):
+        try:
+            path_store = path_canaries.load(cfg["path_canaries_path"])
+        except path_canaries.PathCanaryError:
+            path_store = {"paths": []}
+        path_hits = path_canaries.hits_in_call(
+            path_store, args, policy, cwd=cfg.get("cwd"), tool_name=name)
+        for hit in path_hits:
+            path_detail = path_canaries.redacted(hit)
+            path_detail["via"] = "tool"
+            path_detail["tool"] = name
+            if hit.get("access_path"):
+                path_detail["access_path"] = hit["access_path"]
+            found.append(("GP-0041", path_detail))
+
     if not found:
         return None
 
@@ -127,20 +162,40 @@ def handle_pre(payload, cfg, store):
     for _, d in found:
         detail.update(d)
 
-    blocking = cfg["mode"] == "block"
+    armed_value = any(entry["state"] == canaries.ARMED for entry in value_hits)
+    armed_path = any(hit.get("state") == path_canaries.ARMED for hit in path_hits)
+    canary_only = set(ids) <= {"GP-0020", "GP-0041"}
+    # A canary in baseline reports and does not deny. Any other rule still denies in
+    # block mode, which is what a secret-shaped token (GP-0002) has always done.
+    blocking = cfg["mode"] == "block" and not (canary_only and not armed_value and not armed_path)
     record(cfg, ids, "blocked" if blocking else "flagged", detail)
+    if blocking and policy is not None:
+        for hit in path_hits:
+            if hit.get("state") != path_canaries.ARMED:
+                continue
+            try:
+                breach.contain(policy, hit, tool=name, reason="tool call named a registered path",
+                               audit_path=cfg.get("audit_path"), backend="tool")
+            except (OSError, breach.BreachError):
+                pass
     if not blocking:
         return None
-    # Naming the rule here is safe today because this hook implements no detection whose
-    # trigger is itself a secret. If registered canaries (GP-0020) are ever added to it, this
-    # reason has to become uniform across rules the way the sensor's is, or the response
-    # becomes an oracle telling an attacker which of their stolen credentials is the fake.
+    # A registered canary is a secret of a kind: the answer must not say which one fired.
+    # A denial that names GP-0020 or GP-0041, or that names only the other rules when a
+    # canary also fired, tells the caller which of their attempts was the bait. The
+    # sensor uses one refusal for every rule. This hook uses that same text when a
+    # canary is among the hits, and keeps the named reason when it is not, so a
+    # GP-0002 denial still says GP-0002.
+    if {"GP-0020", "GP-0041"} & set(ids):
+        reason = REFUSAL
+    else:
+        reason = (
+            f"Blocked by Guardian ({', '.join(ids)}). "
+            + " ".join(rules.RULES[p] for p in ids) + ".")
     return {"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "deny",
-        "permissionDecisionReason": (
-            f"Blocked by Guardian ({', '.join(ids)}). "
-            + " ".join(rules.RULES[p] for p in ids) + "."),
+        "permissionDecisionReason": reason,
     }}
 
 
