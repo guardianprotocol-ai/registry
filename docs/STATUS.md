@@ -142,3 +142,32 @@ Generated from `benchmarks/assumed-breach.json`, 20 trials, Python 3.12.3. The f
 
 A descriptor opened before the watch is not seen. The poll backend misses a read when the access time does not move, and the `poll_read` probe depends on access-time updates being on. Timing medians depend on the machine. An allowlisted process can write bytes outside the root, and the watcher does not follow them. The limits are in [../benchmarks/ASSUMED_BREACH.md](../benchmarks/ASSUMED_BREACH.md).
 
+
+## Multi-host assumed breach
+
+Generated from `benchmarks/multi-host-breach.json`, 20 trials, Python 3.12.3. The full table is [../benchmarks/multi-host-breach.md](../benchmarks/multi-host-breach.md). The sweep is scripted. Live trial ran: no. The hosts are network namespaces with no default route.
+
+| Slice | Result | Wilson 95% |
+| --- | --- | --- |
+| Workstation decoy tripped | 20/20 | [0.8389, 1.0000] |
+| Workstation sibling quarantined | 20/20 | [0.8389, 1.0000] |
+| Data sentinel saw the workstation | 20/20 | [0.8389, 1.0000] |
+| Repo sentinel saw the workstation | 20/20 | [0.8389, 1.0000] |
+| Data crown jewel quarantined by the end | 20/20 | [0.8389, 1.0000] |
+| Repo crown jewel quarantined by the end | 20/20 | [0.8389, 1.0000] |
+| Hub stored a counts-only drill sighting | 20/20 | [0.8389, 1.0000] |
+| Seeded value written into a record | 0/20 | [0.0000, 0.1611] |
+| Data jewel moved before the hop connected | 0/20 | [0.0000, 0.1611] |
+| Repo jewel moved before the hop connected | 0/20 | [0.0000, 0.1611] |
+| Seeded value arrived on the workstation | 15/20 | [0.5313, 0.8881] |
+| Dataset download returned bytes | 15/20 | [0.5313, 0.8881] |
+| Training file download returned bytes | 2/20 | [0.0279, 0.3010] |
+| Data foothold recorded the crawl | 20/20 | [0.8389, 1.0000] |
+| Repo foothold recorded the crawl | 20/20 | [0.8389, 1.0000] |
+| A route or connection left the lab | 0/20 | [0.0000, 0.1611] |
+| Benign workload tripped | 0/20 | [0.0000, 0.1611] |
+| Trainer read the dataset and it stayed | 20/20 | [0.8389, 1.0000] |
+| Sentinel connections received no bytes | 20/20 | [0.8389, 1.0000] |
+
+Median seconds to the first workstation decoy: 0.0123. Median seconds from that stamp to the data handshake: -0.0095. A negative arrival means the handshake finished before the stamp. Protected-before counts a move that finished before the handshake, and that claim did not hold: both rows are 0. Download counts vary with timing. This table is one run (dataset 15/20, training file 2/20). A rerun of the same sweep got 11/20 and 1/20. A download that returned bytes is a leak. The limits are in [../benchmarks/MULTI_HOST.md](../benchmarks/MULTI_HOST.md).
+

@@ -306,10 +306,78 @@ def assumed_breach_section():
     return "\n".join(lines) + "\n"
 
 
+def multi_host_section():
+    """The multi-host numbers, read from the benchmark file so this page cannot drift."""
+    path = os.path.join(ROOT, "benchmarks", "multi-host-breach.json")
+    lines = ["", "## Multi-host assumed breach", ""]
+    if not os.path.exists(path):
+        lines.append("No `benchmarks/multi-host-breach.json` is in the tree. "
+                     "Generate it with `python3 benchmarks/multi_host_breach.py`.")
+        return "\n".join(lines) + "\n"
+    with open(path, encoding="utf-8") as handle:
+        doc = json.load(handle)
+    meta = doc["meta"]
+    summary = doc["summary"]
+    live = meta.get("live") or {}
+    n = summary["trials"]
+    lines.append("Generated from `benchmarks/multi-host-breach.json`, %d trials, Python %s. "
+                 "The full table is [../benchmarks/multi-host-breach.md](../benchmarks/multi-host-breach.md). "
+                 "The sweep is scripted. Live trial ran: %s. "
+                 "The hosts are network namespaces with no default route."
+                 % (n, meta["python"], "yes" if live.get("ran") else "no"))
+    lines.append("")
+    lines.append("| Slice | Result | Wilson 95% |")
+    lines.append("| --- | --- | --- |")
+    rows = (
+        ("Workstation decoy tripped", "workstation_tripped"),
+        ("Workstation sibling quarantined", "workstation_sibling"),
+        ("Data sentinel saw the workstation", "data_reached"),
+        ("Repo sentinel saw the workstation", "repo_reached"),
+        ("Data crown jewel quarantined by the end", "data_contained"),
+        ("Repo crown jewel quarantined by the end", "repo_contained"),
+        ("Hub stored a counts-only drill sighting", "hub_counts_only"),
+        ("Seeded value written into a record", "token_in_records"),
+        ("Data jewel moved before the hop connected", "protected_before_data"),
+        ("Repo jewel moved before the hop connected", "protected_before_repo"),
+        ("Seeded value arrived on the workstation", "seed_in_download"),
+        ("Dataset download returned bytes", "dataset_downloaded"),
+        ("Training file download returned bytes", "train_downloaded"),
+        ("Data foothold recorded the crawl", "data_crawled"),
+        ("Repo foothold recorded the crawl", "repo_crawled"),
+        ("A route or connection left the lab", "escape"),
+        ("Benign workload tripped", "benign_trip"),
+        ("Trainer read the dataset and it stayed", "trainer_allowed"),
+        ("Sentinel connections received no bytes", "payload_empty"),
+    )
+    for label, key in rows:
+        k = summary[key]
+        lo, hi = summary[key + "_wilson95"]
+        lines.append("| %s | %d/%d | [%.4f, %.4f] |" % (label, k, n, lo, hi))
+    lines.append("")
+
+    def _fmt(value):
+        return "not recorded" if value is None else "%.4f" % value
+
+    lines.append("Median seconds to the first workstation decoy: %s. "
+                 "Median seconds from that stamp to the data handshake: %s. "
+                 "A negative arrival means the handshake finished before the stamp. "
+                 "Protected-before counts a move that finished before the handshake, and "
+                 "that claim did not hold: both rows are 0. Download counts vary with "
+                 "timing. This table is one run (dataset 15/20, training file 2/20). "
+                 "A rerun of the same sweep got 11/20 and 1/20. A download that returned "
+                 "bytes is a leak. The limits are in "
+                 "[../benchmarks/MULTI_HOST.md](../benchmarks/MULTI_HOST.md)." % (
+                     _fmt(summary.get("median_detect_s")),
+                     _fmt(summary.get("median_arrival_data_s"))))
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def build(coverage_path=None, results_dir=None):
     return (render(collect(coverage_path, results_dir))
             + canary_benchmark_section()
-            + assumed_breach_section())
+            + assumed_breach_section()
+            + multi_host_section())
 
 
 def main(argv=None):

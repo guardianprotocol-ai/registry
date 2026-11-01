@@ -87,4 +87,7 @@ action and the time.
 
 Path canaries, seeded rows and real-file invariants are a different measurement. Their
 threat model is [ASSUMED_BREACH.md](ASSUMED_BREACH.md) and their numbers are
-[assumed-breach.md](assumed-breach.md).
+[assumed-breach.md](assumed-breach.md). A workstation, a data server, a repo host and a
+hub on one machine are a further measurement. Their threat model is
+[MULTI_HOST.md](MULTI_HOST.md) and their numbers are
+[multi-host-breach.md](multi-host-breach.md).

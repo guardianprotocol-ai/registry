@@ -181,6 +181,10 @@ The measurement, including what a scripted crawl does and the command for a live
 the watch is not seen. An allowlisted process can write bytes outside the root, and the
 watcher does not follow them.
 
+The same watcher and sentinel, on four namespaces with no default route, are measured in
+[benchmarks/multi-host-breach.md](../benchmarks/multi-host-breach.md). The sweep is
+scripted. The limits are in [benchmarks/MULTI_HOST.md](../benchmarks/MULTI_HOST.md).
+
 ## Fire drill
 
 The fastest way to see the sensor work, and the way to join the exchange without waiting to

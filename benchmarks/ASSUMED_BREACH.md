@@ -22,7 +22,9 @@ Three mechanisms, all local:
   real sibling read-only. The real file is not emptied.
 
 The sentinel is a listener on 127.0.0.1 that accepts a connection and serves nothing.
-A connection is a trip. It is not exfiltration.
+A connection is a trip. It is not exfiltration. A later lab binds that same listener to
+an address inside 10.99.0.0/24. That measurement is [MULTI_HOST.md](MULTI_HOST.md).
+A public address is refused in both.
 
 ## What the committed run measured
 
