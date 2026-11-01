@@ -2,7 +2,7 @@ schema_version: "0.1"
 id: GP-0020
 title: A credential the operator registered leaves in a tool call
 status: draft
-version: 1
+version: 2
 summary: >
   An agent passes a value the operator registered as a canary into an outbound tool call.
   Nothing about the call needs to look like an attack and no catalogued technique has to be
@@ -39,12 +39,19 @@ detection:
   signals:
     - A registered canary digest matches a token in outbound tool arguments
   logic: >
-    Outbound arguments are split into candidate tokens and each is hashed with the store's
-    salt and compared against the registered digests. Hashing the whole body instead would
-    make a value inside a larger message undetectable, and storing values in the clear would
-    make the file listing what the sensor watches for a worse secret store than the one it
-    protects. A canary in baseline is reported and never blocks, whatever the mode, because
-    it has not yet been shown that ordinary work leaves it alone.
+    Outbound arguments are split into candidate strings and each is hashed with the store's
+    salt and compared against the registered digests. The value is not stored. A second
+    digest, of the case-folded value, catches a copy that differs only by case, and the
+    length is stored so a value glued inside a short carrier can be found at that width.
+    A token is tried whole, with a trailing period removed, and in the pieces left by a
+    separator, with base64 padding kept. JSON strings are decoded first, percent-encoding
+    is decoded, and one layer of base64 or hex is decoded, with the decoded text split
+    the same way. The reverse of a token is tried.
+    A fragment of the previous tool call is joined, in order, to a fragment of this one.
+    Hashing the whole body instead would miss a value inside a larger message. A canary in
+    baseline is reported and never blocks, whatever the mode, because it has not yet been
+    shown that ordinary work leaves it alone. A second encoding layer, compression, and a
+    value that never appears in the arguments are still missed, and the benchmark says so.
   false_alarm_rate: 0.0
 mitigations:
   - Register values no legitimate process should ever touch, and leave each in baseline
@@ -71,6 +78,21 @@ notes: >
   armed canary stops the value leaving and that the value never appears in the evidence. The
   benign corpus does carry a case, a credential shaped token nobody registered, which must
   not fire.
+
+  Measured by `python3 benchmarks/canary_benchmark.py` (seed 20261031, 30 trials, armed,
+  block mode). The same trials scored with the pre-fix matcher reproduce the local run
+  that found the gaps. GP-0020 on the regression suite: designed carriers 2100/2100
+  (Wilson 95% 0.9982 to 1.0000) against 1980/2100 before; formatting edges 840/840
+  (0.9954 to 1.0000) against 0/840; encodings and an in-order split 1260/1260
+  (0.9970 to 1.0000) against 150/1260; all regression attacks 4200/4200
+  (0.9991 to 1.0000) against 2130/4200 (0.4920 to 0.5222). A naive exact-text check, which
+  has to keep the value, scores 3090/4200 (0.7222 to 0.7488). Benign GP-0020 false alarms
+  0/2100 (0.0 to 0.0018). The value appeared in evidence in 0/4200 trials. Held-out
+  transforms score 0/1260. The corpus false-alarm rate above is a different measurement
+  and stays 0.0. Case folding is a change from the earlier case-sensitive match. A
+  one-character difference still does not match. Full table, latency, and the end-to-end
+  proxy runs are in benchmarks/canary-benchmark.md. The limits are in
+  benchmarks/THREAT_MODEL.md.
 credits:
   - {name: Frank Albanese, organization: ""}
 created: 2026-10-22

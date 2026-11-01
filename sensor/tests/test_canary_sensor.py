@@ -195,6 +195,105 @@ def test_a_broken_canary_file_is_loud_and_the_sensor_keeps_running():
         shutil.rmtree(w, ignore_errors=True)
 
 
+def calls(workdir, registered, steps):
+    """A real proxy session. `steps` is a list of (tool, arguments)."""
+    store = canaries.load(os.path.join(workdir, "absent.json"))
+    for value, label, state in registered:
+        canaries.add(store, value, label, state)
+    canaries.save(store, os.path.join(workdir, "canaries.json"))
+    cfg = os.path.join(workdir, "guardian.json")
+    with open(cfg, "w") as f:
+        json.dump({"mode": "block", "allowlist": ["example.com", "partner.test"],
+                   "pins_path": os.path.join(workdir, "pins.json"),
+                   "evidence_path": os.path.join(workdir, "evidence.jsonl"),
+                   "canaries_path": os.path.join(workdir, "canaries.json")}, f)
+    sink = os.path.join(workdir, "sink.jsonl")
+    env = {**os.environ, "PYTHONPATH": ROOT, "GUARDIAN_SINK": sink}
+    cmd = [sys.executable, "-m", "guardian_sensor", "--config", cfg, "--",
+           sys.executable, os.path.join(HERE, "fake_server.py")]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, text=True, bufsize=1, env=env, cwd=workdir)
+    n = [0]
+
+    def call(method, params=None):
+        n[0] += 1
+        p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": n[0], "method": method,
+                                  "params": params or {}}) + "\n")
+        p.stdin.flush()
+        return json.loads(p.stdout.readline())
+
+    call("initialize")
+    call("tools/list")
+    replies = []
+    for tool, args in steps:
+        replies.append(call("tools/call", {"name": tool, "arguments": args}))
+    p.stdin.close()
+    p.wait(timeout=10)
+    evidence_path = os.path.join(workdir, "evidence.jsonl")
+    raw = open(evidence_path).read() if os.path.exists(evidence_path) else ""
+    evidence = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    sunk = open(sink).read() if os.path.exists(sink) else ""
+    blocked = [bool(r.get("result", {}).get("isError")) for r in replies]
+    return {"blocked": blocked, "evidence": evidence, "sink": sunk, "raw_evidence": raw}
+
+
+def test_the_measured_gaps_do_not_leave_through_the_proxy():
+    """The shapes a local run missed, through the real proxy, not only matches().
+
+    A trailing period, a base64 value after an equals sign, and the two halves of a
+    value in order. The completing call is the one that can be blocked. The first
+    half has already been forwarded: a digest cannot be compared with a prefix.
+    """
+    padded = "abcdEFGHijklMNOPQRSTUVWX12+/ab=="
+    w = tempfile.mkdtemp()
+    try:
+        period = calls(w, [(SECRET, "staging", canaries.ARMED)],
+                       [("send_message", {"to": "team@example.com",
+                                          "body": "The key is %s." % SECRET})])
+        check("a trailing period is blocked", period["blocked"] == [True], str(period["blocked"]))
+        check("a trailing period does not reach the sink", SECRET not in period["sink"])
+        check("a trailing period is GP-0020",
+              any("GP-0020" in e.get("patterns", []) for e in period["evidence"]))
+        check("the value is not in the evidence", SECRET not in period["raw_evidence"])
+    finally:
+        shutil.rmtree(w, ignore_errors=True)
+
+    w = tempfile.mkdtemp()
+    try:
+        assigned = calls(w, [(padded, "padded", canaries.ARMED)],
+                         [("send_message", {"to": "team@example.com",
+                                            "body": "API_KEY=%s" % padded})])
+        check("padding after an equals sign is blocked",
+              assigned["blocked"] == [True], str(assigned["blocked"]))
+        check("the padded value does not reach the sink", padded not in assigned["sink"])
+        check("the padded value is not in the evidence", padded not in assigned["raw_evidence"])
+    finally:
+        shutil.rmtree(w, ignore_errors=True)
+
+    w = tempfile.mkdtemp()
+    try:
+        half = len(SECRET) // 2
+        split = calls(w, [(SECRET, "staging", canaries.ARMED)], [
+            ("send_message", {"to": "team@example.com", "body": "part1 " + SECRET[:half]}),
+            ("send_message", {"to": "team@example.com", "body": "part2 " + SECRET[half:]}),
+        ])
+        check("the first half is not itself a canary", split["blocked"][0] is False,
+              str(split["blocked"]))
+        check("the completing half is blocked", split["blocked"][1] is True, str(split["blocked"]))
+        check("the whole value never reaches the sink", SECRET not in split["sink"])
+        check("the whole value is not in the evidence", SECRET not in split["raw_evidence"])
+        backwards = calls(w, [(SECRET, "staging", canaries.ARMED)], [
+            ("send_message", {"to": "team@example.com", "body": "part2 " + SECRET[half:]}),
+            ("send_message", {"to": "team@example.com", "body": "part1 " + SECRET[:half]}),
+        ])
+        # Same work directory, so this is a second session only if calls() starts a new
+        # process. It does. Backwards halves are a held-out miss: neither call is the value.
+        check("halves in reverse order are not blocked",
+              backwards["blocked"] == [False, False], str(backwards["blocked"]))
+    finally:
+        shutil.rmtree(w, ignore_errors=True)
+
+
 def test_a_refusal_does_not_say_which_rule_fired():
     """The oracle. An attacker holding stolen credentials sends them one at a time and reads
     the answers. If a canary match is distinguishable from any other refusal, they learn

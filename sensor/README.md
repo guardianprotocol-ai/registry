@@ -115,10 +115,26 @@ It is also not checked on tool output. A canary coming back from a file read mea
 now holds the value, which is a different event from the agent sending it, and recording
 both under one pattern would make the evidence ambiguous about which happened.
 
-Matching is on whole tokens, so a value spliced into a longer run of characters or re-encoded
-on the way out is not found: this catches a credential being passed on, not one being
-smuggled. Matching is case sensitive, as credentials are. Values shorter than twelve
-characters, and values containing spaces, are refused rather than silently never matched.
+Matching hashes candidate strings and compares them to the salted digest. The value is
+not stored. A second digest, of the case-folded value, is stored so a copy that differs
+only by case still matches, and the length is stored so a value glued inside a short
+carrier can be found at that width. A token is tried whole, with a trailing period
+removed, and in the pieces left by `=`, `&`, `?`, `;`, `,`, `:` and `/`. Base64 padding
+is kept when the token is split. JSON strings are decoded before that split, so a value
+on its own line is the value. Percent-encoding is decoded. One layer of base64 or hex is
+decoded, including hex written with a `0x` prefix, and the decoded text is split the same
+way, so base64 of `user:VALUE` is found. The reverse of a token is tried. A fragment from the previous tool call is
+joined, in order, to a fragment from this one.
+
+What is still missed, on purpose, and measured in
+[the canary benchmark](../benchmarks/canary-benchmark.md): a second encoding, compression,
+rot13, base32, base64 wrapped across several lines, the two halves in reverse order, a character inserted into the value, and
+a value that never appears in the tool arguments. The first half of a split is forwarded,
+because a digest cannot be compared with a prefix. The call that completes the value is
+the one that blocks, and only if nothing else was called in between. A window is taken
+only inside a token of at most 256 characters. Values shorter than twelve characters, and
+values containing spaces, are refused rather than silently never matched. An entry written
+before the case-fold digest was added still matches the exact text only.
 
 ## Fire drill
 

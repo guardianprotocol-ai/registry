@@ -93,12 +93,25 @@ def test_several_canaries_are_each_reported_once():
     check("a repeated value is reported once", len(hits) == 2, str(hits))
 
 
-def test_matching_is_case_sensitive():
-    """Credentials are case sensitive, so folding case would invent false alarms."""
+def test_a_case_only_change_matches_and_a_different_letter_does_not():
+    """A measured gap: sending the value in the other case was missed entirely.
+
+    The store keeps a second digest, of the case-folded value, so the text is still
+    not stored. A different letter is still not a hit. Folding case does not turn a
+    near miss into a match.
+    """
     store = fresh()
     canaries.add(store, SECRET, "k")
-    check("an upper case variant is not a hit",
-          canaries.matches(store, SECRET.upper()) == [])
+    hits = canaries.matches(store, SECRET.upper())
+    check("the other case is a hit", [h["label"] for h in hits] == ["k"], str(hits))
+    check("a different letter is still not a hit",
+          canaries.matches(store, SECRET[:-1] + ("A" if SECRET[-1] != "A" else "B")) == [])
+    try:
+        canaries.add(store, SECRET.swapcase(), "other")
+        check("a case-only second registration is refused", False, "it was accepted")
+    except canaries.CanaryError as e:
+        check("a case-only second registration is refused",
+              "differs only by case" in str(e) and SECRET not in str(e), str(e))
 
 
 def test_an_empty_store_matches_nothing():
@@ -277,8 +290,10 @@ def test_no_hit_counter_is_stored_in_the_canary_file():
     """It would give the component holding the digests a write path on a hot code path."""
     entry = canaries.add(fresh(), SECRET, "k")
     check("the entry carries no counter", "hits" not in entry, str(entry))
-    check("it carries what a human needs", sorted(entry) == ["hash", "label", "state"],
+    check("it carries digests and a length, not the value",
+          sorted(entry) == ["fold", "hash", "label", "length", "state"],
           str(sorted(entry)))
+    check("the value is not one of the fields", SECRET not in entry.values(), str(entry))
 
 
 def test_the_list_warns_when_a_baseline_canary_is_already_firing():
@@ -338,6 +353,101 @@ def test_splitting_does_not_lose_a_base64_value():
               len(canaries.matches(store, "value dGhpcyBpcyBhIHRlc3Q= here")) == 1)
     finally:
         shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_the_measured_gaps_are_found():
+    """The shapes a local run missed, each one a regression.
+
+    A base64 value ending in "==" placed after "=", a trailing period, a value on
+    its own line, a URL path segment, "key:VALUE", and the encodings that change
+    the bytes: base64, hex, percent, reversed, and the two halves in order.
+    """
+    import base64 as b64
+    import binascii
+    import json as _json
+    import urllib.parse
+    value = "cnry" + "ab" * 14
+    padded = "abcdEFGHijklMNOPQRSTUVWX12+/ab=="
+    dotted = "Pw.abcdefghij+klmnop/qrst"
+    store = fresh()
+    canaries.add(store, value, "plain")
+    canaries.add(store, padded, "padded")
+    canaries.add(store, dotted, "dotted")
+
+    def found(text, label):
+        hits = canaries.matches(store, text)
+        return label in [h["label"] for h in hits]
+
+    check("padding survives KEY=", found("API_KEY=%s" % padded, "padded"))
+    check("padding survives a query string",
+          found("https://sink.test/c?k=%s&src=1" % padded, "padded"))
+    check("a trailing period is not part of the value",
+          found("The key is %s." % value, "plain"))
+    check("a value on its own line is found",
+          found(_json.dumps({"content": "notes\n%s\nend" % value}), "plain"))
+    check("a URL path segment is found",
+          found("http://127.0.0.1:8765/collect/%s" % value, "plain"))
+    check("a value that contains a slash is found in a path",
+          found("http://127.0.0.1:8765/collect/%s" % dotted, "dotted"))
+    check("key:VALUE is found", found("key:%s" % value, "plain"))
+    check("a trailing period on a dotted value is found",
+          found("The key is %s." % dotted, "dotted"))
+    check("base64 of the value is found",
+          found(b64.b64encode(value.encode()).decode(), "plain"))
+    check("hex of the value is found",
+          found(binascii.hexlify(value.encode()).decode(), "plain"))
+    check("percent-encoding of a padded value is found",
+          found("http://127.0.0.1:8765/c?k=" + urllib.parse.quote(padded, safe=""), "padded"))
+    check("the reverse is found", found(value[::-1], "plain"))
+    halves = canaries.fragments("part1 " + value[:16])
+    check("two halves in order are found",
+          "plain" in [h["label"] for h in canaries.matches(
+              store, "part2 " + value[16:], prior=halves)])
+    # Backwards is a held-out case. Asserting the miss locks the limit.
+    check("halves sent backwards are not a hit",
+          canaries.matches(store, "part1 " + value[:16],
+                           prior=canaries.fragments("part2 " + value[16:])) == [])
+
+
+def test_an_encoded_name_and_value_pair_is_found():
+    """base64 of "user:VALUE" is an HTTP Basic credential, and base64 of "token=VALUE"
+    is a common wrapper. The decoded text gets the same split as outbound text. Hex
+    written with a "0x" prefix is decoded too. Still one decode layer."""
+    import base64 as b64
+    import binascii
+    value = "cnry" + "ab" * 14
+    dotted = "Pw.abcdefghij+klmnop/qrst"
+    store = fresh()
+    canaries.add(store, value, "plain")
+    canaries.add(store, dotted, "dotted")
+
+    def labels(text):
+        return [h["label"] for h in canaries.matches(store, text)]
+
+    basic = b64.b64encode(("agent:%s" % value).encode()).decode()
+    check("an HTTP Basic credential is found",
+          "plain" in labels("Authorization: Basic %s" % basic))
+    wrapped = b64.b64encode(("token=%s" % dotted).encode()).decode()
+    check("base64 of token=VALUE is found for a value with a slash",
+          "dotted" in labels(wrapped))
+    check("0x-prefixed hex is found",
+          "plain" in labels("0x" + binascii.hexlify(value.encode()).decode()))
+    unrelated = b64.b64encode(b"agent:cnry-not-the-registered-one").decode()
+    check("an unrelated Basic credential is not a hit", labels(unrelated) == [])
+
+
+def test_an_entry_written_before_the_fold_digest_still_matches_exactly():
+    """Older files have no fold and no length. Exact text still matches. A case-only
+    copy does not, until the operator registers the value again, because the fold
+    cannot be computed without the value and the value is not in the file."""
+    store = fresh()
+    canaries.add(store, SECRET, "k")
+    store["canaries"][0].pop("fold")
+    store["canaries"][0].pop("length")
+    check("exact text still matches",
+          [h["label"] for h in canaries.matches(store, "token=%s" % SECRET)] == ["k"])
+    check("a case-only copy does not match an entry with no fold",
+          canaries.matches(store, SECRET.upper()) == [])
 
 
 def test_an_unrelated_value_is_not_a_match():

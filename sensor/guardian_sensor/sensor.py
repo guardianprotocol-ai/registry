@@ -106,6 +106,10 @@ class Sensor:
         # addition rather than as a first sighting.
         self.approved = bool(self.pins)
         self.lock = threading.Lock()
+        # Pieces of the previous tool call, so a value split across two calls can be
+        # joined. Not written anywhere. Replaced each call, not accumulated, so a long
+        # session cannot keep every argument it has ever seen.
+        self._canary_prior = []
 
     # ---------- storage ----------
     def _load_json(self, path, default):
@@ -182,7 +186,15 @@ class Sensor:
 
         # A canary the operator registered, found in what is about to leave. Checked here,
         # before the call is forwarded, because afterwards the value has already gone.
-        hit_canaries = canaries.matches(self.canaries, rules.text_of(args))
+        argument_text = rules.text_of(args)
+        # One scan of the argument. Passed into the match when there is a previous
+        # call to join with, and kept either way so the next call can finish a value.
+        pieces = canaries.fragments(argument_text) if self._canary_prior else None
+        hit_canaries = canaries.matches(
+            self.canaries, argument_text, prior=self._canary_prior, pieces=pieces)
+        # Remembered after the check, so this call is joined with the previous one
+        # and not with itself.
+        self._canary_prior = pieces if pieces is not None else canaries.fragments(argument_text)
         armed = [c for c in hit_canaries if c["state"] == canaries.ARMED]
         for c in hit_canaries:
             found.append(("GP-0020", canaries.redacted(c)))

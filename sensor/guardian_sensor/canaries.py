@@ -24,12 +24,14 @@ an incident.
 
 Python 3.9+ standard library only.
 """
+import base64
 import hashlib
 import hmac
 import json
 import os
 import re
 import secrets
+import urllib.parse
 
 from . import home
 
@@ -128,16 +130,28 @@ def add(store, value, label, state=BASELINE):
             "not a sentence.")
 
     digest = _digest(value, store["salt"])
+    fold = _digest(value.casefold(), store["salt"])
     for existing in store["canaries"]:
         if hmac.compare_digest(existing["hash"], digest):
             raise CanaryError("that value is already registered as %r" % existing["label"])
+        existing_fold = existing.get("fold")
+        if isinstance(existing_fold, str) and hmac.compare_digest(existing_fold, fold):
+            raise CanaryError(
+                "that value differs only by case from %r. Registering both would make a "
+                "case-only copy ambiguous about which label fired." % existing["label"])
 
     # No hit counter is stored here. A count in this file would have to be written by the
     # sensor on every detection, which means the component holding digests of the
     # operator's secrets gains a write path on a hot code path, for a number that is already
     # recorded in the evidence log. `hits_by_label` derives it from there instead, so there
     # is one source of truth and this file stays something only the operator writes.
-    entry = {"label": label.strip(), "hash": digest, "state": state}
+    #
+    # `length` is not the secret. It lets a value glued inside a short carrier be found
+    # by that exact width, instead of hashing every window of every width.
+    # `fold` is the digest of the case-folded value. A copy that differs only by case
+    # still matches, and the value is still not stored. Two digests, never the text.
+    entry = {"label": label.strip(), "hash": digest, "state": state,
+             "length": len(value), "fold": fold}
     store["canaries"].append(entry)
     return entry
 
@@ -162,58 +176,270 @@ def tokens(text):
     return set(TOKEN_RE.findall(text or ""))
 
 
-def matches(store, text):
-    """Registered canaries present in `text`, as a list of entries. Never returns a value.
+# A run of "=" that is base64 padding, not a name-and-value separator: it sits at the
+# end of the token, or immediately before another separator. "KEY=VALUE==" used to
+# split into "KEY" and "VALUE", and the padding was eaten, so a registered base64
+# value that ends in "==" was invisible the moment it followed an equals sign.
+_PADDING = re.compile(r"=(?==*(?:[&?;,:/]|$))")
+# Separators a credential is wrapped in. ":" is "key:VALUE". "/" is a URL path
+# segment. Both used to stay inside the token, so the hashed string was the wrapper
+# plus the value and never the value.
+_SEPARATORS = re.compile(r"[=&?;,:/]+")
+_B64 = re.compile(r"^[A-Za-z0-9+/]+={0,2}$")
+_B64URL = re.compile(r"^[A-Za-z0-9_-]+={0,2}$")
+_HEX = re.compile(r"^[0-9a-fA-F]+$")
+# Pieces shorter than a token. A value split across two calls is not a token on
+# either side. "part1" in the regression suite is 5 characters and must not be kept,
+# or it glues to the half and the join is no longer the value.
+FRAGMENT_RE = re.compile(r"[A-Za-z0-9_\-+./=:]{6,80}")
+# Sliding a window across a multi-kilobyte blob is what made a large file write
+# expensive in measurement, and a value sitting in its own token does not need it.
+# 256 is enough for a value glued inside a URL or a short carrier.
+MAX_SLIDE = 256
+MAX_DECODE = 8192
 
-    Each candidate is hashed and compared, so the stored form stays a digest. A token is
-    tried whole and then in the parts a name-and-value separator leaves behind, so
-    "token=SECRET" and a query string both match, which they did not before.
 
-    A value re-encoded on the way out, base64 or percent escaped or split across two
-    calls, is still not found. That limitation is real and is documented rather than
-    hidden: this catches a credential being passed on, not a credential being smuggled by
-    somebody who knows it is watched.
+def _surfaces(text):
+    """Strings worth tokenising. JSON is decoded so a newline is a newline.
+
+    Tool arguments arrive as a JSON object. A value on its own line was hashed as
+    "nVALUE", because the encoding of the newline is a backslash and an n, and the
+    backslash splits the token while the n stays on the value. Decoding the JSON
+    strings first is the fix. Percent-decoding is applied to those strings, because
+    "%" is not part of a token either.
     """
-    if not store.get("canaries"):
-        return []
-    by_hash = {c["hash"]: c for c in store["canaries"]}
-    found = []
-    for token in tokens(text):
-        for candidate in _candidates(token):
-            entry = by_hash.get(_digest(candidate, store["salt"]))
-            if entry is not None and entry not in found:
-                found.append(entry)
+    raw = text or ""
+    found = [raw]
+    parsed = None
+    stripped = raw.strip()
+    if stripped[:1] in "{[":
+        try:
+            parsed = json.loads(raw)
+        except (ValueError, TypeError):
+            parsed = None
+    if parsed is not None:
+        _walk_strings(parsed, found)
+    extra = []
+    for item in found:
+        if "%" in item:
+            once = urllib.parse.unquote(item)
+            extra.append(once)
+            if "%" in once:
+                extra.append(urllib.parse.unquote(once))
+    for item in extra:
+        if item not in found:
+            found.append(item)
     return found
 
 
-# The characters that join a name to its value. A token class that keeps them is right,
-# because base64 ends in "=" and a path keeps "/", but it means "token=SECRET" arrives as
-# one token and never matches a secret stored on its own.
-#
-# Three of the six shapes a credential actually travels in were missed because of this,
-# including a query string, which is the likeliest way one leaves at all:
-#
-#   token=SECRET                        missed
-#   https://somewhere/?k=SECRET         missed
-#   API_KEY=SECRET                      missed
-#
-# So a token is compared whole and also in the parts these separators divide it into. The
-# whole token is still tried first and still matters: a base64 value ends in "=" and
-# splitting it would be the way to miss that one instead.
-JOINERS = "=&?;,"
+def _walk_strings(obj, found):
+    if isinstance(obj, str):
+        if obj and obj not in found:
+            found.append(obj)
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            _walk_strings(key, found)
+            _walk_strings(value, found)
+    elif isinstance(obj, list):
+        for value in obj:
+            _walk_strings(value, found)
 
 
-def _candidates(token):
-    """The token itself, then the pieces a name-and-value separator leaves behind."""
+def fragments(text):
+    """Short pieces of outbound text, so a later call can finish a value this one started.
+
+    The first four and the last four distinct pieces, in order. A long document has
+    thousands of ordinary words, and keeping every one would make the next call join
+    against a transcript. Membership is a set: scanning a list to drop duplicates is
+    quadratic in the number of words, which a large tool argument has.
+    """
+    first = []
+    last = []
+    seen = set()
+    for surface in _surfaces(text):
+        for piece in FRAGMENT_RE.findall(surface):
+            if piece in seen:
+                continue
+            seen.add(piece)
+            if len(first) < 4:
+                first.append(piece)
+            else:
+                last.append(piece)
+                if len(last) > 4:
+                    del last[0]
+    return first + last
+
+
+def _parts(token):
+    """The token, then the pieces separators leave, with base64 padding kept."""
     yield token
-    piece = token
-    for joiner in JOINERS:
-        piece = piece.replace(joiner, "\x00")
-    if "\x00" not in piece:
+    bare = token.rstrip(".")
+    if bare != token:
+        yield bare
+    protected = _PADDING.sub("\x01", token)
+    if protected == token and not _SEPARATORS.search(token):
         return
-    for part in piece.split("\x00"):
-        if len(part) >= MIN_LENGTH:
+    segments = [part.replace("\x01", "=") for part in _SEPARATORS.split(protected)]
+    for part in segments:
+        if part:
             yield part
+            bare = part.rstrip(".")
+            if bare != part:
+                yield bare
+    # A value that itself contains "/" is more than one segment. Put a few neighbouring
+    # segments back together. Three is enough for the shapes we register.
+    if "/" in token:
+        segs = [part for part in token.split("/") if part]
+        for start in range(len(segs)):
+            acc = segs[start]
+            for nxt in range(start + 1, min(start + 3, len(segs))):
+                acc = acc + "/" + segs[nxt]
+                yield acc
+
+
+def _decoded(token):
+    """One layer of base64, base64url or hex. Not a second layer, and not compression."""
+    if not token or len(token) > MAX_DECODE:
+        return
+    blobs = []
+    if len(token) >= 16 and _B64.match(token):
+        padded = token + ("=" * ((4 - len(token) % 4) % 4))
+        try:
+            blobs.append(base64.b64decode(padded))
+        except Exception:
+            pass
+    if len(token) >= 16 and ("-" in token or "_" in token) and _B64URL.match(token):
+        padded = token + ("=" * ((4 - len(token) % 4) % 4))
+        try:
+            blobs.append(base64.urlsafe_b64decode(padded))
+        except Exception:
+            pass
+    # "0x" is how hex is often written. The prefix is not part of the bytes.
+    hexed = token[2:] if token[:2] in ("0x", "0X") else token
+    if len(hexed) >= MIN_LENGTH * 2 and len(hexed) % 2 == 0 and _HEX.match(hexed):
+        try:
+            blobs.append(bytes.fromhex(hexed))
+        except ValueError:
+            pass
+    seen = set()
+    for raw in blobs:
+        if not raw or len(raw) > MAX_DECODE:
+            continue
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        if len(text) >= MIN_LENGTH and text not in seen:
+            seen.add(text)
+            yield text
+
+
+def _windows(token, lengths):
+    if len(token) > MAX_SLIDE:
+        return
+    for length in lengths:
+        if length < MIN_LENGTH or len(token) <= length:
+            continue
+        span = len(token) - length + 1
+        for index in range(span):
+            yield token[index:index + length]
+
+
+def _joins(prior, current):
+    if not prior or not current:
+        return
+    for left in prior[-3:]:
+        if len(left) < 6:
+            continue
+        for right in current[:4]:
+            if len(right) < 6:
+                continue
+            yield left + right
+
+
+def matches(store, text, prior=None, pieces=None):
+    """Registered canaries present in `text`, as a list of entries. Never returns a value.
+
+    Candidates are hashed and compared to the salted digest. The forms tried are the
+    token, the pieces a separator leaves (with base64 padding kept), a trailing period
+    removed, JSON string values, percent-decoding, one layer of base64 or hex, the
+    reverse of a token, the case-folded digest, a value glued inside a short carrier,
+    and the join of a piece from `prior` with a piece from this text. `prior` is how a
+    value split across two calls is put back together, in order.
+
+    Still not tried, on purpose: a second encoding layer, compression, rot13, a change
+    that drops part of the value, and a value that never appears in tool text. Those
+    are measured as held-out cases rather than quietly added after a score.
+    """
+    rows = store.get("canaries") or []
+    if not rows:
+        return []
+    by_hash = {}
+    by_fold = {}
+    lengths = []
+    for row in rows:
+        by_hash[row["hash"]] = row
+        fold = row.get("fold")
+        if isinstance(fold, str):
+            by_fold[fold] = row
+        length = row.get("length")
+        if isinstance(length, int) and MIN_LENGTH <= length <= MAX_SLIDE:
+            if length not in lengths:
+                lengths.append(length)
+    found = []
+    seen = set()
+    salt = store["salt"]
+
+    def hit(value, folded):
+        if not isinstance(value, str) or len(value) < MIN_LENGTH or len(value) > 4096:
+            return
+        table = by_fold if folded else by_hash
+        entry = table.get(_digest(value, salt))
+        if entry is None or entry["label"] in seen:
+            return
+        seen.add(entry["label"])
+        found.append(entry)
+
+    def consider(value):
+        hit(value, False)
+        folded = value.casefold()
+        hit(folded, True)
+        rev = value[::-1]
+        if rev != value:
+            hit(rev, False)
+            hit(rev.casefold(), True)
+
+    def consider_with_windows(value):
+        consider(value)
+        for window in _windows(value, lengths):
+            consider(window)
+
+    for surface in _surfaces(text):
+        for token in tokens(surface):
+            for candidate in _parts(token):
+                if len(candidate) < MIN_LENGTH:
+                    continue
+                consider_with_windows(candidate)
+                for decoded in _decoded(candidate):
+                    consider_with_windows(decoded)
+                    # The decoded text gets the same split and windows as outbound
+                    # text, so base64 of "user:VALUE" (an HTTP Basic credential) or of
+                    # "token=VALUE" is found. Still one decode layer.
+                    for inner in tokens(decoded):
+                        for part in _parts(inner):
+                            if part != decoded and len(part) >= MIN_LENGTH:
+                                consider_with_windows(part)
+            if len(found) == len(rows):
+                return found
+    # Nothing to join with on the first call. Computing the pieces anyway is a full
+    # scan of the argument, and the caller already does that when it stores them for
+    # the next call.
+    if prior:
+        if pieces is None:
+            pieces = fragments(text)
+        for joined in _joins(list(prior), pieces):
+            consider(joined)
+    return found
 
 
 def hits_by_label(evidence_path):
