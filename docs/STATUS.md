@@ -106,7 +106,7 @@ Open a technique's issue to claim it. If none of the 7 open ones look right, [PR
 
 ## Canary benchmark
 
-Generated from `benchmarks/canary-benchmark.json`, seed 20261031, 30 trials per scenario, Python 3.12.3. The full table is [../benchmarks/canary-benchmark.md](../benchmarks/canary-benchmark.md). GP-0020 only. The value is not stored.
+Generated from `benchmarks/canary-benchmark.json`, seed 20261031, 30 trials per scenario, Python 3.13.5. The full table is [../benchmarks/canary-benchmark.md](../benchmarks/canary-benchmark.md). GP-0020 only. The value is not stored. The tool calls are scripted: no model chose them. The regression suite is the set of forms the matcher was fixed against, so a full score there is a regression result, not a general detection rate.
 
 | Slice | Sensor | Pre-fix matcher | Naive exact text |
 | --- | --- | --- | --- |
