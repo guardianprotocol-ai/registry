@@ -62,12 +62,12 @@ Every pattern has a stable ID, links to OWASP and MITRE ATLAS, a runnable test w
 
 The words above are used precisely. [docs/GLOSSARY.md](docs/GLOSSARY.md) says what each one means.
 
-**Season 1 ran October 5 to October 29, 2026.** [PROGRAM.md](PROGRAM.md) is the page that said what we were doing and what anyone could pick up without asking. Where it ended up is in [docs/STATUS.md](docs/STATUS.md), generated from this repository: 41 draft patterns, and 56 of the 63 ATLAS techniques that happen while an agent runs covered by at least one. The group's paper is in author review, and the open issues are still open to anyone.
+**Season 1 ran October 5 to October 29, 2026.** [PROGRAM.md](PROGRAM.md) is the page that said what we were doing and what anyone could pick up without asking. Where it ended up is in [docs/STATUS.md](docs/STATUS.md), generated from this repository: 41 draft patterns, and 56 of the 63 ATLAS techniques that happen while an agent runs covered by at least one pattern. The group's paper is in author review, and the open issues are still open to anyone.
 
 ## Results so far
 
-Every number below has a run count and a 95% interval, and comes from a file in this
-repository. A row is one version on one date, never a statement about a vendor in general.
+Every number below comes from a file in this repository, which prints its run count and
+95% interval. A row is one version on one date, never a statement about a vendor in general.
 
 | What | Result | Where |
 | --- | --- | --- |
