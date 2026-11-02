@@ -67,13 +67,48 @@ def test_it_falls_back_when_the_terminal_cannot_draw():
     check("an unknown codec does not raise", banner.LIT not in weird, weird)
 
 
+class Environment:
+    """Run a block with these variables set, and every other colour variable unset.
+
+    The colour decision reads NO_COLOR, FORCE_COLOR and TERM. Without this, a contributor
+    whose shell sets NO_COLOR=1 or TERM=dumb saw the terminal checks fail on a clean tree."""
+
+    NAMES = ("NO_COLOR", "FORCE_COLOR", "TERM")
+
+    def __init__(self, **values):
+        self.values = values
+
+    def __enter__(self):
+        self.saved = {name: os.environ.get(name) for name in self.NAMES}
+        for name in self.NAMES:
+            os.environ.pop(name, None)
+        os.environ.update(self.values)
+
+    def __exit__(self, *exc):
+        for name, value in self.saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+
 def test_no_escape_codes_unless_somebody_is_watching():
-    plain = banner.banner(Stream(tty=False))
+    with Environment(TERM="xterm-256color"):
+        plain = banner.banner(Stream(tty=False))
+        lit = banner.banner(Stream(tty=True))
     check("a pipe gets no colour", "\033[" not in plain, repr(plain))
-    lit = banner.banner(Stream(tty=True))
     check("a terminal does", "\033[" in lit, repr(lit))
     check("and the amber is on the lit node only",
           lit.count("\033[33m") == 1, repr(lit))
+
+
+def test_the_operator_can_turn_colour_off():
+    with Environment(TERM="xterm-256color", NO_COLOR="1"):
+        quiet = banner.banner(Stream(tty=True))
+    check("NO_COLOR is honoured on a terminal", "\033[" not in quiet, repr(quiet))
+    with Environment(TERM="dumb"):
+        dumb = banner.banner(Stream(tty=True))
+    check("a dumb terminal gets no colour", "\033[" not in dumb, repr(dumb))
 
 
 def test_it_says_what_this_is():
