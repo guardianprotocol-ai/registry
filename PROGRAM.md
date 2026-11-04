@@ -1,10 +1,44 @@
-# Season 1: October 5 to October 29, 2026
+# Season 1: October 5 to October 29, 2026. Closed, and here is what shipped
 
-One page: what the group is doing, what you can pick up without asking anyone, and where to
-see how far along we are.
+One page: what the group did, what you can pick up without asking anyone, and where to see
+how far along we are.
 
-**The goal.** By October 29 we publish protocol v0.1 and the full co-authored paper as
-preprint v1, with members' own agents measured and numbers to show for it.
+**Season 1 is over and the paper did not ship on October 29.** This page said it would,
+and leaving that promise in the future tense for a week was worse than missing the date.
+The measurement work landed; the paper's own headline claim turned out not to be
+measurable yet, and that is the honest reason rather than a scheduling one.
+
+## What shipped
+
+- **Twenty patterns**, fourteen with detection rules, nine runnable end to end
+- **Three agent vendors measured** at twenty trials per cell, zero errored: Claude Code,
+  Gemini CLI, Codex CLI
+- **The first cross-vendor difference.** GP-0008 reached the second agent in 30%
+  [0.15, 0.52] of runs on one harness and in none of twenty on another. That is the
+  argument for a shared registry, stated as a measurement
+- **A false alarm rate for every rule**, with denominators and intervals, against a benign
+  corpus. Most detection work never publishes this half
+- **A working exchange.** Four organizations, k-anonymity withholding below three, nothing
+  sensitive leaving any node, rehearsed at twenty containerised hosts
+- **Four outside contributors with merged work**, and three audits from outside that
+  corrected numbers we had already published
+
+## What did not, and why
+
+**Time to protection, the number this research exists to report.** One rule bundle has been
+published and one machine has adopted it, which is ours. Propagation needs two
+organizations moving between two versions, so there is nothing yet to time. The script
+exists and the measurement has never had data. See issue #217.
+
+**No live detection.** Every sighting in the exchange is `source: drill`, which is
+self-attack. The work measures how fast a detection could travel, not how often these
+attacks happen in the wild.
+
+Both gaps are about adoption rather than effort, which is what Season 2 is for.
+
+**The paper's scope was measurement:** which attacks land, against which models, inside
+which harnesses, with the sensor off and on. That part is done and is publishable on its
+own.
 
 **The paper's scope is measurement:** which attacks land, against which models, inside which
 harnesses, with the sensor off and on. The distributed work, fire drills and the immune
@@ -24,7 +58,7 @@ The paper is written in parallel from week 1. It is not written at the end.
 | 1 | Oct 5 to 11 | Kickoff. **Map** the 63 techniques |
 | 2 | Oct 12 to 18 | **Prove** and **Measure**. **Deploy** is optional: the sensor in monitor mode on your own machine |
 | 3 | Oct 19 to 25 | **Measure** continues: more harnesses, more model families, 20 runs per cell, sensor off and on. Results in by Oct 25 |
-| 4 | Oct 26 to 29 | Finish the paper and every author approves it. **Publish** v0.1 and preprint v1 on Oct 29 |
+| 4 | Oct 26 to 29 | Finish the paper and every author approves it. **Publish** v0.1 and preprint v1 on Oct 29. *Did not happen: see the top of this page* |
 
 ## The four phases, and one optional
 
