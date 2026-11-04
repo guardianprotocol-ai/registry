@@ -157,6 +157,8 @@ class CliAgentTarget:
 
         class MyHarnessTarget(CliAgentTarget):
             name = "my-harness"
+            executable = "my-harness"
+            note = "costs tokens"
 
             def argv(self, prompt, config_path):
                 return ["my-harness", "--prompt", prompt, "--mcp-config", config_path]
@@ -164,7 +166,11 @@ class CliAgentTarget:
             def answer_of(self, stdout):
                 return json.loads(stdout or "{}").get("text", "")
 
-    Then add it to `_target()` in __main__.py so `--target my-harness` finds it.
+    Put it in this file above `REGISTRY`, then add it to `REGISTRY` and `CLASSES`. `--target`
+    looks names up in `REGISTRY`, and `run` reads `CLASSES` to see whether a target needs
+    `--model`. Take it out of `WANTED` if it is listed there. `executable` is how `targets`
+    and `./guardian measure` tell that it is installed, and `note` is its line in the
+    targets table, which a test requires.
 
     The contract a target must meet:
 
