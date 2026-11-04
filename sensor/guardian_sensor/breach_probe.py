@@ -75,8 +75,33 @@ def _tripped(box, timeout=2.0):
     return watcher.wait_for(lambda: bool(watcher.events), timeout)
 
 
-def _row(caught, note):
-    return {"caught": bool(caught), "note": note}
+def _row(caught, note, backend=None):
+    row = {"caught": bool(caught), "note": note}
+    if backend:
+        row["backend"] = backend
+    return row
+
+
+# What the poll backend cannot see, however the watcher is written.
+#
+# inotify is told by the kernel that a file was opened. Polling compares size, link count
+# and timestamps, so it learns only what a touch left behind. A read leaves nothing, and
+# polling cannot name the process that did it either. Both of those are interface limits
+# rather than defects, and `breach.py` says so in its own docstring.
+#
+# So on the poll backend these are expected to miss, and the result says which backend
+# answered. On inotify every one of them is still required to catch, which is what runs
+# in CI. Written down because the alternative was a suite that fails on the maintainer's
+# own machine and passes on the runners, which is how #258 shipped looking green.
+POLL_CANNOT_SEE = {
+    "open",           # a read that changes nothing on disk
+    "symlink",        # the same read, reached through a link
+    "tar",            # tar reads the file to archive it
+    "other_process",  # polling cannot attribute a touch to a process
+    "asset_allow",    # needs the process name to tell the trainer from anything else
+    "byte_copy",      # the same attribution, for an allowlisted writer
+    "rename",         # the decoy is gone and back under a new name between two polls
+}
 
 
 # What `caught` means differs by probe. For the evasion cases it means the touch was
@@ -131,9 +156,33 @@ def expectations_hold(results):
             continue
         if name == "git_status" and "not installed" in note:
             continue
+        if (row.get("backend") == "poll" and name in POLL_CANNOT_SEE
+                and want and not caught):
+            # Not a pass. The probe is reported as a limit of this backend, so a reader
+            # sees that the host could not answer rather than that the watcher is clean.
+            continue
         if caught != want:
             problems.append("%s caught %s, expected %s (%s)" % (name, caught, want, note))
     return problems
+
+
+def active_backend():
+    """Which backend a watcher picks on this host: "inotify" or "poll".
+
+    Asked once and stamped onto every result, so a reader of the output can tell whether
+    a miss is a defect or an interface this host does not have.
+    """
+    try:
+        box = _decoy_box(content=False)
+    except Exception:
+        return "unknown"
+    try:
+        return box["watcher"].backend
+    finally:
+        try:
+            box["watcher"].stop()
+        except Exception:
+            pass
 
 
 def run():
@@ -147,9 +196,11 @@ def run():
         "tool_names_path", "tool_omits_path",
     ]
     out = {}
+    backend = active_backend()
     for name in names:
         try:
             out[name] = globals()["_probe_" + name]()
+            out[name].setdefault("backend", backend)
         except Exception as exc:
             out[name] = _row(False, "probe failed: %s" % exc)
     return out

@@ -17,6 +17,7 @@ miss a read that does not change the file. inotify does not have that gap.
 """
 import ctypes
 import ctypes.util
+import errno
 import hashlib
 import hmac
 import json
@@ -594,10 +595,28 @@ def _libc():
 
 
 def _inotify_fd():
+    """A file descriptor from inotify, or OSError when this machine has no inotify.
+
+    The missing-symbol case is normalised to OSError here rather than left to callers.
+    inotify is a Linux interface, so on macOS the libc lookup raises AttributeError from
+    ctypes rather than any kind of OS error, and the one caller that falls back to polling
+    was catching OSError alone. The fallback therefore never ran: thirteen probes reported
+    that they had caught nothing, on a platform where the watcher was never started.
+
+    It passed every pull request, because the runners are Linux and the maintainer's
+    machine is not. `check.py` is the contract that it passes before a commit, so it has
+    to mean the same thing on both.
+    """
     libc = _libc()
-    libc.inotify_init1.argtypes = [ctypes.c_int]
-    libc.inotify_init1.restype = ctypes.c_int
-    fd = libc.inotify_init1(IN_CLOEXEC | IN_NONBLOCK)
+    try:
+        init = libc.inotify_init1
+    except AttributeError:
+        raise OSError(errno.ENOSYS,
+                      "inotify_init1 is not in libc on this platform, which is expected "
+                      "anywhere but Linux")
+    init.argtypes = [ctypes.c_int]
+    init.restype = ctypes.c_int
+    fd = init(IN_CLOEXEC | IN_NONBLOCK)
     if fd < 0:
         err = ctypes.get_errno()
         raise OSError(err, os.strerror(err) if err else "inotify_init1 failed")
