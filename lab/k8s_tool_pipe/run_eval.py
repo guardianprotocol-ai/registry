@@ -32,6 +32,7 @@ import platform
 import re
 import shutil
 import subprocess
+import tempfile
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -73,16 +74,57 @@ def run(argv, kubeconfig=None, stdin_text=None, timeout=40):
 def ensure_kubectl(explicit):
     if explicit:
         return explicit
-    wrapper = "/tmp/gp-lab-kubectl"
     if os.path.isfile("/tmp/k3s"):
+        # Written into a directory only this user can enter, and left executable only by
+        # this user. The previous path was a fixed name in /tmp, which is world writable:
+        # anyone with a local account could create or symlink /tmp/gp-lab-kubectl first,
+        # have this open follow it, and then have the result executed. Mode 0755 made it
+        # world readable and world runnable on top of that.
+        #
+        # The same class as #261, which made the workstation chroot temporary directory
+        # owner-only. A lab for a tool that catches this is a poor place to ship it.
+        folder = tempfile.mkdtemp(prefix="gp-lab-kubectl-")
+        wrapper = os.path.join(folder, "kubectl")
         with open(wrapper, "w", encoding="utf-8") as handle:
             handle.write("#!/bin/sh\nexec /tmp/k3s kubectl \"$@\"\n")
-        os.chmod(wrapper, 0o755)
+        os.chmod(wrapper, 0o700)
         return wrapper
     found = shutil.which("kubectl")
     if found:
         return found
     raise SystemExit("kubectl was not found. Pass --kubectl or install k3s at /tmp/k3s.")
+
+
+#: Flags whose value is a credential. A k3s server command line carries the cluster join
+#: token, and this list is written to versions.txt beside the report, so without this the
+#: run leaves a working cluster secret in clear text in its own output directory.
+#:
+#: Redacted where the command line is read rather than where it is written, so the value
+#: never reaches the outcome document and cannot be printed by anything downstream either.
+SECRET_FLAGS = ("--token", "-t", "--agent-token", "--datastore-endpoint",
+                "--etcd-s3-secret-key", "--etcd-s3-access-key")
+
+
+def _redact_secrets(text):
+    """A command line with credential values replaced. Handles --flag=value and --flag value."""
+    parts = text.split()
+    out = []
+    skip = False
+    for part in parts:
+        if skip:
+            out.append("<redacted>")
+            skip = False
+            continue
+        name = part.split("=", 1)[0]
+        if name in SECRET_FLAGS:
+            if "=" in part:
+                out.append("%s=<redacted>" % name)
+            else:
+                out.append(part)
+                skip = True
+            continue
+        out.append(part)
+    return " ".join(out)
 
 
 def k3s_cmdline():
@@ -100,7 +142,7 @@ def k3s_cmdline():
             continue
         text = raw.replace(b"\x00", b" ").decode(errors="replace").strip()
         if "k3s server" in text or (text.startswith("/tmp/k3s") and " server" in text):
-            found.append(text)
+            found.append(_redact_secrets(text))
     return found
 
 

@@ -29,10 +29,33 @@ failures = []
 
 
 def check(name, condition, detail=""):
+    # Failure detail goes through the project's own secret detector before it is printed.
+    #
+    # This lab drives kubectl, so a failing assertion can carry a token, a kubeconfig
+    # fragment or a service account out of the fixture and into the CI log of every fork.
+    # #233 was the same shape in the scanner tests: a failing check printed the canary it
+    # was asserting about. Using rules.find_secrets here rather than a bespoke pattern
+    # means the test output is scrubbed by the same signatures the sensor enforces, and
+    # gets better whenever those do.
     print("%s %s%s" % ("ok  " if condition else "FAIL", name,
-                       "" if condition else "  <- " + str(detail)))
+                       "" if condition else "  <- " + _scrubbed(detail)))
     if not condition:
         failures.append(name)
+
+
+def _scrubbed(detail):
+    """`detail` with anything the sensor recognises as a secret replaced.
+
+    `rules.find_secrets` answers which signatures matched, not what they matched, so the
+    patterns are applied again here to get the spans. Written out rather than assumed: the
+    first version of this used the return value as though it were the matched text, so it
+    replaced nothing and printed the secret it was meant to hide, which is worse than not
+    having scrubbed at all because the output then looks safe.
+    """
+    text = str(detail)
+    for expression in rules.SECRET_RES:
+        text = expression.sub("<redacted>", text)
+    return text
 
 
 class Client:
