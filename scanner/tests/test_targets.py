@@ -623,7 +623,21 @@ def test_every_real_harness_declares_how_it_is_isolated():
         json.dump({"mcpServers": {"lab": {"command": "python3", "args": ["server.py"],
                                           "env": {}}}}, f)
 
-    real = [targets.ClaudeCodeTarget, targets.GeminiCliTarget, targets.CodexCliTarget]
+    # Every registered harness that drives a real agent, found rather than listed.
+    #
+    # This named three classes, so the guard it was written to be did not exist: a target
+    # added from the template in TEST_YOUR_AGENT.md passed with `isolation = ()`, which is
+    # the one thing the comment on CliAgentTarget.isolation promises cannot happen.
+    # Reported by @mwaoi on #267, who found it while fixing the template and left it alone
+    # rather than widen that change.
+    #
+    # Scripted targets are excluded because they are the in-repo control: no model, no
+    # credentials, nothing of the operator's to keep out.
+    real = [cls for name, cls in sorted(targets.CLASSES.items())
+            if isinstance(cls, type) and issubclass(cls, targets.CliAgentTarget)
+            and cls is not targets.CliAgentTarget]
+    check("the guard covers every registered harness, not a list",
+          len(real) >= 3, str(sorted(targets.CLASSES)))
     for cls in real:
         target = cls()
         check("%s declares its isolation" % target.name, bool(target.isolation),
