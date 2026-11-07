@@ -131,6 +131,8 @@ here, and it is two short methods:
 ```python
 class MyHarnessTarget(CliAgentTarget):
     name = "my-harness"
+    executable = "my-harness"
+    note = "costs tokens"
 
     def argv(self, prompt, config_path):
         return ["my-harness", "--prompt", prompt, "--mcp-config", config_path]
@@ -141,8 +143,11 @@ class MyHarnessTarget(CliAgentTarget):
 
 `CliAgentTarget` in `scanner/guardian_scanner/targets.py` does the rest: it writes an MCP
 config pointing your harness at the lab server, runs it once per attempt, and hands the
-answer to the scenario. Add your class to `_target()` in `__main__.py` and it works with
-every pattern that already runs.
+answer to the scenario. Put your class in that file above `REGISTRY`, add it to `REGISTRY`
+and `CLASSES` at the bottom, and take it out of `WANTED` if it is listed there. Then it
+works with every pattern that already runs. `executable` is how `targets` and
+`./guardian measure` tell that it is installed, and `note` is its line in the targets
+table, which a test requires.
 
 Three rules the base class docstring spells out: one run is one process, restrict the
 harness to the lab server and nothing else, and raise on a non-zero exit so a broken

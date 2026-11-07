@@ -12,6 +12,7 @@ import os
 import shutil
 import sys
 import tempfile
+import textwrap
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
@@ -317,16 +318,25 @@ def test_each_harness_pulls_its_answer_out_of_its_own_output_shape():
         check(f"{make().name} survives empty output", make().answer_of("") == "")
 
 
+def _template_in(text):
+    """The `class MyHarnessTarget` block as a document shows it, dedented."""
+    lines = text.splitlines()
+    start = next(i for i, line in enumerate(lines)
+                 if "class MyHarnessTarget(CliAgentTarget):" in line)
+    indent = len(lines[start]) - len(lines[start].lstrip())
+    block = [lines[start]]
+    for line in lines[start + 1:]:
+        if line.strip() and len(line) - len(line.lstrip()) <= indent:
+            break
+        block.append(line)
+    return textwrap.dedent("\n".join(block)).strip() + "\n"
+
+
 def test_adding_a_target_is_two_short_methods():
     """The template in the base class docstring has to actually work."""
-    class MyHarnessTarget(targets.CliAgentTarget):
-        name = "my-harness"
-
-        def argv(self, prompt, config_path):
-            return ["my-harness", "--prompt", prompt, "--mcp-config", config_path]
-
-        def answer_of(self, stdout):
-            return json.loads(stdout or "{}").get("text", "")
+    namespace = {"CliAgentTarget": targets.CliAgentTarget, "json": json}
+    exec(_template_in(targets.CliAgentTarget.__doc__), namespace)
+    MyHarnessTarget = namespace["MyHarnessTarget"]
 
     folder = tempfile.mkdtemp()
     try:
@@ -341,6 +351,29 @@ def test_adding_a_target_is_two_short_methods():
         check("and it decides nothing itself", "accepted" not in calls[0], str(calls))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
+
+
+def test_the_template_a_contributor_copies_passes_the_checks():
+    """A copy without `note` fails the targets table test, and one without `executable`
+    reads as not installed to `targets` and `./guardian measure`, whatever is on PATH."""
+    guide_path = os.path.join(os.path.dirname(os.path.dirname(HERE)), "TEST_YOUR_AGENT.md")
+    with open(guide_path, encoding="utf-8") as f:
+        guide = f.read()
+    shown = {}
+    for where, text in (("the docstring", targets.CliAgentTarget.__doc__),
+                        ("TEST_YOUR_AGENT.md", guide)):
+        shown[where] = _template_in(text)
+        namespace = {"CliAgentTarget": targets.CliAgentTarget, "json": json}
+        exec(shown[where], namespace)
+        template = namespace["MyHarnessTarget"]
+        check(f"the template in {where} names its executable", bool(template.executable),
+              shown[where])
+        check(f"the template in {where} carries a note", bool(template.note), shown[where])
+        check(f"{where} says to register in REGISTRY and CLASSES and to update WANTED",
+              all(word in text for word in ("REGISTRY", "CLASSES", "WANTED"))
+              and "_target()" not in text, where)
+    check("the docstring and TEST_YOUR_AGENT.md show the same template",
+          len(set(shown.values())) == 1, str(shown))
 
 
 def test_a_harness_reports_its_own_version():
@@ -644,7 +677,7 @@ def test_claude_code_does_not_guess_at_its_own_credentials():
 def test_an_unregistered_target_is_refused_with_a_useful_message():
     from guardian_scanner import __main__ as cli
     try:
-        cli._target("my-harness")
+        cli._target("no-such-harness")
         ok, message = False, "accepted"
     except SystemExit as e:
         ok, message = True, str(e)
