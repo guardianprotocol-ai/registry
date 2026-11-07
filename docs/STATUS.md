@@ -18,7 +18,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Map | Covered by a pattern | 56 |
 | Map | Marked not testable at runtime | 0 |
 | Map | Still open | 7 |
-| Prove | With a runnable test | 11 |
+| Prove | With a runnable test | 13 |
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 10 |
 
@@ -72,7 +72,7 @@ The benign corpus holds 24 cases of ordinary work that no rule may flag. It is s
 | `AML.T0080.001` | AI Agent Context Poisoning: Thread | GP-0029 | no | no | no | covered |
 | `AML.T0081` | Modify AI Agent Configuration |  | no | no | no | open |
 | `AML.T0082` | RAG Credential Harvesting | GP-0030 | no | no | no | covered |
-| `AML.T0083` | Credentials from AI Agent Configuration | GP-0007 | no | yes | no | covered |
+| `AML.T0083` | Credentials from AI Agent Configuration | GP-0007 | yes | yes | no | covered |
 | `AML.T0084` | Discover AI Agent Configuration | GP-0031 | no | no | no | covered |
 | `AML.T0084.000` | Discover AI Agent Configuration: Embedded Knowledge | GP-0031 | no | no | no | covered |
 | `AML.T0084.001` | Discover AI Agent Configuration: Tool Definitions | GP-0031 | no | no | no | covered |
@@ -84,7 +84,7 @@ The benign corpus holds 24 cases of ordinary work that no rule may flag. It is s
 | `AML.T0092` | Manipulate User LLM Chat History | GP-0029 | no | no | no | covered |
 | `AML.T0093` | Prompt Infiltration via Public-Facing Application |  | no | no | no | open |
 | `AML.T0094` | Delay Execution of LLM Instructions | GP-0022 | no | no | no | covered |
-| `AML.T0098` | AI Agent Tool Credential Harvesting | GP-0007 | no | yes | no | covered |
+| `AML.T0098` | AI Agent Tool Credential Harvesting | GP-0007 | yes | yes | no | covered |
 | `AML.T0099` | AI Agent Tool Data Poisoning |  | no | no | no | open |
 | `AML.T0100` | AI Agent Clickbait | GP-0036 | no | no | no | covered |
 | `AML.T0101` | Data Destruction via AI Agent Tool Invocation | GP-0005 | yes | yes | no | covered |
