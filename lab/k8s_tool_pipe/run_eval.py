@@ -105,6 +105,18 @@ SECRET_FLAGS = ("--token", "-t", "--agent-token", "--datastore-endpoint",
                 "--etcd-s3-secret-key", "--etcd-s3-access-key")
 
 
+def _scrub(text):
+    """`text` with anything the sensor recognises as a secret replaced.
+
+    The signatures the sensor enforces, applied to this lab's own output, so what gets
+    written here is scrubbed by the same rules and improves whenever those do.
+    """
+    out = str(text or "")
+    for expression in rules.SECRET_RES:
+        out = expression.sub("<redacted>", out)
+    return out
+
+
 def _redact_secrets(text):
     """A command line with credential values replaced. Handles --flag=value and --flag value."""
     parts = text.split()
@@ -124,7 +136,7 @@ def _redact_secrets(text):
                 skip = True
             continue
         out.append(part)
-    return " ".join(out)
+    return _scrub(" ".join(out))
 
 
 def k3s_cmdline():
@@ -666,11 +678,19 @@ def git_info():
 
 def versions(kubectl, admin):
     def capture(argv, kubeconfig=None):
+        """Output of a command, scrubbed before it can be stored.
+
+        These run against the admin kubeconfig and the result is written to versions.txt
+        beside the report. `kubectl version` prints no secret, but this returns stderr as
+        well, and a kubectl error can carry a server URL with credentials embedded in it
+        or quote part of the configuration it failed to read. Scrubbing everything that
+        comes back is cheaper than reasoning about which failure modes do that.
+        """
         try:
             completed = run(argv, kubeconfig=kubeconfig, timeout=30)
         except (OSError, subprocess.TimeoutExpired) as exc:
-            return str(exc)
-        return (completed.stdout + completed.stderr).strip()
+            return _scrub(str(exc))
+        return _scrub((completed.stdout + completed.stderr).strip())
     return {
         "time_utc": now(),
         "time_est": now_est(),
