@@ -32,6 +32,7 @@ from . import canaries
 from . import home
 from . import path_canaries
 from . import rules
+from .approvals import ApprovalStore
 
 # Under the member's data directory, not relative to wherever an agent happened to start
 # the proxy. A client launches this with the working directory of whatever project is open,
@@ -194,6 +195,21 @@ class Sensor:
         if method != "tools/call":
             return None
         name, args = params.get("name"), params.get("arguments") or {}
+        # Dedicated delegated-operation proxy: every tool call needs approval,
+        # independent of taint and monitor mode. Identity comes from host config.
+        if "delegated_approval" in self.cfg:
+            try:
+                policy = self.cfg["delegated_approval"]
+                aid = params.get("_meta", {}).get("guardian/approval_id")
+                accepted = (
+                    isinstance(aid, str) and name == policy["tool"] and
+                    ApprovalStore(policy["database"]).consume(
+                        aid, policy["subject"], policy["agent"], policy["audience"], name, args))
+            except Exception:
+                accepted = False
+            if not accepted:
+                return {"jsonrpc": "2.0", "id": mid, "result": {
+                    "isError": True, "content": [{"type": "text", "text": REFUSAL}]}}
         detail = {"tool": name}
         found = rules.check_call(name, args, self.state, self.cfg)
         if name in self.blocked_tools:
@@ -358,6 +374,11 @@ def pump(src, dst, handler, sensor, reply_to=None):
                 reply_to.flush()
                 continue
         except Exception as e:  # fail open
+            if "delegated_approval" in sensor.cfg:
+                # Do not forward an uninspected request or response. Terminating
+                # this pipe also covers malformed JSON and unexpected failures.
+                sys.stderr.write("[guardian] delegated approval proxy fault; closing pipe\n")
+                return
             sys.stderr.write(f"[guardian] sensor fault, relaying unchanged: {e}\n")
         try:
             dst.write(line if line.endswith("\n") else line + "\n")
