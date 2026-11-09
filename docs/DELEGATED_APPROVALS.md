@@ -5,6 +5,15 @@ call on a dedicated proxy, independent of taint and monitor mode. It supports on
 structured tool per proxy; alternate tools are denied. Existing heuristic rules
 still apply after approval and may independently refuse the call.
 
+The delegated protocol permits only initialize, initialized/cancelled
+notifications, ping, tools/list and tools/call. The trusted backend must keep
+lifecycle/discovery methods non-mutating. Tool calls must contain exactly name,
+arguments (an object), and the approval-ID metadata; additional metadata or
+parameters are rejected because they were not approved. Duplicate JSON keys and
+non-finite JSON constants terminate the relay. Other MCP extensions are not
+supported by this dedicated gateway. Database initialization creates an
+owner-only file and refuses existing paths; protect its parent directory too.
+
 Trusted host configuration:
 
 ```json

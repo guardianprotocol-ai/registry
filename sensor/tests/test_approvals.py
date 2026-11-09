@@ -127,6 +127,33 @@ class Approvals(unittest.TestCase):
              sensor, reply_to=io.StringIO())
         self.assertEqual(destination.getvalue(), '')
 
+    def test_approval_does_not_cover_extra_metadata_or_invalid_arguments(self):
+        sensor = self.sensor()
+        for field, value in [('arguments', []), ('arguments', None),
+                             ('unapproved_target', 'other-cluster')]:
+            msg = self.message(self.grant())
+            msg['params'][field] = value
+            self.assertTrue(sensor.inspect_request(msg)['result']['isError'])
+        msg = self.message(self.grant())
+        msg['params']['_meta']['target'] = 'other-cluster'
+        self.assertTrue(sensor.inspect_request(msg)['result']['isError'])
+
+    def test_custom_rpc_method_cannot_bypass_gate(self):
+        self.assertTrue(self.sensor().inspect_request({
+            'jsonrpc': '2.0', 'id': 1, 'method': 'capi/delete', 'params': {}})['result']['isError'])
+
+    def test_duplicate_json_keys_are_not_forwarded(self):
+        sensor = self.sensor()
+        destination = io.StringIO()
+        pump(io.StringIO('{"method":"tools/call","method":"ping","id":1}\n'),
+             destination, sensor.inspect_request, sensor, reply_to=io.StringIO())
+        self.assertEqual(destination.getvalue(), '')
+
+    def test_database_is_private_and_never_overwritten(self):
+        self.assertEqual(os.stat(self.path).st_mode & 0o777, 0o600)
+        with self.assertRaises(FileExistsError):
+            ApprovalStore.initialize(self.path)
+
 
 if __name__ == '__main__':
     unittest.main()

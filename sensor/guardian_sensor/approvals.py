@@ -9,6 +9,7 @@ import math
 import sqlite3
 import time
 import uuid
+import os
 from contextlib import closing
 
 
@@ -30,6 +31,9 @@ class ApprovalStore:
 
     @staticmethod
     def initialize(path):
+        # Never follow or overwrite an existing file; owner-only from creation.
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(fd)
         with closing(sqlite3.connect(path)) as db, db:
             db.executescript('''
                 CREATE TABLE approvals (
