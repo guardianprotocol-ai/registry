@@ -195,6 +195,22 @@ SENSITIVE_PATHS = _compile(_S["paths"]["sensitive"])
 AGENT_CONFIG_PATHS = _compile(_S["paths"]["agent_config"])
 
 DESTRUCTIVE_SHELL = _compile(_S["shell"]["destructive"])
+# Kubernetes, where the verb is not the risk and the resource is.
+#
+# `kubectl delete pod web-7f8` is a thing operators do all day and an agent restarting a
+# stuck pod is doing its job. `kubectl delete cluster prod-east` removes a cluster, and
+# against a Cluster API management cluster it removes the machines underneath it. Both are
+# one `delete`, both look identical to a rule that reads the verb, and the blast radius
+# differs by orders of magnitude.
+#
+# So this is two signatures and not one: a destructive kubectl verb, and whether the
+# resource it names is fleet or cluster scoped. The pair is what GP-0042 turns on, and
+# neither half alone says anything useful. Defaulted so a bundle older than this engine
+# still loads, per the lesson in COMMAND_KEYS.
+KUBERNETES_DESTRUCTIVE = _compile(_S["shell"].get("kubernetes_destructive")
+                                  or {"pattern": r"(?!x)x", "flags": ""})
+KUBERNETES_FLEET = _compile(_S["shell"].get("kubernetes_fleet")
+                            or {"pattern": r"(?!x)x", "flags": ""})
 EGRESS_SHELL = _compile(_S["shell"]["egress"])
 URL_RE = _compile(_S["url"])
 
@@ -337,6 +353,7 @@ RULES = {
     "GP-0019": "A tool appeared on an approved server, or its input schema changed, after approval",
     "GP-0020": "A canary the operator registered appeared in outbound tool arguments",
     "GP-0041": "A registered file, path or sentinel canary was touched, or a seeded record appeared outside its dataset",
+    "GP-0042": "A destructive Kubernetes command against cluster or fleet scoped infrastructure",
 }
 
 
@@ -380,6 +397,17 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
         cfg_paths = [p for p in paths_in(args) if AGENT_CONFIG_PATHS.search(p)]
         if cfg_paths or has_instructions(blob):
             hits.append(("GP-0009", {"tool": name, "paths": paths_in(args), "tainted_by": tainted}))
+
+    # GP-0042. Deliberately not folded into GP-0005: that one says a destructive action
+    # followed untrusted content, and this says the thing being destroyed was
+    # infrastructure rather than a workload. A reader of the matrix needs them apart,
+    # because the mitigation is different. One is "do not let content steer deletions",
+    # the other is "an agent should not hold cluster lifecycle credentials at all".
+    fleet = [c for c in commands_in(args)
+             if KUBERNETES_DESTRUCTIVE.search(c) and KUBERNETES_FLEET.search(c)]
+    if tainted and fleet:
+        hits.append(("GP-0042", {"tool": name, "tainted_by": tainted,
+                                 "scope": "cluster or fleet"}))
 
     sig = hashlib.sha256(f"{name}|{blob}".encode()).hexdigest()[:16]
     counts = state.setdefault("counts", {})

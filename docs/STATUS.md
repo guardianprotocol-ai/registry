@@ -22,7 +22,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 10 |
 
-The benign corpus holds 24 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
+The benign corpus holds 27 cases of ordinary work that no rule may flag. It is shared by every rule rather than owned by one technique, so it is counted once here and not per row.
 
 ## What the columns mean
 
@@ -87,7 +87,7 @@ The benign corpus holds 24 cases of ordinary work that no rule may flag. It is s
 | `AML.T0098` | AI Agent Tool Credential Harvesting | GP-0007 | yes | yes | no | covered |
 | `AML.T0099` | AI Agent Tool Data Poisoning |  | no | no | no | open |
 | `AML.T0100` | AI Agent Clickbait | GP-0036 | no | no | no | covered |
-| `AML.T0101` | Data Destruction via AI Agent Tool Invocation | GP-0005 | yes | yes | no | covered |
+| `AML.T0101` | Data Destruction via AI Agent Tool Invocation | GP-0005, GP-0042 | yes | yes | no | covered |
 | `AML.T0103` | Deploy AI Agent | GP-0037 | no | no | no | covered |
 | `AML.T0108` | AI Agent | GP-0038 | no | no | no | covered |
 | `AML.T0110` | AI Agent Tool Poisoning |  | no | no | no | open |
