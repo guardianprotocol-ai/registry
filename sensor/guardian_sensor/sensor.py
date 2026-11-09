@@ -395,9 +395,10 @@ def _reject_json_constant(value):
 
 
 def pump(src, dst, handler, sensor, reply_to=None):
+    delegated = sensor is not None and "delegated_approval" in sensor.cfg
     for line in src:
         try:
-            if "delegated_approval" in sensor.cfg:
+            if delegated:
                 msg = json.loads(line, object_pairs_hook=_unique_json_object,
                                  parse_constant=_reject_json_constant)
             else:
@@ -408,7 +409,7 @@ def pump(src, dst, handler, sensor, reply_to=None):
                 reply_to.flush()
                 continue
         except Exception as e:  # fail open
-            if "delegated_approval" in sensor.cfg:
+            if delegated:
                 # Do not forward an uninspected request or response. Terminating
                 # this pipe also covers malformed JSON and unexpected failures.
                 sys.stderr.write("[guardian] delegated approval proxy fault; closing pipe\n")
