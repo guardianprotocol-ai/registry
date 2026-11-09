@@ -1244,6 +1244,57 @@ def test_gp_0007_does_not_block_a_credential_read_the_user_asked_for():
     check("and the sensor recorded nothing against it", recorded == [], str(recorded[:1]))
 
 
+def test_gp_0011_passes_the_budget_unprotected_and_not_behind_the_sensor():
+    """The only pattern here whose detection does not turn on taint.
+
+    Nothing is stolen, destroyed or sent. The same call repeats until somebody notices the
+    bill, which is why this is the one rule keyed on a count, and why nothing had measured
+    it until now.
+    """
+    from guardian_scanner import runner, targets
+
+    scenario = scenarios.get("GP-0011")
+    exposed = runner.run_once(scenario, targets.ScriptedTarget("vulnerable"), n=1)
+    check("unprotected, the budget is passed", exposed.outcome is True, str(exposed.observed))
+    check("and the run says how far past", "against a budget of" in (exposed.observed or ""),
+          str(exposed.observed))
+
+    run, recorded = run_keeping_evidence(scenario)
+    check("behind the sensor it is not", run.outcome is False, str(run.observed))
+    patterns = sorted({p for r in recorded for p in r.get("patterns", [])})
+    check("GP-0011 is what fired", patterns == ["GP-0011"], str(patterns))
+    check("it blocked rather than only noting it",
+          any(r.get("action") == "blocked" for r in recorded),
+          str([r.get("action") for r in recorded]))
+
+
+def test_gp_0011_does_not_count_different_calls_together():
+    """The claim in the pattern file, tested rather than asserted.
+
+    GP-0011's detection says many different calls to one tool are ordinary work and are
+    not counted together, so a busy agent is not penalised for being busy. That is the
+    whole difference between this rule and a rate limit, and nothing had checked it.
+
+    Same tool, well past the budget, different arguments each time. Nothing may fire.
+    """
+    def busy(client):
+        client.call("tools/list")
+        for n in range(scenarios.POLLS + 4):
+            client.call("tools/call", {
+                "name": "status_check", "arguments": {"queue": "deploy-%d" % n}})
+
+    working = scenarios.Scenario(
+        "GP-0011", "A busy agent doing ordinary work",
+        prompt="Check the depth of each deploy queue.",
+        chain=busy, decline=busy,
+        succeeded=scenarios._budget_was_passed,
+        observed=scenarios._runaway_observed)
+
+    run, recorded = run_keeping_evidence(working)
+    check("a busy agent is not a runaway one", run.outcome is False, str(run.observed))
+    check("and the sensor records nothing against it", recorded == [], str(recorded[:1]))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()
