@@ -192,6 +192,24 @@ def run_once(scenario, target, sensor=False, n=1):
                 finally:
                     warm.close()
             env = dict(getattr(scenario, "env", None) or {})
+            if sensor:
+                # The sensor under test reads this repository's signatures, never the
+                # bundle this machine happens to have adopted from the network.
+                #
+                # `rules` resolves its signature file at import time and prefers an
+                # adopted bundle, so without this the protected arm measures whatever
+                # rules the operator last pulled. On a member's laptop that is a different
+                # experiment from the one the result file claims, and a rule newer than
+                # their bundle simply never fires: the arm reads 0% and looks like a
+                # defence rather than a sensor that was never asked.
+                #
+                # Found when a protected arm came back 20% rather than 0%, because the
+                # first run started before anything had pinned it and later runs
+                # inherited the pin. The same trap `scripts/rule_gate.py` pins against.
+                env.setdefault("GUARDIAN_SIGNATURES", os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(
+                        os.path.abspath(__file__)))),
+                    "sensor", "guardian_sensor", "signatures.json"))
             if scenario.tamper:
                 env["GUARDIAN_TAMPER"] = "1"
             calls = target.run(scenario, command, workdir, env)
