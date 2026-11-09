@@ -32,6 +32,7 @@ from . import canaries
 from . import home
 from . import path_canaries
 from . import rules
+from .approvals import ApprovalStore
 
 # Under the member's data directory, not relative to wherever an agent happened to start
 # the proxy. A client launches this with the working directory of whatever project is open,
@@ -189,11 +190,43 @@ class Sensor:
     def inspect_request(self, msg):
         """Return a JSON-RPC response to send back instead of forwarding, or None to forward."""
         method, mid, params = msg.get("method"), msg.get("id"), msg.get("params") or {}
+        if "delegated_approval" in self.cfg:
+            refusal = {"jsonrpc": "2.0", "id": mid, "result": {
+                "isError": True, "content": [{"type": "text", "text": REFUSAL}]}}
+            # Dedicated protocol surface: no custom RPC escape hatch. The backend
+            # must treat these lifecycle/discovery methods as non-mutating.
+            if method not in {"initialize", "notifications/initialized", "ping",
+                              "tools/list", "tools/call", "notifications/cancelled"}:
+                return refusal
+            if method == "tools/call" and (
+                set(msg) - {"jsonrpc", "id", "method", "params"} or
+                not isinstance(params, dict) or
+                set(params) != {"name", "arguments", "_meta"} or
+                not isinstance(params["arguments"], dict) or
+                not isinstance(params["_meta"], dict) or
+                set(params["_meta"]) != {"guardian/approval_id"}
+            ):
+                return refusal
         if mid is not None and method:
             self.pending[mid] = (method, params)
         if method != "tools/call":
             return None
         name, args = params.get("name"), params.get("arguments") or {}
+        # Dedicated delegated-operation proxy: every tool call needs approval,
+        # independent of taint and monitor mode. Identity comes from host config.
+        if "delegated_approval" in self.cfg:
+            try:
+                policy = self.cfg["delegated_approval"]
+                aid = params.get("_meta", {}).get("guardian/approval_id")
+                accepted = (
+                    isinstance(aid, str) and name == policy["tool"] and
+                    ApprovalStore(policy["database"]).consume(
+                        aid, policy["subject"], policy["agent"], policy["audience"], name, args))
+            except Exception:
+                accepted = False
+            if not accepted:
+                return {"jsonrpc": "2.0", "id": mid, "result": {
+                    "isError": True, "content": [{"type": "text", "text": REFUSAL}]}}
         detail = {"tool": name}
         found = rules.check_call(name, args, self.state, self.cfg)
         if name in self.blocked_tools:
@@ -348,16 +381,39 @@ class Sensor:
         return msg
 
 
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value):
+    raise ValueError("non-finite JSON number")
+
+
 def pump(src, dst, handler, sensor, reply_to=None):
+    delegated = sensor is not None and "delegated_approval" in sensor.cfg
     for line in src:
         try:
-            msg = json.loads(line)
+            if delegated:
+                msg = json.loads(line, object_pairs_hook=_unique_json_object,
+                                 parse_constant=_reject_json_constant)
+            else:
+                msg = json.loads(line)
             out = handler(msg)
             if isinstance(out, dict) and out is not msg and reply_to is not None:
                 reply_to.write(json.dumps(out) + "\n")
                 reply_to.flush()
                 continue
         except Exception as e:  # fail open
+            if delegated:
+                # Do not forward an uninspected request or response. Terminating
+                # this pipe also covers malformed JSON and unexpected failures.
+                sys.stderr.write("[guardian] delegated approval proxy fault; closing pipe\n")
+                return
             sys.stderr.write(f"[guardian] sensor fault, relaying unchanged: {e}\n")
         try:
             dst.write(line if line.endswith("\n") else line + "\n")
