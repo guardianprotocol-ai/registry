@@ -69,7 +69,13 @@ def test_check_mode_fails_on_a_hand_edit():
 def test_the_page_names_its_denominator_and_interval():
     """A bare rate is the mistake the attack matrix exists to avoid."""
     page = io.open(os.path.join(ROOT, "docs", "FALSE_ALARMS.md"), encoding="utf-8").read()
-    check("the page exists and names the denominator", "24 cases" in page, page[:200])
+    # Counted rather than written down. This asserted "24 cases" and broke the moment the
+    # corpus grew, which is the test failing for the one reason it should never fail: the
+    # thing it guards got better.
+    import glob
+    total = len(glob.glob(os.path.join(ROOT, "corpus", "benign", "*")))
+    check("the page exists and names the denominator",
+          "%d cases" % total in page, "page does not say %d cases" % total)
     check("every row carries an interval", page.count("[0.") >= 10, "too few intervals")
     check("and it says a floor is not a field measurement",
           "never the ones a real deployment would find" in page, "the caveat is missing")

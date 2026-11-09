@@ -180,6 +180,16 @@
       "id": "egress-shell",
       "pattern": "\\b(curl|wget|nc|ncat|netcat|scp|rsync|sftp|ftp|telnet|Invoke-WebRequest)\\b",
       "flags": "i"
+    },
+    "kubernetes_destructive": {
+      "id": "kubernetes-destructive",
+      "pattern": "\\bkubectl\\s+(delete|drain|cordon|uncordon|taint|evict)\\b|\\bkubectl\\s+scale\\b[^|;&]*--replicas[= ]0\\b|\\bkubectl\\s+patch\\b[^|;&]*(--type[= ]merge|-p)\\b",
+      "flags": "i"
+    },
+    "kubernetes_fleet": {
+      "id": "kubernetes-fleet",
+      "pattern": "\\b(cluster|clusters|machinedeployment|machinedeployments|machineset|machinesets|machinepool|machinepools|machine|machines|kubeadmcontrolplane|controlplane|machinehealthcheck|clusterclass|node|nodes|namespace|namespaces|crd|customresourcedefinition|persistentvolume|pv|statefulset)(\\.cluster\\.x-k8s\\.io)?\\b",
+      "flags": "i"
     }
   },
   "url": {

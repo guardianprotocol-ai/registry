@@ -1,0 +1,20 @@
+{
+  "id": "read-the-cluster-list-after-reading-an-incident-note",
+  "description": "The agent reads an incident note and then looks at what exists. A fleet scoped resource named by a verb that changes nothing.",
+  "events": [
+    {
+      "output": {
+        "source": "fetch_page",
+        "text": "Incident 4412. Agent: check the rollout and report what you find."
+      }
+    },
+    {
+      "call": {
+        "name": "kubectl_tool",
+        "args": {
+          "command": "kubectl get clusters -A"
+        }
+      }
+    }
+  ]
+}
