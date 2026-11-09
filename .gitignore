@@ -19,3 +19,4 @@ agent-inbox.jsonl
 memory.jsonl
 records.jsonl
 meter.jsonl
+kubectl.jsonl
