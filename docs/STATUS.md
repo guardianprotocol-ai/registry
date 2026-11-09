@@ -18,7 +18,7 @@ runtime with a reason. Everything else is open work, and every one of them has a
 | Map | Covered by a pattern | 56 |
 | Map | Marked not testable at runtime | 0 |
 | Map | Still open | 7 |
-| Prove | With a runnable test | 13 |
+| Prove | With a runnable test | 14 |
 | Prove | With an attack case in the corpus | 16 |
 | Measure | With a recorded result | 10 |
 
@@ -44,7 +44,7 @@ The benign corpus holds 24 cases of ordinary work that no rule may flag. It is s
 | `AML.T0018.003` | Manipulate AI Model: Modify Prompt Construction Logic | GP-0032 | no | no | no | covered |
 | `AML.T0024` | Exfiltration via AI Inference API | GP-0034 | no | no | no | covered |
 | `AML.T0025` | Exfiltration via Cyber Means |  | no | no | no | open |
-| `AML.T0034.002` | Cost Harvesting: Agentic Resource Consumption | GP-0011, GP-0017 | no | yes | no | covered |
+| `AML.T0034.002` | Cost Harvesting: Agentic Resource Consumption | GP-0011, GP-0017 | yes | yes | no | covered |
 | `AML.T0051` | LLM Prompt Injection | GP-0021 | no | no | no | covered |
 | `AML.T0051.000` | LLM Prompt Injection: Direct | GP-0021 | no | no | no | covered |
 | `AML.T0051.001` | LLM Prompt Injection: Indirect | GP-0001, GP-0006 | yes | yes | yes | covered |
