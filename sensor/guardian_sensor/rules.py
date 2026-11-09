@@ -403,8 +403,9 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
     # infrastructure rather than a workload. A reader of the matrix needs them apart,
     # because the mitigation is different. One is "do not let content steer deletions",
     # the other is "an agent should not hold cluster lifecycle credentials at all".
+    from .kubernetes import destructive_fleet
     fleet = [c for c in commands_in(args)
-             if KUBERNETES_DESTRUCTIVE.search(c) and KUBERNETES_FLEET.search(c)]
+             if destructive_fleet(c, KUBERNETES_DESTRUCTIVE, KUBERNETES_FLEET)]
     if tainted and fleet:
         hits.append(("GP-0042", {"tool": name, "tainted_by": tainted,
                                  "scope": "cluster or fleet"}))

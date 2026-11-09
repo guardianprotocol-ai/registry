@@ -143,6 +143,27 @@ def test_gp0042_judges_the_resource_not_the_verb():
 
     check("deleting a cluster is caught",
           "GP-0042" in hits("kubectl delete cluster prod-east -n capi-system"))
+    for command in (
+        "kubectl --context management delete clusters.cluster.x-k8s.io demo",
+        "kubectl -n capi-system scale machinedeployment workers --replicas=0",
+        "kubectl delete machines.cluster.x-k8s.io/demo",
+        "kubectl --context=management delete kubeadmcontrolplanes.controlplane.cluster.x-k8s.io demo",
+        "kubectl get pods\nkubectl delete machines demo",
+        "kubectl delete pods,machines demo",
+        "kubectl drain worker-17",
+    ):
+        check("CAPI lifecycle command: " + command, "GP-0042" in hits(command))
+    for command in (
+        "kubectl delete pod cluster",
+        "kubectl get clusters; kubectl delete pod web",
+        "echo kubectl delete cluster demo",
+        "kubectl delete pod web --context cluster",
+        "kubectl --context management get clusters.cluster.x-k8s.io",
+        "kubectl scale machinedeployment workers --replicas=3",
+        "kubectl delete cluster-backups demo",
+        "kubectl get clusters\nkubectl delete pod web",
+    ):
+        check("benign Kubernetes command: " + command, "GP-0042" not in hits(command))
     check("so is a node pool", "GP-0042" in hits("kubectl delete machinedeployment workers"))
     check("so is scaling one to zero",
           "GP-0042" in hits("kubectl scale machinedeployment workers --replicas=0"))
