@@ -381,15 +381,60 @@ notice. An agent that reads whole log files through a guarded server will feel i
 the time is the instruction patterns themselves rather than the work around them: 55 ms of
 the 79 at 200 KB.
 
-This is not optimized yet, on purpose. The obvious fix is to scan once for the words every
-pattern needs before running any pattern, which measured about six times faster on text
-that matches nothing. It is not in yet because getting it wrong means the sensor quietly
-stops catching something, which is worse than being slow, and the change wants the attack
-corpus used as an equivalence check rather than a deadline. Tracked in the issues.
+Those figures are from before the word prescan below, and are kept because they are what
+the sensor costs with every pattern running on everything, which
+`GUARDIAN_PRESCAN=off` still gives you.
+
+### The word prescan
+
+Nearly every instruction pattern cannot match unless one of a few plain words is in the
+text: `\b(send|email|post|upload|forward) ...` needs one of five. Looking for a word is
+far cheaper than running a pattern, so the sensor now looks first and runs a pattern only
+on text where it stands a chance (`guardian_sensor/prescan.py`).
+
+The words are derived from the parsed pattern when the bundle loads, a member's own
+patterns included. Anything the derivation cannot prove always runs.
+
+Measured on macOS 26.4, Python 3.13.3, 2026-11-17, `check_output` on text tiled to
+size, best of five. Reproduce with `python3 scripts/prescan_gate.py --time`:
+
+| 200 KB of | Every pattern | With the prescan | |
+| --- | --- | --- | --- |
+| Access log lines | 63.1 ms | 15.4 ms | 4.1x |
+| Python source | 44.3 ms | 23.1 ms | 1.9x |
+| Benign corpus text | 86.1 ms | 55.5 ms | 1.6x |
+
+It depends on the text, and the table says so on purpose. Log lines contain none of the
+words, so no pattern runs. Source code contains a few (`after`, `store`, `ai` inside
+other words), so a few patterns still run. The benign corpus is written to sit as close
+to the rules as ordinary work gets, so half the patterns run on it. What is left at the
+top row is mostly the hidden content checks, which this does not touch. The six times
+measured before this was built was the instruction patterns alone on text containing
+none of the words; the whole output check, on real text, is the table above.
+
+This was held back because getting it wrong means the sensor quietly stops catching
+something. What it rests on:
+
+- `scripts/prescan_gate.py`, on every pull request: every corpus case raises the same
+  patterns on both paths, no pattern matches any text its words would skip across the
+  corpus and several thousand seeded mutations of it, a shipped pattern with no
+  derivable words must say `"prescan": "always"`, and a deliberately wrong set of words
+  must be caught.
+- `tests/test_prescan.py`: the derivation on shapes no shipped pattern has, and the
+  property itself on random text.
+- One thing the tests found that reading the patterns would not have. Under
+  `re.IGNORECASE` four characters outside ASCII match an ASCII letter, among them the
+  long s. `str.lower()` leaves it alone, so a lowercase word search would have skipped
+  text the pattern matches. The text is folded the way the regex engine folds it, and a
+  test asks the engine about every code point rather than trusting the table.
+
+What this does not show: that the derivation is right for every pattern anybody could
+write. It is conservative by construction and tested on the shapes above, and
+`GUARDIAN_PRESCAN=off` is there for anyone who would rather not rely on that.
 
 The proxy is long lived, so it pays process startup once rather than per call.
 
-Scanning cost is linear in the size of the text, about **365 ms per megabyte**, so a few
+With every pattern running, scanning cost is linear in the size of the text, about **365 ms per megabyte**, so a few
 hundred bytes of tool output costs a fraction of a millisecond and a 200 KB page costs
 roughly 73 ms. Numbers on another machine will differ; the shape will not.
 
