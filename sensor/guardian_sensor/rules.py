@@ -217,6 +217,11 @@ KUBERNETES_DESTRUCTIVE = _compile(_S["shell"].get("kubernetes_destructive")
                                   or {"pattern": r"(?!x)x", "flags": ""})
 KUBERNETES_FLEET = _compile(_S["shell"].get("kubernetes_fleet")
                             or {"pattern": r"(?!x)x", "flags": ""})
+# The same two signatures, and how a tool call that is not a command string names the
+# same operation. See kubernetes.py.
+from . import kubernetes  # noqa: E402
+KUBERNETES = kubernetes.Vocabulary(KUBERNETES_DESTRUCTIVE, KUBERNETES_FLEET,
+                                   _S.get("kubernetes"), _compile)
 EGRESS_SHELL = _compile(_S["shell"]["egress"])
 URL_RE = _compile(_S["url"])
 
@@ -350,7 +355,7 @@ RULES = {
     "GP-0004": "Write to the agent's long-term memory carrying instructions from untrusted content",
     "GP-0005": "Destructive action requested after the agent read untrusted content with instructions",
     "GP-0006": "Tool output hides content from human readers (invisible characters, hidden HTML, encoded instructions)",
-    "GP-0007": "Credential file read after the agent read untrusted content with instructions",
+    "GP-0007": "Credential file or managed cluster credential read after the agent read untrusted content with instructions",
     "GP-0008": "Instructions from untrusted content passed on to another agent",
     "GP-0009": "Instructions from untrusted content written into a shared file or agent configuration",
     "GP-0010": "Untrusted content tries to steer which sources the agent trusts or recommends",
@@ -396,6 +401,16 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
     if tainted and any(SENSITIVE_PATHS.search(p) for p in paths_in(args)):
         hits.append(("GP-0007", {"paths": [p for p in paths_in(args) if SENSITIVE_PATHS.search(p)], "tainted_by": tainted}))
 
+    # A management cluster keeps an admin kubeconfig for every cluster it manages, as a
+    # Secret. It is not a file and no path names it, so the check above cannot see it,
+    # and it opens more than any file on the agent's own machine does.
+    fleet_credential = tainted and kubernetes.fleet_credential(
+        name, args, commands_in(args), KUBERNETES)
+    if fleet_credential and not any(pid == "GP-0007" for pid, _ in hits):
+        hits.append(("GP-0007", {"credential": fleet_credential["operation"],
+                                 "read_from": fleet_credential["read_from"],
+                                 "tainted_by": tainted}))
+
     if tainted and AGENT_TOOL.search(name or "") and has_instructions(blob):
         hits.append(("GP-0008", {"tool": name, "tainted_by": tainted}))
 
@@ -409,12 +424,12 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
     # infrastructure rather than a workload. A reader of the matrix needs them apart,
     # because the mitigation is different. One is "do not let content steer deletions",
     # the other is "an agent should not hold cluster lifecycle credentials at all".
-    from .kubernetes import destructive_fleet
-    fleet = [c for c in commands_in(args)
-             if destructive_fleet(c, KUBERNETES_DESTRUCTIVE, KUBERNETES_FLEET)]
-    if tainted and fleet:
+    fleet = tainted and kubernetes.fleet_operation(name, args, commands_in(args), KUBERNETES)
+    if fleet:
         hits.append(("GP-0042", {"tool": name, "tainted_by": tainted,
-                                 "scope": "cluster or fleet"}))
+                                 "scope": "cluster or fleet",
+                                 "operation": fleet["operation"],
+                                 "read_from": fleet["read_from"]}))
 
     sig = hashlib.sha256(f"{name}|{blob}".encode()).hexdigest()[:16]
     counts = state.setdefault("counts", {})

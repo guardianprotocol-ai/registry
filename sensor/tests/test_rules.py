@@ -440,6 +440,231 @@ def test_no_local_file_and_a_broken_one_are_both_survivable():
         shutil.rmtree(folder, ignore_errors=True)
 
 
+def _kube(name, args, tainted="fetch_page"):
+    return [(p, d.get("operation") or d.get("credential"))
+            for p, d in rules.check_call(name, args, fresh(tainted), CFG)
+            if p in ("GP-0042", "GP-0007")]
+
+
+def test_gp0042_reads_kubectl_the_way_it_is_typed():
+    """Short names and prefixed invocations are how kubectl is actually written.
+
+    `kubectl delete ns prod` is the usual way to delete a namespace, and
+    `KUBECONFIG=... kubectl` is the usual way to address a management cluster. Neither
+    was caught: the vocabulary held `namespace` and not `ns`, and the parser wanted the
+    first word to be kubectl.
+    """
+    def hits(command, tainted="fetch_page"):
+        return _kube("shell", {"command": command}, tainted)
+
+    for command, operation in (
+        ("kubectl delete ns prod", "delete namespace"),
+        ("kubectl delete ns/prod", "delete namespace"),
+        ("kubectl delete no worker-1", "delete node"),
+        ("kubectl delete md gpu-a -n fleet", "delete machinedeployment"),
+        ("kubectl delete kcp train-east-cp", "delete kubeadmcontrolplane"),
+        ("kubectl scale mp gpu-b --replicas=0", "scale machinepool"),
+        ("KUBECONFIG=/etc/fleet/management.kubeconfig kubectl delete cluster demo", "delete cluster"),
+        ("sudo -E kubectl delete cluster demo", "delete cluster"),
+        ("env KUBECONFIG=x kubectl delete cluster demo", "delete cluster"),
+    ):
+        check("typed form is caught: " + command, hits(command) == [("GP-0042", operation)],
+              str(hits(command)))
+    for command in (
+        "kubectl delete pod no",                 # a pod called `no`
+        "kubectl delete pod web -n ns",          # a namespace called `ns`
+        "kubectl get ns",
+        "kubectl scale md gpu-a --replicas=3",
+        "KUBECONFIG=x kubectl delete pod web",
+        "sudo systemctl restart kubelet",
+        # A file name is not a resource. This one was flagged for being called cluster.
+        "kubectl delete -f cluster.yaml",
+        "kubectl delete -f node.yaml",
+    ):
+        check("typed form is left alone: " + command, hits(command) == [], str(hits(command)))
+    check("an untainted session is left alone", hits("kubectl delete ns prod", None) == [])
+    check("cordoning a node is caught", hits("kubectl cordon worker-1") == [("GP-0042", "cordon node")])
+    # Putting a node back into service undoes damage. Blocking it would be the outage.
+    check("uncordoning one is left alone", hits("kubectl uncordon worker-1") == [])
+
+
+def test_gp0042_reads_kubernetes_mcp_tool_calls():
+    """A Kubernetes MCP server takes no command string, so there was nothing to read.
+
+    The sensor is an MCP proxy, and GP-0042 only ever read `command` arguments. Through a
+    server with structured tools, deleting a Cluster raised GP-0005 at best, the same as
+    deleting a pod, and scaling a node pool to zero or draining a node raised nothing.
+    The tool and argument names below are the ones published servers use. None is run.
+    """
+    capi = "cluster.x-k8s.io/v1beta1"
+    for name, args, operation in (
+        ("resources_delete", {"apiVersion": capi, "kind": "Cluster", "name": "demo"}, "delete cluster"),
+        ("resources_delete", {"apiVersion": "v1", "kind": "Namespace", "name": "prod"}, "delete namespace"),
+        ("resources_scale", {"apiVersion": capi, "kind": "MachineDeployment", "name": "gpu-a",
+                             "scale": 0}, "scale machinedeployment"),
+        ("kubectl_delete", {"resourceType": "namespace", "name": "prod"}, "delete namespace"),
+        ("kubectl_scale", {"resourceType": "machinedeployment", "name": "gpu-a", "replicas": 0},
+         "scale machinedeployment"),
+        ("kubectl_patch", {"resourceType": "cluster", "name": "demo", "patchType": "merge",
+                           "patchData": {"spec": {"paused": True}}}, "patch cluster"),
+        ("kubectl_generic", {"command": "delete", "resourceType": "cluster", "name": "demo"},
+         "delete cluster"),
+        ("kubectl_generic", {"command": "delete", "args": ["md", "gpu-a"]}, "delete machinedeployment"),
+        ("kubectl_generic", {"command": "scale", "resourceType": "md", "name": "gpu-a",
+                             "flags": {"replicas": 0}}, "scale machinedeployment"),
+        ("node_management", {"operation": "drain", "nodeName": "worker-1"}, "drain node"),
+        ("execute_kubectl", {"command": "delete cluster demo -n fleet"}, "delete cluster"),
+        ("call_kubectl", {"args": "delete ns prod"}, "delete namespace"),
+        ("mcp__kubernetes__resources_delete", {"apiVersion": capi, "kind": "Cluster", "name": "demo"},
+         "delete cluster"),
+    ):
+        got = [h for h in _kube(name, args) if h[0] == "GP-0042"]
+        check("tool call is caught: %s %s" % (name, operation), got == [("GP-0042", operation)],
+              str(got))
+        check("and left alone in a clean session: %s" % name, _kube(name, args, None) == [])
+    for name, args in (
+        ("resources_delete", {"apiVersion": "v1", "kind": "Pod", "name": "web-1"}),
+        ("resources_scale", {"apiVersion": capi, "kind": "MachineDeployment", "name": "gpu-a", "scale": 3}),
+        # No scale argument reads the current scale.
+        ("resources_scale", {"apiVersion": capi, "kind": "MachineDeployment", "name": "gpu-a"}),
+        ("resources_scale", {"apiVersion": "apps/v1", "kind": "Deployment", "name": "web", "scale": 0}),
+        ("resources_get", {"apiVersion": capi, "kind": "Cluster", "name": "demo"}),
+        ("kubectl_scale", {"name": "web", "replicas": 0}),      # the default kind is a deployment
+        ("kubectl_patch", {"resourceType": "deployment", "name": "web", "patchData": {}}),
+        ("kubectl_generic", {"command": "get", "resourceType": "clusters"}),
+        ("node_management", {"operation": "uncordon", "nodeName": "worker-1"}),
+        ("execute_kubectl", {"command": "get clusters -A | grep demo"}),
+        ("call_kubectl", {"args": "get pods -n kube-system"}),
+        # A pod whose name is a fleet word is still a pod.
+        ("pods_delete", {"name": "cluster", "namespace": "default"}),
+        ("kubectl_delete", {"resourceType": "pod", "name": "namespace"}),
+        # Not Kubernetes: a graph database also deletes nodes.
+        ("delete_node", {"kind": "node", "id": "42"}),
+        ("delete_entities", {"kind": "cluster", "names": ["a"]}),
+        ("update_record", {"action": "delete", "kind": "namespace"}),
+        # A kind that is not one plain word is data, and data is never read as the command.
+        ("resources_delete", {"apiVersion": "v1", "kind": "Namespace and more", "name": "prod"}),
+        ("resources_delete", {"apiVersion": "v1", "kind": ["Namespace"], "name": "prod"}),
+        ("resources_scale", {"apiVersion": capi, "kind": "MachineDeployment", "scale": False}),
+    ):
+        got = [h for h in _kube(name, args) if h[0] == "GP-0042"]
+        check("tool call is not GP-0042: %s %s" % (name, json.dumps(args)[:60]), got == [], str(got))
+
+
+def test_gp0042_cluster_api_operations_that_delete_nothing():
+    """In Cluster API the damage is often one step away from the call that causes it."""
+    def hits(command, tainted="fetch_page"):
+        return _kube("shell", {"command": command}, tainted)
+
+    for command, operation in (
+        ("kubectl annotate machine gpu-a-0 cluster.x-k8s.io/delete-machine=yes", "annotate machine"),
+        ("kubectl annotate ma gpu-a-0 -n fleet cluster.x-k8s.io/delete-machine=yes", "annotate machine"),
+        ("kubectl annotate cluster demo cluster.x-k8s.io/paused=true", "annotate cluster"),
+        ("clusterctl move --to-kubeconfig=/tmp/standby.kubeconfig", "clusterctl move"),
+        ("clusterctl delete --all --include-crd", "clusterctl delete"),
+        ("sudo clusterctl delete --infrastructure aws", "clusterctl delete"),
+    ):
+        check("lifecycle operation is caught: " + command,
+              hits(command) == [("GP-0042", operation)], str(hits(command)))
+    for command in (
+        "kubectl annotate cluster demo cluster.x-k8s.io/paused-",     # removing it resumes
+        "kubectl annotate machine gpu-a-0 team=infra",
+        "kubectl annotate pod web cluster.x-k8s.io/paused=true",      # means nothing on a pod
+        "clusterctl move --dry-run --to-kubeconfig=/tmp/standby.kubeconfig",
+        "clusterctl describe cluster demo",
+        "clusterctl upgrade plan",
+        "echo clusterctl move",
+    ):
+        check("lifecycle look-alike is left alone: " + command, hits(command) == [],
+              str(hits(command)))
+    check("an untainted move is the operator's business",
+          hits("clusterctl move --to-kubeconfig=/tmp/standby.kubeconfig", None) == [])
+
+
+def test_gp0007_sees_a_managed_cluster_kubeconfig():
+    """A management cluster holds an admin kubeconfig for every cluster it manages.
+
+    It is a Secret called <cluster>-kubeconfig, not a file, so the credential rule, which
+    reads paths, could not see it being read.
+    """
+    for name, args in (
+        ("shell", {"command": "kubectl get secret demo-kubeconfig -o jsonpath='{.data.value}'"}),
+        ("shell", {"command": "kubectl -n fleet get secret/demo-kubeconfig -o yaml"}),
+        ("shell", {"command": "kubectl get secrets demo-kubeconfig --output=json"}),
+        ("shell", {"command": "clusterctl get kubeconfig demo"}),
+        ("shell", {"command": "KUBECONFIG=/etc/fleet/m.kubeconfig clusterctl get kubeconfig demo -n fleet"}),
+        ("resources_get", {"apiVersion": "v1", "kind": "Secret", "name": "demo-kubeconfig"}),
+        ("kubectl_get", {"resourceType": "secret", "name": "demo-kubeconfig", "output": "yaml"}),
+        ("execute_kubectl", {"command": "get secret demo-kubeconfig -o yaml"}),
+        ("shell", {"command": "kubectl get secret demo-kubeconfig -ojson"}),
+        # Every Secret at once includes every kubeconfig.
+        ("shell", {"command": "kubectl get secrets -n fleet -o yaml"}),
+        ("shell", {"command": "kubectl get secrets -A -o json"}),
+    ):
+        got = [h[0] for h in _kube(name, args)]
+        check("kubeconfig read is caught: %s %s" % (name, json.dumps(args)[:50]),
+              got == ["GP-0007"], str(got))
+        check("and left alone in a clean session: %s" % name, _kube(name, args, None) == [])
+    for name, args in (
+        # No output flag: kubectl prints a name and an age.
+        ("shell", {"command": "kubectl get secret demo-kubeconfig"}),
+        ("shell", {"command": "kubectl get secret app-config -o yaml"}),
+        ("shell", {"command": "kubectl get configmap demo-kubeconfig -o yaml"}),
+        ("shell", {"command": "kubectl get secrets"}),
+        # These print what a Secret is called and nothing it holds.
+        ("shell", {"command": "kubectl get secrets -o name"}),
+        ("shell", {"command": "kubectl get secret demo-kubeconfig -o wide"}),
+        ("shell", {"command": "kubectl get pods -o yaml"}),
+        ("shell", {"command": "clusterctl describe cluster demo"}),
+        ("resources_get", {"apiVersion": "v1", "kind": "Secret", "name": "app-config"}),
+        ("resources_get", {"apiVersion": "v1", "kind": "ConfigMap", "name": "demo-kubeconfig"}),
+        ("read_file", {"path": "notes/demo-kubeconfig"}),
+    ):
+        check("not a kubeconfig read: %s %s" % (name, json.dumps(args)[:50]),
+              _kube(name, args) == [], str(_kube(name, args)))
+
+
+def test_kubernetes_reading_never_raises_on_hostile_arguments():
+    """The sensor reads every call. An argument shaped to break the reader must not stop it."""
+    import random
+    rng = random.Random(42)
+    junk = [None, True, 0, -1, 1e308, float("nan"), float("inf"), "", " ", "'", '"', "\\",
+            "kubectl", "delete", "cluster", "$(x)", "a;b|c&d", "--", "-o", "\n", "x" * 5000,
+            [], {}, ["cluster", 3, None], {"replicas": float("nan")}, {"kind": {"kind": "ns"}}]
+    keys = ["command", "args", "kind", "resourceType", "name", "nodeName", "operation",
+            "scale", "replicas", "flags", "apiVersion", "subCommand", "action"]
+    names = [None, "", "kubectl_delete", "resources_scale", "node_management", "shell", 7]
+    raised = []
+    for _ in range(3000):
+        args = {rng.choice(keys): rng.choice(junk) for _ in range(rng.randrange(0, 6))}
+        if rng.random() < 0.1:
+            args = rng.choice(junk)
+        name = rng.choice(names)
+        try:
+            rules.check_call(name if isinstance(name, str) else "", args, fresh("fetch_page"), CFG)
+        except Exception as e:      # noqa: BLE001, the point is that there is none
+            raised.append("%s %r: %r" % (name, args, e))
+    check("no hostile argument makes the reader raise", not raised, "; ".join(raised[:2])[:300])
+
+
+def test_a_bundle_without_the_kubernetes_section_still_works():
+    """A bundle may be older than the engine. The original two signatures keep working."""
+    from guardian_sensor import kubernetes
+    old = kubernetes.Vocabulary(rules.KUBERNETES_DESTRUCTIVE, rules.KUBERNETES_FLEET)
+    found = kubernetes.fleet_operation("shell", {}, ["kubectl delete cluster demo"], old)
+    check("an old bundle still catches a deleted cluster",
+          found and found["operation"] == "delete cluster", str(found))
+    check("and reads no short names it was never given",
+          kubernetes.fleet_operation("shell", {}, ["kubectl delete ns prod"], old) is None)
+    found = kubernetes.fleet_operation(
+        "resources_delete", {"apiVersion": "v1", "kind": "Namespace"}, [], old)
+    check("and reads a structured call with the words it does have",
+          found and found["operation"] == "delete namespace", str(found))
+    check("the string helper still answers",
+          kubernetes.destructive_fleet("kubectl delete cluster demo",
+                                       rules.KUBERNETES_DESTRUCTIVE, rules.KUBERNETES_FLEET))
+
+
 def main():
     for fn in [v for k, v in sorted(globals().items()) if k.startswith("test_")]:
         fn()

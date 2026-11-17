@@ -226,5 +226,63 @@
     "cmd",
     "command",
     "script"
-  ]
+  ],
+  "kubernetes": {
+    "about": "How a tool call names a Kubernetes operation when it is not a kubectl command string. Read by guardian_sensor/kubernetes.py. An engine older than this section ignores it.",
+    "tool": {
+      "id": "kubernetes-tool",
+      "pattern": "(kubectl|kubernetes|k8s)",
+      "flags": "i"
+    },
+    "short_names": {
+      "ns": "namespace",
+      "no": "node",
+      "sts": "statefulset",
+      "crds": "crd",
+      "cl": "cluster",
+      "md": "machinedeployment",
+      "ms": "machineset",
+      "ma": "machine",
+      "mp": "machinepool",
+      "kcp": "kubeadmcontrolplane",
+      "mhc": "machinehealthcheck",
+      "mhcs": "machinehealthcheck",
+      "cc": "clusterclass"
+    },
+    "kind_keys": [
+      "kind",
+      "resourceType",
+      "resource_type"
+    ],
+    "verb_keys": [
+      "command",
+      "operation",
+      "action",
+      "subCommand",
+      "verb"
+    ],
+    "count_keys": [
+      "replicas",
+      "scale"
+    ],
+    "name_keys": [
+      "name",
+      "nodeName"
+    ],
+    "lifecycle_annotation": {
+      "id": "capi-lifecycle-annotation",
+      "pattern": "^cluster\\.x-k8s\\.io/(delete-machine|paused)=",
+      "flags": ""
+    },
+    "clusterctl_destructive": {
+      "id": "clusterctl-destructive",
+      "pattern": "^(delete|move)$",
+      "flags": ""
+    },
+    "fleet_credential_secret": {
+      "id": "capi-kubeconfig-secret",
+      "pattern": "[a-z0-9]-kubeconfig$",
+      "flags": ""
+    }
+  }
 }
