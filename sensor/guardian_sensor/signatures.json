@@ -281,8 +281,17 @@
     },
     "fleet_credential_secret": {
       "id": "capi-kubeconfig-secret",
-      "pattern": "[a-z0-9]-kubeconfig$",
+      "pattern": "[a-z0-9]-(kubeconfig|ca|etcd|sa|proxy)$",
       "flags": ""
-    }
+    },
+    "fleet_kind_provider": {
+      "id": "capi-provider-kind",
+      "pattern": "(aws|azure|gcp|vsphere|openstack|metal3|docker|dev|nutanix|oci|ibmvpc|ibmpowervs|hetzner|hcloud|byo|kubevirt|packet|tinkerbell|vcd|cloudstack|do|linode|proxmox|maas|outscale|scaleway|rke2|k0s|k0smotron|kthrees|eks|aks|gke|rosa)[a-z0-9]{0,24}(cluster|machine|machinepool|machinetemplate|clustertemplate|controlplane|controlplanetemplate)",
+      "flags": "i"
+    },
+    "manifest_keys": [
+      "resource",
+      "manifest"
+    ]
   }
 }

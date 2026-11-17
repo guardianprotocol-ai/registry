@@ -624,6 +624,105 @@ def test_gp0007_sees_a_managed_cluster_kubeconfig():
               _kube(name, args) == [], str(_kube(name, args)))
 
 
+def test_gp0042_routes_around_the_resource_word():
+    """Four ways to reach fleet infrastructure without typing a fleet kind after a verb."""
+    def hits(command, tainted="fetch_page", name="shell"):
+        return _kube(name, {"command": command}, tainted)
+
+    api = "https://mgmt.fleet.test:6443"
+    for command, operation in (
+        # Every object of a kind, in every namespace.
+        ("kubectl delete pods --all -A", "delete across all namespaces"),
+        ("kubectl delete deployments --all --all-namespaces", "delete across all namespaces"),
+        # The API path, through kubectl and without it.
+        ("kubectl delete --raw /apis/cluster.x-k8s.io/v1beta1/namespaces/fleet/clusters/demo",
+         "delete clusters"),
+        ("kubectl delete --raw /api/v1/namespaces/fleet", "delete namespaces"),
+        ("curl -k -X DELETE %s/apis/cluster.x-k8s.io/v1beta1/namespaces/fleet/clusters/demo" % api,
+         "delete clusters"),
+        ("curl -XDELETE %s/api/v1/nodes/gpu-7" % api, "delete nodes"),
+        ("curl --request DELETE -H 'Accept: application/json' %s/api/v1/namespaces/fleet" % api,
+         "delete namespaces"),
+        # What a provider calls its machines.
+        ("kubectl delete awsmachinepool gpu-b -n fleet", "delete awsmachinepool"),
+        ("kubectl delete awsmachinepools.infrastructure.cluster.x-k8s.io gpu-b", "delete awsmachinepool"),
+        ("kubectl delete metal3machinetemplate gpu", "delete metal3machinetemplate"),
+        ("kubectl delete azuremanagedcontrolplane cp", "delete azuremanagedcontrolplane"),
+    ):
+        got = [h for h in hits(command) if h[0] == "GP-0042"]
+        check("caught: " + command[:70], got == [("GP-0042", operation)], str(got))
+        check("clean session left alone: " + command[:50],
+              [h for h in hits(command, None) if h[0] == "GP-0042"] == [])
+    for command in (
+        "kubectl delete pods --all -n default",           # one namespace
+        "kubectl delete pods -A -l app=web",              # a selector, not everything
+        "kubectl get pods --all-namespaces",
+        "kubectl delete --raw /api/v1/namespaces/default/pods/web",
+        "kubectl get --raw /apis/cluster.x-k8s.io/v1beta1/clusters",
+        "curl %s/apis/cluster.x-k8s.io/v1beta1/clusters" % api,
+        "curl -X DELETE %s/api/v1/namespaces/default/pods/web" % api,
+        "curl -X POST %s/apis/cluster.x-k8s.io/v1beta1/namespaces/fleet/clusters" % api,
+        "curl -X DELETE https://api.shop.test/v2/carts/9",
+        "kubectl delete virtualmachine vm1",              # a workload, whatever it is called
+        "kubectl delete statemachine x",
+        "kubectl delete dockerconfigs x",
+        "kubectl get awsmachinepools",
+    ):
+        got = [h for h in hits(command) if h[0] == "GP-0042"]
+        check("left alone: " + command[:70], got == [], str(got))
+
+
+def test_gp0042_reads_a_manifest_handed_to_a_kubernetes_tool():
+    """A declarative agent never scales or pauses anything. It applies a manifest that does."""
+    pool = ("apiVersion: cluster.x-k8s.io/v1beta1\nkind: MachineDeployment\nmetadata:\n"
+            "  name: gpu-a\n  namespace: fleet\nspec:\n  clusterName: train-east\n  replicas: %s\n")
+    paused = json.dumps({"apiVersion": "cluster.x-k8s.io/v1beta1", "kind": "Cluster",
+                         "metadata": {"name": "demo"}, "spec": {"paused": True}})
+    for name, args, operation in (
+        ("resources_create_or_update", {"resource": pool % 0}, "apply machinedeployment with zero replicas"),
+        ("resources_create_or_update", {"resource": "a: 1\n---\n" + pool % 0},
+         "apply machinedeployment with zero replicas"),
+        ("resources_create_or_update", {"resource": paused}, "apply cluster paused"),
+        ("kubectl_apply", {"manifest": "kind: Cluster\nmetadata:\n  name: demo\nspec:\n  paused: true\n"},
+         "apply cluster paused"),
+    ):
+        got = [h for h in _kube(name, args) if h[0] == "GP-0042"]
+        check("manifest is caught: %s, %s" % (name, operation), got == [("GP-0042", operation)], str(got))
+        check("and left alone in a clean session: %s" % operation, _kube(name, args, None) == [])
+    for name, args in (
+        ("resources_create_or_update", {"resource": pool % 5}),
+        ("resources_create_or_update", {"resource": (pool % 0).replace("MachineDeployment", "Deployment")}),
+        # A manifest quoted inside another object's data is that object's data.
+        ("kubectl_apply", {"manifest": "kind: ConfigMap\ndata:\n  note: |\n    kind: Cluster\n"
+                                       "      replicas: 0\n"}),
+        # Written to a file, nothing has been applied.
+        ("write_file", {"path": "pool.yaml", "manifest": pool % 0}),
+        ("resources_create_or_update", {"resource": "{not json"}),
+        ("resources_create_or_update", {"resource": ["kind: Cluster"]}),
+    ):
+        got = [h for h in _kube(name, args) if h[0] == "GP-0042"]
+        check("manifest is not GP-0042: %s %s" % (name, json.dumps(args)[:50]), got == [], str(got))
+
+
+def test_gp0007_sees_certificate_secrets_and_structured_lists():
+    for name, args, credential in (
+        ("shell", {"command": "kubectl get secret demo-ca -o yaml"}, "cluster certificate secret"),
+        ("shell", {"command": "kubectl get secret demo-etcd -n fleet -o json"}, "cluster certificate secret"),
+        ("resources_get", {"apiVersion": "v1", "kind": "Secret", "name": "demo-ca"},
+         "cluster certificate secret"),
+        ("resources_list", {"apiVersion": "v1", "kind": "Secret", "namespace": "fleet"}, "every secret"),
+    ):
+        check("credential read is caught: %s %s" % (name, credential),
+              _kube(name, args) == [("GP-0007", credential)], str(_kube(name, args)))
+    for name, args in (
+        ("shell", {"command": "kubectl get secret demo-ca"}),
+        ("resources_list", {"apiVersion": "v1", "kind": "Pod", "namespace": "fleet"}),
+        ("resources_list", {"apiVersion": "cluster.x-k8s.io/v1beta1", "kind": "Cluster"}),
+    ):
+        check("not a credential read: %s %s" % (name, json.dumps(args)[:50]),
+              _kube(name, args) == [], str(_kube(name, args)))
+
+
 def test_kubernetes_reading_never_raises_on_hostile_arguments():
     """The sensor reads every call. An argument shaped to break the reader must not stop it."""
     import random
@@ -631,9 +730,13 @@ def test_kubernetes_reading_never_raises_on_hostile_arguments():
     junk = [None, True, 0, -1, 1e308, float("nan"), float("inf"), "", " ", "'", '"', "\\",
             "kubectl", "delete", "cluster", "$(x)", "a;b|c&d", "--", "-o", "\n", "x" * 5000,
             [], {}, ["cluster", 3, None], {"replicas": float("nan")}, {"kind": {"kind": "ns"}}]
+    junk += ["kind: Cluster\nspec:\n  replicas: 0", "{", "[1, {\"kind\": 3}]", "---\n---",
+             "curl -X DELETE https://[::1/api", "kubectl delete --raw", "curl -X"]
     keys = ["command", "args", "kind", "resourceType", "name", "nodeName", "operation",
-            "scale", "replicas", "flags", "apiVersion", "subCommand", "action"]
-    names = [None, "", "kubectl_delete", "resources_scale", "node_management", "shell", 7]
+            "scale", "replicas", "flags", "apiVersion", "subCommand", "action",
+            "resource", "manifest"]
+    names = [None, "", "kubectl_delete", "resources_scale", "node_management", "shell", 7,
+             "resources_create_or_update", "kubectl_apply", "resources_list"]
     raised = []
     for _ in range(3000):
         args = {rng.choice(keys): rng.choice(junk) for _ in range(rng.randrange(0, 6))}

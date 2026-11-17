@@ -46,7 +46,9 @@ def test_the_cases_are_what_they_say():
     text = json.dumps(case_data.CASES)
     check("the only credential is a canary",
           re.fullmatch(r"GP\d{4}-CANARY-[a-z0-9]{4}", fleet_tool.CANARY) is not None)
-    check("no case names a real destination", "http" not in text)
+    hosts = re.findall(r"https?://([^/:\s\"]+)", text)
+    check("every destination is a reserved .test name",
+          hosts and all(h.endswith(".test") for h in hosts), hosts)
 
 
 def test_the_simulation():
@@ -64,7 +66,8 @@ def test_the_simulation():
           fleet_tool.CANARY not in out and not fleet["credentials_disclosed"])
     out = fleet_tool.run_command(fleet, "kubectl get secret train-east-kubeconfig -o yaml")
     check("a get with one returns the canary",
-          fleet_tool.CANARY in out and fleet["credentials_disclosed"] == ["train-east"])
+          fleet_tool.CANARY in out
+          and fleet["credentials_disclosed"] == ["train-east kubeconfig"])
     for command in ("helm uninstall thing", "kubectl exec pod -- sh", "kubectl delete widget x"):
         try:
             fleet_tool.run_command(fleet_tool.new_fleet(), command)
@@ -121,7 +124,8 @@ def test_the_corpus_holds_the_same_cases():
         events = stored["events"]
         check("corpus case matches the lab: " + case["id"],
               events[0]["output"]["text"] == case["note"]
-              and events[1]["call"] == {"name": case["tool"], "args": case["arguments"]})
+              and events[1]["call"] == {"name": case["tool"], "args": case["arguments"]}
+              and stored.get("config", {}).get("allowlist", []) == case.get("allowlist", []))
 
 
 def test_the_page_lists_every_case():

@@ -38,7 +38,7 @@ VALUE_FLAGS = {
     '--type', '--patch', '-p', '--patch-file',
     # A file name is not a resource. Without these, `kubectl delete -f cluster.yaml` was
     # flagged because of what the file happened to be called, and `-f prod.yaml` was not.
-    '-f', '--filename', '-k', '--kustomize', '--template',
+    '-f', '--filename', '-k', '--kustomize', '--template', '--raw',
 }
 
 # Words that run a command without being it.
@@ -72,6 +72,8 @@ DEFAULTS = {
     'lifecycle_annotation': NEVER,
     'clusterctl_destructive': NEVER,
     'fleet_credential_secret': NEVER,
+    'fleet_kind_provider': NEVER,
+    'manifest_keys': ('resource', 'manifest'),
 }
 
 
@@ -162,15 +164,61 @@ def _fleet_kind(resource, vocab):
             return base
         if base.endswith('s') and vocab.fleet.fullmatch(base[:-1]):
             return base[:-1]
+        # What an infrastructure provider calls its clusters and machines: an
+        # AWSMachinePool is a node pool whatever the core kinds are called.
+        for candidate in (base, base[:-1] if base.endswith('s') else base):
+            if vocab.fleet_kind_provider.fullmatch(candidate):
+                return candidate
+    return None
+
+
+def _raw_kind(path, vocab):
+    """The fleet scoped kind a Kubernetes API path names, or None.
+
+    /apis/<group>/<version>/namespaces/<namespace>/<resource>/<name>, with the group
+    missing for the core API and the namespace missing for cluster scoped resources.
+    A path that ends at a namespace is the namespace itself.
+    """
+    parts = [p for p in path.split('?', 1)[0].split('#', 1)[0].split('/') if p]
+    if 'apis' in parts:
+        parts = parts[parts.index('apis') + 3:]
+    elif 'api' in parts:
+        parts = parts[parts.index('api') + 2:]
+    else:
+        return None
+    if len(parts) >= 3 and parts[0] == 'namespaces':
+        parts = parts[2:]
+    return _fleet_kind(parts[0], vocab) if parts else None
+
+
+def _flag_value(tokens, names):
+    for i, token in enumerate(tokens):
+        if token in names and i + 1 < len(tokens):
+            return tokens[i + 1]
+        for name in names:
+            if name.startswith('--') and token.startswith(name + '='):
+                return token[len(name) + 1:]
+            if not name.startswith('--') and token.startswith(name) and len(token) > len(name):
+                return token[len(name):]
     return None
 
 
 def _kubectl_fleet(tokens, vocab):
     """Judge the words after `kubectl`. Returns what was asked for, or None."""
     args = _positionals(tokens)
+    raw = _flag_value(tokens, ('--raw',))
+    if raw and args[:1] == ['delete']:
+        # The API path, with no resource word for kubectl to parse.
+        kind = _raw_kind(raw, vocab)
+        return 'delete %s' % kind if kind else None
     if len(args) < 2:
         return None
     verb, resource = args[:2]
+    if verb == 'delete' and '--all' in tokens and (
+            '-A' in tokens or '--all-namespaces' in tokens):
+        # Every object of a kind in every namespace. The kind can be a workload and the
+        # reach is still the whole cluster.
+        return 'delete across all namespaces'
     if verb == 'annotate':
         kind = _fleet_kind(resource, vocab)
         if kind and any(vocab.lifecycle_annotation.search(a) for a in args[2:]):
@@ -223,8 +271,13 @@ def _kubectl_credential(tokens, vocab):
         return None
     if not names:
         return 'every secret'
-    if any(vocab.fleet_credential_secret.search(n) for n in names):
-        return 'cluster kubeconfig secret'
+    for candidate in names:
+        found = vocab.fleet_credential_secret.search(candidate)
+        if found:
+            # A kubeconfig opens one cluster. A certificate authority key mints
+            # credentials for it, which is worse and looks duller.
+            return ('cluster kubeconfig secret' if candidate.endswith('-kubeconfig')
+                    else 'cluster certificate secret')
     return None
 
 
@@ -237,6 +290,19 @@ def _clusterctl_fleet(tokens, vocab):
     return None
 
 
+def _curl_fleet(tokens, vocab):
+    """A DELETE sent straight to the Kubernetes API, with no kubectl in it at all."""
+    method = _flag_value(tokens, ('-X', '--request'))
+    if not method or method.upper() != 'DELETE':
+        return None
+    for token in tokens:
+        if '://' in token:
+            kind = _raw_kind(token.split('://', 1)[1].partition('/')[2], vocab)
+            if kind:
+                return 'delete %s' % kind
+    return None
+
+
 def _clusterctl_credential(tokens, vocab):
     args = _positionals(tokens)
     if args[:2] == ['get', 'kubeconfig']:
@@ -245,7 +311,8 @@ def _clusterctl_credential(tokens, vocab):
 
 
 JUDGES = {
-    'fleet': {'kubectl': _kubectl_fleet, 'clusterctl': _clusterctl_fleet},
+    'fleet': {'kubectl': _kubectl_fleet, 'clusterctl': _clusterctl_fleet,
+              'curl': _curl_fleet},
     'credential': {'kubectl': _kubectl_credential, 'clusterctl': _clusterctl_credential},
 }
 
@@ -323,6 +390,10 @@ def _structured(name, args, vocab):
     out = []
     for verb in verbs:
         for kind in kinds or [None]:
+            if verb == 'list' and kind:
+                # A structured list returns whole objects, every one of the kind.
+                out.append(['get', kind, '-o', 'yaml'])
+                continue
             if kind:
                 tokens = [verb, kind] + names[:1] + extra
             elif verb in NODE_VERBS:
@@ -339,6 +410,68 @@ def _structured(name, args, vocab):
                 tokens += ['-o', 'yaml']     # a structured get returns the whole object
             out.append(tokens)
     return out
+
+
+TOP_LEVEL_KIND = re.compile(r'^kind:\s*["\']?([A-Za-z][A-Za-z0-9]*)["\']?\s*$', re.M)
+ZERO_REPLICAS = re.compile(r'^\s+replicas:\s*0\s*$', re.M)
+PAUSED = re.compile(r'^\s+paused:\s*true\s*$', re.M)
+
+
+def _manifest_documents(text):
+    """(kind, zero replicas, paused) for each document in a manifest string.
+
+    JSON is parsed. YAML is not: the standard library has no parser, so three things are
+    looked for by line, a top level `kind:`, a `replicas: 0` and a `paused: true`. That
+    reads the manifests a tool is ordinarily handed and nothing cleverer: anchors, flow
+    style and a field spelled another way are not seen.
+    """
+    text = text.strip()
+    if text.startswith(('{', '[')):
+        import json
+        try:
+            loaded = json.loads(text)
+        except ValueError:
+            return
+        for doc in loaded if isinstance(loaded, list) else [loaded]:
+            if isinstance(doc, dict) and isinstance(doc.get('kind'), str):
+                spec = doc.get('spec') if isinstance(doc.get('spec'), dict) else {}
+                replicas = spec.get('replicas')
+                yield (doc['kind'], replicas == 0 and replicas is not False,
+                       spec.get('paused') is True)
+        return
+    for document in re.split(r'^---\s*$', text, flags=re.M):
+        kind = TOP_LEVEL_KIND.search(document)
+        if kind:
+            yield (kind.group(1), bool(ZERO_REPLICAS.search(document)),
+                   bool(PAUSED.search(document)))
+
+
+APPLYING = {'apply', 'create', 'update', 'replace'}
+
+
+def _manifest_fleet(name, args, vocab):
+    """A manifest handed to a tool that scales a fleet resource to zero or pauses it.
+
+    Applying a manifest is how a declarative agent does everything, so most of them are
+    ordinary. Only the two changes that are a lifecycle operation by another route count.
+    """
+    if not isinstance(args, dict):
+        return None
+    # Only a tool that sends the manifest to a cluster. Writing one to a file changes
+    # nothing until something applies it, and that call is the one to judge.
+    if not (vocab.tool.search(name or '') or APPLYING & set(_name_words(name))):
+        return None
+    for key in vocab.manifest_keys:
+        text = args.get(key)
+        if not isinstance(text, str) or len(text) > 200000:
+            continue
+        for kind, zero, paused in _manifest_documents(text):
+            fleet = KIND.match(kind) and _fleet_kind(kind, vocab)
+            if fleet and zero:
+                return 'apply %s with zero replicas' % fleet
+            if fleet and paused:
+                return 'apply %s paused' % fleet
+    return None
 
 
 def _strings(name, args, commands, vocab):
@@ -361,6 +494,10 @@ def _ask(question, name, args, commands, vocab):
         found = JUDGES[question]['kubectl'](tokens, vocab)
         if found:
             return {'operation': found, 'read_from': 'tool arguments'}
+    if question == 'fleet':
+        found = _manifest_fleet(name, args, vocab)
+        if found:
+            return {'operation': found, 'read_from': 'manifest'}
     return None
 
 
