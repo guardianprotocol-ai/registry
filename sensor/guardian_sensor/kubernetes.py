@@ -41,8 +41,16 @@ VALUE_FLAGS = {
     '-f', '--filename', '-k', '--kustomize', '--template', '--raw',
 }
 
-# Words that run a command without being it.
+# Words that run a command without being it, and the flags of theirs that take a value.
 WRAPPERS = {'sudo', 'env', 'command', 'exec', 'nohup', 'time'}
+WRAPPER_VALUE_FLAGS = {'-u', '-g', '-h', '-p', '-C', '-D', '-R', '-T', '-r', '-t',
+                       '--user', '--group', '--host', '--chdir'}
+CASCADE_VALUES = {'background', 'foreground', 'orphan', 'true', 'false'}
+# A flag longer than this, or more of them than this, is not a flag anybody typed. The
+# bundle's destructive signature is run over the flags of one invocation, and what it is
+# given is bounded here so its cost is too.
+MAX_FLAG_LENGTH = 64
+MAX_FLAGS = 64
 ASSIGNMENT = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
 
 NODE_VERBS = {'drain', 'cordon', 'uncordon', 'taint'}
@@ -56,6 +64,8 @@ NAMES_ONLY = {'name', 'wide'}
 # somebody's data, and data must never be read as the command.
 WORD = re.compile(r'^[A-Za-z]+$')
 KIND = re.compile(r'^[A-Za-z][A-Za-z0-9.-]*$')
+
+API_VERSION = re.compile(r'^v\d+((alpha|beta)\d+)?$')
 
 NEVER = re.compile(r'(?!x)x')
 
@@ -108,6 +118,9 @@ def _positionals(tokens):
         if token in VALUE_FLAGS:
             i += 2
             continue
+        if token == '--cascade' and i + 1 < len(tokens) and tokens[i + 1] in CASCADE_VALUES:
+            i += 2
+            continue
         if token.startswith('-'):
             i += 1
             continue
@@ -119,9 +132,15 @@ def _positionals(tokens):
 def _segments(command):
     """The command split into simple commands, as tokens. Empty if it does not parse."""
     try:
-        lexer = shlex.shlex(command, posix=True, punctuation_chars=';&|()\n')
+        # A backslash at the end of a line continues it, which is how any long kubectl
+        # command is written down.
+        lexer = shlex.shlex(command.replace('\\\n', ' '), posix=True,
+                            punctuation_chars=';&|()\n')
         lexer.whitespace = ' \t\r'
         lexer.whitespace_split = True
+        # shlex would drop a comment together with the newline that ends it, joining the
+        # next line onto this one. Comments are cut below instead, a line at a time.
+        lexer.commenters = ''
         segments = [[]]
         for token in lexer:
             if token and all(c in ';&|()\n' for c in token):
@@ -130,7 +149,15 @@ def _segments(command):
                 segments[-1].append(token)
     except ValueError:
         return []
-    return [tokens for tokens in segments if tokens]
+    out = []
+    for tokens in segments:
+        for i, token in enumerate(tokens):
+            if token.startswith('#'):
+                tokens = tokens[:i]
+                break
+        if tokens:
+            out.append(tokens)
+    return out
 
 
 def _unwrapped(tokens):
@@ -147,7 +174,7 @@ def _unwrapped(tokens):
         elif token in WRAPPERS:
             i += 1
             while i < len(tokens) and tokens[i].startswith('-'):
-                i += 1
+                i += 2 if tokens[i] in WRAPPER_VALUE_FLAGS else 1
         else:
             break
     return tokens[i:]
@@ -180,10 +207,18 @@ def _raw_kind(path, vocab):
     A path that ends at a namespace is the namespace itself.
     """
     parts = [p for p in path.split('?', 1)[0].split('#', 1)[0].split('/') if p]
+    # The shapes Kubernetes serves and nothing looser: /api/v1/ for the core group, and
+    # /apis/<group>/<version>/ for the rest. Plenty of other services have an /api/.
     if 'apis' in parts:
-        parts = parts[parts.index('apis') + 3:]
+        at = parts.index('apis')
+        if len(parts) < at + 3 or not API_VERSION.match(parts[at + 2]):
+            return None
+        parts = parts[at + 3:]
     elif 'api' in parts:
-        parts = parts[parts.index('api') + 2:]
+        at = parts.index('api')
+        if parts[at + 1:at + 2] != ['v1']:
+            return None
+        parts = parts[at + 2:]
     else:
         return None
     if len(parts) >= 3 and parts[0] == 'namespaces':
@@ -224,17 +259,51 @@ def _kubectl_fleet(tokens, vocab):
         if kind and any(vocab.lifecycle_annotation.search(a) for a in args[2:]):
             return 'annotate %s' % kind
         return None
-    # Reconstruct only this invocation, with global flags removed from between kubectl
-    # and the verb, for the bundle's destructive signature.
-    normalized = 'kubectl ' + verb + ' ' + ' '.join(tokens)
-    if not vocab.destructive.search(normalized):
+    if _dry_run(tokens):
+        return None
+    if not vocab.destructive.search(_normalized(verb, tokens)):
         return None
     if verb in RESTORING:
         return None
+    if verb == 'taint' and args[2:] and all(a.endswith('-') for a in args[2:]):
+        return None         # a trailing dash removes the taint, which restores the node
     if verb in NODE_VERBS:
         return '%s node' % verb
     kind = _fleet_kind(resource, vocab)
     return '%s %s' % (verb, kind) if kind else None
+
+
+def _dry_run(tokens):
+    """Whether kubectl was told to change nothing. `--dry-run=none` is a real run."""
+    for token in tokens:
+        if token == '--dry-run' or (token.startswith('--dry-run=')
+                                    and token != '--dry-run=none'):
+            return True
+    return False
+
+
+def _normalized(verb, tokens):
+    """One invocation as the bundle's destructive signature expects to read it.
+
+    The verb, then this invocation's flags and nothing else. Names and other words are
+    left out because the signature does not need them and a long run of them is what
+    makes a pattern slow. `--patch` is written as `-p`, which is the spelling the
+    signature knows.
+    """
+    flags = []
+    for i, token in enumerate(tokens):
+        if len(flags) >= MAX_FLAGS:
+            break
+        if not token.startswith('-') or len(token) > MAX_FLAG_LENGTH or ' ' in token:
+            continue
+        if token == '--patch' or token.startswith('--patch=') or token == '--patch-file':
+            token = '-p'
+        flags.append(token)
+        if token in ('--replicas', '--type') and i + 1 < len(tokens):
+            value = tokens[i + 1]
+            if len(value) <= MAX_FLAG_LENGTH and ' ' not in value:
+                flags.append(value)
+    return 'kubectl %s %s' % (verb, ' '.join(flags))
 
 
 def _output_format(tokens):
@@ -262,23 +331,34 @@ def _kubectl_credential(tokens, vocab):
     args = _positionals(tokens)
     if len(args) < 2 or args[0] != 'get':
         return None
-    output = _output_format(tokens)
-    if output is None or output.split('=', 1)[0] in NAMES_ONLY:
+    if not _prints_contents(_output_format(tokens)):
         return None
-    kind, _, name = args[1].partition('/')
+    kinds, _, name = args[1].partition('/')
     names = [name] if name else args[2:]
-    if kind.split('.', 1)[0].lower() not in ('secret', 'secrets'):
+    if not any(k.split('.', 1)[0].lower() in ('secret', 'secrets') for k in kinds.split(',')):
         return None
     if not names:
         return 'every secret'
     for candidate in names:
-        found = vocab.fleet_credential_secret.search(candidate)
-        if found:
+        if vocab.fleet_credential_secret.search(candidate):
             # A kubeconfig opens one cluster. A certificate authority key mints
             # credentials for it, which is worse and looks duller.
             return ('cluster kubeconfig secret' if candidate.endswith('-kubeconfig')
                     else 'cluster certificate secret')
     return None
+
+
+def _prints_contents(output):
+    """Whether this output format can print what a Secret holds."""
+    if output is None:
+        return False                        # kubectl's table: a name and an age
+    form = output.split('=', 1)[0].lower()
+    if form in NAMES_ONLY:
+        return False
+    if form.startswith(('custom-columns', 'jsonpath', 'go-template', 'template')):
+        # An expression chooses the fields. One that never mentions data prints names.
+        return bool(re.search(r'(^|[^a-z])(string)?data', output.lower()))
+    return True
 
 
 def _clusterctl_fleet(tokens, vocab):
@@ -364,10 +444,15 @@ def _structured(name, args, vocab):
             verbs.append(value.lower())
     # Only a call that is recognisably Kubernetes. `delete_node {"kind": ...}` is also how
     # a graph database removes a vertex.
+    # A node verb only counts when the call also names a node. `drain_queue` drains a
+    # queue, and a `command` argument of `drain` may be a program to run in a pod.
+    names_a_node = 'node' in words or 'nodes' in words or 'nodeName' in args
     kubernetes = (vocab.tool.search(name or '') or 'apiVersion' in args
-                  or any(v in NODE_VERBS for v in verbs))
+                  or (names_a_node and any(v in NODE_VERBS for v in verbs)))
     if not kubernetes:
         return []
+    output = next((args[k] for k in ('output', 'outputFormat')
+                   if isinstance(args.get(k), str) and len(args[k]) <= MAX_FLAG_LENGTH), 'yaml')
     kinds = [args[k] for k in vocab.kind_keys
              if isinstance(args.get(k), str) and KIND.match(args[k])]
     names = [args[k] for k in vocab.name_keys
@@ -392,11 +477,13 @@ def _structured(name, args, vocab):
         for kind in kinds or [None]:
             if verb == 'list' and kind:
                 # A structured list returns whole objects, every one of the kind.
-                out.append(['get', kind, '-o', 'yaml'])
+                out.append(['get', kind, '-o', output])
                 continue
             if kind:
                 tokens = [verb, kind] + names[:1] + extra
             elif verb in NODE_VERBS:
+                if not names_a_node:
+                    continue
                 tokens = [verb] + (names[:1] or ['node']) + extra
             else:
                 # No kind argument, so the kind can only come from a list of kubectl
@@ -407,43 +494,85 @@ def _structured(name, args, vocab):
             if verb == 'patch':
                 tokens += ['-p', 'x']
             if verb == 'get':
-                tokens += ['-o', 'yaml']     # a structured get returns the whole object
+                # A structured get returns the whole object unless it is asked not to.
+                tokens += ['-o', output]
             out.append(tokens)
     return out
 
 
-TOP_LEVEL_KIND = re.compile(r'^kind:\s*["\']?([A-Za-z][A-Za-z0-9]*)["\']?\s*$', re.M)
-ZERO_REPLICAS = re.compile(r'^\s+replicas:\s*0\s*$', re.M)
-PAUSED = re.compile(r'^\s+paused:\s*true\s*$', re.M)
+TOP_LEVEL_KIND = re.compile(r'^kind:[ \t]*["\']?([A-Za-z][A-Za-z0-9]*)["\']?[ \t]*$')
+TOP_LEVEL_KEY = re.compile(r'^[A-Za-z]')
+ZERO_REPLICAS = re.compile(r'^[ \t-]+replicas:[ \t]*0[ \t]*$')
+PAUSED = re.compile(r'^[ \t]+paused:[ \t]*true[ \t]*$')
+MAX_MANIFEST = 200000
+MAX_DEPTH = 12
+
+
+def _yaml_document(lines):
+    """(kind, zero replicas, paused) from the lines of one YAML document.
+
+    Only what is under `spec:` counts. `status.replicas: 0` describes a pool that has not
+    come up yet, and says nothing about what the manifest asks for.
+    """
+    kind, zero, paused, in_spec = None, False, False, False
+    for line in lines:
+        if TOP_LEVEL_KEY.match(line):
+            in_spec = line.startswith('spec:')
+            found = TOP_LEVEL_KIND.match(line)
+            if found:
+                kind = found.group(1)
+        elif in_spec:
+            zero = zero or bool(ZERO_REPLICAS.match(line))
+            paused = paused or bool(PAUSED.match(line))
+    return kind, zero, paused
+
+
+def _json_zero_replicas(node, depth=0):
+    """Whether `replicas` is zero anywhere under a spec, a topology included."""
+    if depth > MAX_DEPTH:
+        return False
+    if isinstance(node, dict):
+        value = node.get('replicas')
+        if value == 0 and not isinstance(value, bool):
+            return True
+        return any(_json_zero_replicas(v, depth + 1) for v in node.values())
+    if isinstance(node, list):
+        return any(_json_zero_replicas(v, depth + 1) for v in node)
+    return False
 
 
 def _manifest_documents(text):
     """(kind, zero replicas, paused) for each document in a manifest string.
 
     JSON is parsed. YAML is not: the standard library has no parser, so three things are
-    looked for by line, a top level `kind:`, a `replicas: 0` and a `paused: true`. That
-    reads the manifests a tool is ordinarily handed and nothing cleverer: anchors, flow
-    style and a field spelled another way are not seen.
+    looked for by line, a top level `kind:`, and under `spec:` a `replicas: 0` or a
+    `paused: true`. That reads the manifests a tool is ordinarily handed and nothing
+    cleverer: anchors, flow style and a field spelled another way are not seen.
     """
     text = text.strip()
     if text.startswith(('{', '[')):
         import json
         try:
             loaded = json.loads(text)
-        except ValueError:
+        except (ValueError, RecursionError):
             return
         for doc in loaded if isinstance(loaded, list) else [loaded]:
             if isinstance(doc, dict) and isinstance(doc.get('kind'), str):
                 spec = doc.get('spec') if isinstance(doc.get('spec'), dict) else {}
-                replicas = spec.get('replicas')
-                yield (doc['kind'], replicas == 0 and replicas is not False,
-                       spec.get('paused') is True)
+                yield (doc['kind'], _json_zero_replicas(spec), spec.get('paused') is True)
         return
-    for document in re.split(r'^---\s*$', text, flags=re.M):
-        kind = TOP_LEVEL_KIND.search(document)
-        if kind:
-            yield (kind.group(1), bool(ZERO_REPLICAS.search(document)),
-                   bool(PAUSED.search(document)))
+    document = []
+    for line in text.split('\n'):
+        if line.rstrip() == '---':
+            kind, zero, paused = _yaml_document(document)
+            if kind:
+                yield kind, zero, paused
+            document = []
+        else:
+            document.append(line.rstrip('\r'))
+    kind, zero, paused = _yaml_document(document)
+    if kind:
+        yield kind, zero, paused
 
 
 APPLYING = {'apply', 'create', 'update', 'replace'}
@@ -463,7 +592,7 @@ def _manifest_fleet(name, args, vocab):
         return None
     for key in vocab.manifest_keys:
         text = args.get(key)
-        if not isinstance(text, str) or len(text) > 200000:
+        if not isinstance(text, str) or len(text) > MAX_MANIFEST:
             continue
         for kind, zero, paused in _manifest_documents(text):
             fleet = KIND.match(kind) and _fleet_kind(kind, vocab)

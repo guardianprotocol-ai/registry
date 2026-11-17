@@ -723,6 +723,108 @@ def test_gp0007_sees_certificate_secrets_and_structured_lists():
               _kube(name, args) == [], str(_kube(name, args)))
 
 
+def test_kubernetes_forms_an_independent_review_found():
+    """A second reader went through kubernetes.py and reproduced each of these.
+
+    Kept together and named for where they came from, because they are the cases the
+    author of a parser does not think of: the ones that looked right in the tests the
+    author wrote.
+    """
+    def hits(command, tainted="fetch_page"):
+        return _kube("shell", {"command": command}, tainted)
+
+    for command, expected in (
+        # A long command is written over several lines.
+        ("kubectl delete \\\n  cluster demo", ("GP-0042", "delete cluster")),
+        ("kubectl scale md gpu-a \\\n  --replicas=0", ("GP-0042", "scale machinedeployment")),
+        ("kubectl get secret demo-kubeconfig \\\n  -o yaml", ("GP-0007", "cluster kubeconfig secret")),
+        # A comment ends at its own line and hides nothing after it.
+        ("kubectl get pods # check first\nkubectl delete cluster demo", ("GP-0042", "delete cluster")),
+        # The long spelling of -p, and a patch type that is not merge.
+        ("kubectl patch cluster demo --patch '{\"spec\":{\"paused\":true}}'", ("GP-0042", "patch cluster")),
+        ("kubectl patch cluster demo --type=json --patch '[]'", ("GP-0042", "patch cluster")),
+        # Flags that take a value, in front of the thing they are not.
+        ("sudo -u ops kubectl delete cluster demo", ("GP-0042", "delete cluster")),
+        ("kubectl delete --cascade foreground cluster demo", ("GP-0042", "delete cluster")),
+        ("kubectl delete --cascade=orphan cluster demo", ("GP-0042", "delete cluster")),
+        ("kubectl delete cluster demo --dry-run=none", ("GP-0042", "delete cluster")),
+        ("kubectl get secret,cm -n fleet -o yaml", ("GP-0007", "every secret")),
+    ):
+        check("review: caught: " + command[:60].replace("\n", " / "),
+              hits(command) == [expected], str(hits(command)))
+    for command in (
+        "kubectl delete cluster demo --dry-run=client",
+        "kubectl delete cluster demo --dry-run=server",
+        "kubectl delete cluster demo --dry-run",
+        "kubectl get pods # then kubectl delete cluster demo",
+        # A trailing dash removes the taint, which puts the node back.
+        "kubectl taint nodes --all node-role.kubernetes.io/control-plane-",
+        # Other services have an /api/ too.
+        "curl -X DELETE https://vcs.test/api/v4/namespaces/7",
+        "curl -X DELETE https://queue.test/apis/nodes/42",
+        # Ordinary application Secrets, and reads that print names.
+        "kubectl get secret oauth2-proxy -o yaml",
+        "kubectl get secret build-sa -o json",
+        "kubectl get secrets -o custom-columns=NAME:.metadata.name",
+        "kubectl get secrets -o jsonpath='{.items[*].metadata.name}'",
+    ):
+        check("review: left alone: " + command[:60], hits(command) == [], str(hits(command)))
+    check("review: an expression that prints data is a read",
+          hits("kubectl get secrets -o jsonpath='{.items[*].data}'") == [("GP-0007", "every secret")])
+    check("review: a taint that is added is still caught",
+          hits("kubectl taint nodes gpu-7 maintenance=true:NoSchedule") == [("GP-0042", "taint node")])
+
+    for name, args in (
+        ("drain_queue", {"name": "emails"}),
+        ("queue_admin", {"action": "drain", "queue": "emails"}),
+        ("terraform_taint", {"address": "aws_instance.web"}),
+        # `command` here is a program to run inside a pod.
+        ("mcp__kubernetes__pods_exec", {"name": "cass-0", "command": "drain"}),
+        ("kubectl_get", {"resourceType": "secrets", "output": "name"}),
+    ):
+        check("review: not Kubernetes fleet work: %s %s" % (name, json.dumps(args)[:40]),
+              _kube(name, args) == [], str(_kube(name, args)))
+    check("review: a drain that names a node is still caught",
+          _kube("node_management", {"operation": "drain", "nodeName": "gpu-7"})
+          == [("GP-0042", "drain node")])
+
+    status = ("kind: MachineDeployment\nspec:\n  replicas: 3\nstatus:\n  replicas: 0\n")
+    check("review: status.replicas of zero is not a request for zero",
+          _kube("kubectl_apply", {"manifest": status}) == [], str(_kube("kubectl_apply", {"manifest": status})))
+    topology = ("kind: Cluster\nspec:\n  topology:\n    workers:\n      machineDeployments:\n"
+                "      - class: default-worker\n        name: md-0\n        replicas: 0\n")
+    check("review: a topology that empties a pool is caught",
+          _kube("kubectl_apply", {"manifest": topology}) == [("GP-0042", "apply cluster with zero replicas")],
+          str(_kube("kubectl_apply", {"manifest": topology})))
+
+
+def test_kubernetes_reading_stays_fast_on_text_built_to_be_slow():
+    """The sensor reads every call, so a call that takes seconds to read is an outage."""
+    import time
+    slow = [
+        ("kubectl_apply", {"manifest": "kind: Cluster\n" + "\n" * 150000 + "x"}),
+        ("kubectl_apply", {"manifest": "kind: Cluster\nspec:\n" + " " * 150000 + "x"}),
+        ("kubectl_apply", {"manifest": "[" * 100000}),
+        ("shell", {"command": "kubectl scale md " + "kubectl scale " * 8000}),
+        ("shell", {"command": "kubectl patch md " + "kubectl patch " * 8000}),
+        ("shell", {"command": "kubectl scale md x " + "--replicas " * 8000}),
+        ("shell", {"command": "\ud800 kubectl delete cluster demo"}),
+        (7, {"command": "kubectl delete cluster demo"}),
+        (["a"], {}),
+    ]
+    for name, args in slow:
+        start = time.time()
+        try:
+            rules.check_call(name, args, fresh("fetch_page"), CFG)
+            raised = None
+        except Exception as e:      # noqa: BLE001
+            raised = e
+        spent = time.time() - start
+        label = "%s %s" % (name, json.dumps(args)[:30])
+        check("hostile call does not raise: " + label, raised is None, repr(raised))
+        check("and is read in well under a second: " + label, spent < 0.5, "%.2fs" % spent)
+
+
 def test_kubernetes_reading_never_raises_on_hostile_arguments():
     """The sensor reads every call. An argument shaped to break the reader must not stop it."""
     import random
