@@ -42,6 +42,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, SENSOR)
 
 import kubectl_tool  # noqa: E402
+import redact  # noqa: E402
 from guardian_sensor import rules  # noqa: E402
 
 NAMESPACE = kubectl_tool.NAMESPACE
@@ -109,12 +110,10 @@ def _scrub(text):
     """`text` with anything the sensor recognises as a secret replaced.
 
     The signatures the sensor enforces, applied to this lab's own output, so what gets
-    written here is scrubbed by the same rules and improves whenever those do.
+    written here is scrubbed by the same rules and improves whenever those do. Then the
+    credentials Kubernetes hands out, which those signatures do not know. See redact.py.
     """
-    out = str(text or "")
-    for expression in rules.SECRET_RES:
-        out = expression.sub("<redacted>", out)
-    return out
+    return redact.scrub(text, rules.SECRET_RES)
 
 
 def _redact_secrets(text):
@@ -220,7 +219,8 @@ roleRef:
     lines = [line.strip() for line in token.stdout.splitlines() if line.strip()]
     bearer = lines[-1] if lines else ""
     if bearer.count(".") != 2:
-        raise SystemExit("lab token was not a JWT. stdout was:\n%s" % token.stdout)
+        # Not the output itself. Whatever came back in place of a token may still be one.
+        raise SystemExit("lab token was not a JWT. kubectl printed %d line(s)" % len(lines))
     admin_text = open(admin, encoding="utf-8").read()
     server = cluster_field(admin_text, "server")
     ca = cluster_field(admin_text, "certificate-authority-data")
@@ -900,7 +900,8 @@ def main(argv=None):
                            "attack_metrics": on["attack_metrics"]},
         }
     except (SystemExit, OSError, subprocess.TimeoutExpired, RuntimeError, json.JSONDecodeError) as exc:
-        failure = str(exc)
+        # An error from kubectl can quote what it was given, and this is written to disk.
+        failure = _scrub(str(exc))
         outcome = {
             "experiment": "k8s-tool-pipe-lab",
             "scripted": True,
@@ -922,7 +923,7 @@ def main(argv=None):
             handle.write(json.dumps(outcome["versions"], indent=2) + "\n")
             handle.write("k3s cmdline:\n")
             for line in outcome.get("k3s_cmdline") or []:
-                handle.write(line + "\n")
+                handle.write(_scrub(line) + "\n")
         with open(os.path.join(out, "commands.txt"), "w", encoding="utf-8") as handle:
             handle.write(outcome["rerun"] + "\n")
             handle.write("admin kubeconfig: %s\n" % args.admin_kubeconfig)
