@@ -2,7 +2,7 @@ schema_version: "0.1"
 id: GP-0007
 title: Credential file read after the agent read outside content
 status: draft
-version: 2
+version: 3
 summary: >
   Outside content the agent read steers it into opening a credential file that the task
   never needed: cloud keys, an ssh key, a .env, a token store. Reading is the first half
@@ -37,7 +37,8 @@ detection:
     - A path in the call's arguments matching a known credential location
     - A read of the kubeconfig a Cluster API management cluster holds for a cluster it
       manages, by `clusterctl get kubeconfig`, by a get of the `<cluster>-kubeconfig`
-      Secret that prints its contents, or by a get of every Secret at once
+      Secret or of the certificate Secrets beside it that prints their contents, or by a
+      get or a structured list of every Secret at once
   logic: >
     While a session is tainted, flag a call whose arguments name a credential file: cloud
     credentials, ssh keys, .env, .netrc, package manager tokens, kubeconfig, docker config

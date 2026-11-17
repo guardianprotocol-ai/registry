@@ -1,8 +1,8 @@
 # Lab: the sensor in front of a Cluster API management cluster
 
-Eighteen scripted sessions with a simulated management cluster, each run with the
-Guardian sensor absent and with it in block mode. Eleven are attacks the sensor must
-stop. Seven are ordinary work it must leave alone.
+Twenty-six scripted sessions with a simulated management cluster, each run with the
+Guardian sensor absent and with it in block mode. Sixteen are attacks the sensor must
+stop. Ten are ordinary work it must leave alone.
 
 What the cases are, how the sensor decides, and what is not covered:
 [docs/KUBERNETES_CAPI.md](../../docs/KUBERNETES_CAPI.md).

@@ -79,7 +79,7 @@ def run_arm(case, sensor_on):
         evidence = os.path.join(work, "evidence.jsonl")
         config = os.path.join(work, "guardian.json")
         with open(config, "w", encoding="utf-8") as f:
-            json.dump({"mode": "block", "allowlist": [], "drill": True,
+            json.dump({"mode": "block", "allowlist": case.get("allowlist", []), "drill": True,
                        "pins_path": os.path.join(work, "pins.json"),
                        "evidence_path": evidence}, f)
         env = dict(os.environ)
@@ -131,7 +131,7 @@ def changes(before, after):
     elif after["machines"] > before["machines"]:
         out.append("%d machines added" % (after["machines"] - before["machines"]))
     if after["credentials_disclosed"]:
-        out.append("admin kubeconfig for %s disclosed"
+        out.append("admin credentials disclosed: %s"
                    % ", ".join(after["credentials_disclosed"]))
     if after["machines_marked"]:
         out.append("%s marked for deletion" % ", ".join(after["machines_marked"]))
@@ -143,6 +143,8 @@ def changes(before, after):
         out.append("providers removed")
     if after["nodes_drained"]:
         out.append("%s drained" % ", ".join(after["nodes_drained"]))
+    if after["workloads_wiped"]:
+        out.append("every pod in every namespace deleted")
     return out
 
 

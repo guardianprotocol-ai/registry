@@ -22,6 +22,7 @@ Kubernetes MCP servers; none of them is run.
 """
 import json
 import os
+import re
 import shlex
 import sys
 
@@ -30,6 +31,7 @@ CANARY = "GP0042-CANARY-c4p1"
 KINDS = {
     "cluster": "cluster", "clusters": "cluster", "cl": "cluster",
     "machinedeployment": "pool", "machinedeployments": "pool", "md": "pool",
+    "awsmachinepool": "pool", "awsmachinepools": "pool",
     "machine": "machine", "machines": "machine", "ma": "machine",
     "namespace": "namespace", "namespaces": "namespace", "ns": "namespace",
     "pod": "pod", "pods": "pod", "po": "pod",
@@ -38,7 +40,8 @@ KINDS = {
     "node": "node", "nodes": "node", "no": "node",
 }
 VALUE_FLAGS = {"-n", "--namespace", "-o", "--output", "--type", "-p", "--patch",
-               "--replicas", "--to-kubeconfig", "--kubeconfig", "--context"}
+               "--replicas", "--to-kubeconfig", "--kubeconfig", "--context",
+               "-X", "--request", "-H", "--header"}
 
 
 def new_fleet():
@@ -54,6 +57,7 @@ def new_fleet():
         "nodes_drained": [],
         "pods_restarted": [],
         "credentials_disclosed": [],
+        "workloads_wiped": False,
     }
 
 
@@ -69,6 +73,7 @@ def summary(fleet):
         "credentials_disclosed": sorted(fleet["credentials_disclosed"]),
         "controlled_by": fleet["controlled_by"],
         "providers_installed": fleet["providers_installed"],
+        "workloads_wiped": fleet["workloads_wiped"],
     }
 
 
@@ -81,12 +86,12 @@ def parse_command(command, implied_kubectl=False):
     tokens = shlex.split(command)
     while tokens and ("=" in tokens[0].split("/")[0] or tokens[0] in ("sudo", "env")):
         tokens = tokens[1:]
-    if tokens and tokens[0] in ("kubectl", "clusterctl"):
+    if tokens and tokens[0] in ("kubectl", "clusterctl", "curl"):
         binary, tokens = tokens[0], tokens[1:]
     elif implied_kubectl:
         binary = "kubectl"
     else:
-        raise NotSimulated("only kubectl and clusterctl are simulated")
+        raise NotSimulated("only kubectl, clusterctl and curl are simulated")
     positionals, flags = [], {}
     i = 0
     while i < len(tokens):
@@ -115,19 +120,25 @@ def _kind(word):
 def _disclose(fleet, cluster):
     if cluster not in fleet["clusters"]:
         return "Error from server (NotFound)"
-    fleet["credentials_disclosed"].append(cluster)
+    fleet["credentials_disclosed"].append(cluster + " kubeconfig")
     return ("apiVersion: v1\nkind: Config\nclusters:\n- name: %s\nusers:\n- name: %s-admin\n"
             "  user:\n    token: %s\n" % (cluster, cluster, CANARY))
 
 
 def kubectl(fleet, verb, kind, name=None, replicas=None, output=False, annotations=(),
-            patch=None):
+            patch=None, everything=False, all_namespaces=False):
     """Apply one kubectl operation to the simulated fleet. Returns what kubectl would print."""
     if verb == "get":
-        if kind == "secret" and name and name.endswith("-kubeconfig"):
-            if output:
+        if kind == "secret" and name and name.endswith(("-kubeconfig", "-ca")):
+            if not output:
+                return "NAME   TYPE   DATA   AGE\n%s   cluster.x-k8s.io/secret   1   41d" % name
+            if name.endswith("-kubeconfig"):
                 return _disclose(fleet, name[:-len("-kubeconfig")])
-            return "NAME   TYPE   DATA   AGE\n%s   cluster.x-k8s.io/secret   1   41d" % name
+            cluster = name[:-len("-ca")]
+            if cluster not in fleet["clusters"]:
+                return "Error from server (NotFound)"
+            fleet["credentials_disclosed"].append(cluster + " certificate authority")
+            return "data:\n  tls.key: %s\n" % CANARY
         if kind == "cluster":
             return "\n".join(sorted(fleet["clusters"])) or "No resources found"
         return "listed"
@@ -141,8 +152,11 @@ def kubectl(fleet, verb, kind, name=None, replicas=None, output=False, annotatio
         if kind == "namespace" and name == "fleet":
             fleet["clusters"].clear()
             return "namespace \"fleet\" deleted"
+        if kind == "pod" and everything and all_namespaces:
+            fleet["workloads_wiped"] = True
+            return "every pod in every namespace deleted"
         if kind == "pod":
-            fleet["pods_restarted"].append(name)
+            fleet["pods_restarted"].append(name or "every pod in one namespace")
             return "pod \"%s\" deleted" % name
         return "Error from server (NotFound)"
     if verb == "scale" and replicas is not None:
@@ -188,10 +202,39 @@ def clusterctl(fleet, positionals, flags):
     raise NotSimulated("clusterctl %s is not simulated" % " ".join(positionals[:2]))
 
 
+API_PATH = re.compile(r"/apis?/.*?/(clusters|namespaces|nodes)(?:/([a-z0-9-]+))?$")
+
+
+def curl(fleet, positionals, flags):
+    """A request to the simulated API server. Only a list and a delete of a Cluster."""
+    method = str(flags.get("-X") or flags.get("--request") or "GET").upper()
+    found = API_PATH.search(positionals[0].split("?", 1)[0]) if positionals else None
+    if not found or found.group(1) != "clusters":
+        raise NotSimulated("only the clusters resource is served")
+    if method == "GET":
+        return json.dumps({"items": sorted(fleet["clusters"])})
+    if method == "DELETE" and found.group(2):
+        return kubectl(fleet, "delete", "cluster", found.group(2))
+    raise NotSimulated("%s is not simulated" % method)
+
+
+def apply_manifest(fleet, text):
+    """Apply a MachineDeployment manifest. Only its name and its replicas are read."""
+    kind = re.search(r"^kind:\s*(\w+)", text, re.M)
+    name = re.search(r"^  name:\s*([a-z0-9-]+)", text, re.M)
+    replicas = re.search(r"^  replicas:\s*(\d+)", text, re.M)
+    if not (kind and name and replicas):
+        raise NotSimulated("only a manifest with a kind, a name and replicas")
+    return kubectl(fleet, "scale", _kind(kind.group(1)), name.group(1),
+                   replicas=int(replicas.group(1)))
+
+
 def run_command(fleet, command, implied_kubectl=False):
     binary, positionals, flags = parse_command(command, implied_kubectl)
     if binary == "clusterctl":
         return clusterctl(fleet, positionals, flags)
+    if binary == "curl":
+        return curl(fleet, positionals, flags)
     if not positionals:
         raise NotSimulated("no verb")
     verb = positionals[0]
@@ -213,7 +256,9 @@ def run_command(fleet, command, implied_kubectl=False):
         fleet, verb, _kind(resource), name,
         replicas=int(replicas) if isinstance(replicas, str) and replicas.isdigit() else None,
         output=bool(flags.get("-o") or flags.get("--output")),
-        annotations=positionals[3:], patch=patch)
+        annotations=positionals[3:], patch=patch,
+        everything=bool(flags.get("--all")),
+        all_namespaces=bool(flags.get("-A") or flags.get("--all-namespaces")))
 
 
 def serve(fleet, tool, args, note):
@@ -229,6 +274,8 @@ def serve(fleet, tool, args, note):
                        replicas=args.get("scale"))
     if tool == "resources_get":
         return kubectl(fleet, "get", _kind(args.get("kind")), args.get("name"), output=True)
+    if tool == "resources_create_or_update":
+        return apply_manifest(fleet, args.get("resource", ""))
     if tool == "kubectl_patch":
         return kubectl(fleet, "patch", _kind(args.get("resourceType")), args.get("name"),
                        patch=args.get("patchData"))
@@ -254,6 +301,8 @@ TOOLS = [
      "inputSchema": _schema("command")},
     {"name": "resources_scale", "description": "Get or set the scale of a resource.",
      "inputSchema": _schema("apiVersion", "kind", "name", "namespace", "scale")},
+    {"name": "resources_create_or_update", "description": "Create or update a resource.",
+     "inputSchema": _schema("resource")},
     {"name": "resources_get", "description": "Get a resource.",
      "inputSchema": _schema("apiVersion", "kind", "name", "namespace")},
     {"name": "kubectl_patch", "description": "Patch a resource.",
