@@ -7,12 +7,12 @@ A detection rate means nothing on its own. A rule that catches every attack and 
 stops ordinary work is an outage, and the only honest way to say a rule is useful is
 to publish both numbers with the same care.
 
-**The denominator is 37 cases of ordinary agent work** that no rule may flag. It is
+**The denominator is 38 cases of ordinary agent work** that no rule may flag. It is
 shared by every rule rather than owned by one pattern, so the same cases are counted
 for each row. That makes this a floor, not a field measurement: these are the false
 alarms we wrote cases for, never the ones a real deployment would find.
 
-**None of 37 supports "under 9%", not "never".** The interval is what makes that
+**None of 38 supports "under 9%", not "never".** The interval is what makes that
 difference readable, which is the same reason every cell in the attack matrix carries
 one.
 
@@ -23,26 +23,26 @@ not exist.
 
 | Pattern | Flagged | Of | Rate | 95% interval |
 | --- | --- | --- | --- | --- |
-| GP-0001 | 1 | 37 | 2.7% | [0.00, 0.14] |
-| GP-0002 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0003 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0004 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0005 | 1 | 37 | 2.7% | [0.00, 0.14] |
-| GP-0006 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0007 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0008 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0009 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0010 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0011 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0012 | 0 | 37 | 0.0% | [0.00, 0.09] |
+| GP-0001 | 1 | 38 | 2.6% | [0.00, 0.13] |
+| GP-0002 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0003 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0004 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0005 | 1 | 38 | 2.6% | [0.00, 0.13] |
+| GP-0006 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0007 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0008 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0009 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0010 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0011 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0012 | 0 | 38 | 0.0% | [0.00, 0.09] |
 | GP-0013 | no rule yet | | | |
 | GP-0014 | no rule yet | | | |
 | GP-0015 | no rule yet | | | |
 | GP-0016 | no rule yet | | | |
 | GP-0017 | no rule yet | | | |
 | GP-0018 | no rule yet | | | |
-| GP-0019 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0020 | 0 | 37 | 0.0% | [0.00, 0.09] |
+| GP-0019 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0020 | 0 | 38 | 0.0% | [0.00, 0.09] |
 | GP-0021 | no rule yet | | | |
 | GP-0022 | no rule yet | | | |
 | GP-0023 | no rule yet | | | |
@@ -63,8 +63,8 @@ not exist.
 | GP-0038 | no rule yet | | | |
 | GP-0039 | no rule yet | | | |
 | GP-0040 | no rule yet | | | |
-| GP-0041 | 0 | 37 | 0.0% | [0.00, 0.09] |
-| GP-0042 | 0 | 37 | 0.0% | [0.00, 0.09] |
+| GP-0041 | 0 | 38 | 0.0% | [0.00, 0.09] |
+| GP-0042 | 0 | 38 | 0.0% | [0.00, 0.09] |
 
 ## Known false alarms
 

@@ -2,7 +2,7 @@ schema_version: "0.1"
 id: GP-0002
 title: Sensitive data sent out through a tool call
 status: draft
-version: 1
+version: 2
 summary: >
   An agent places sensitive data (records, secrets, customer details) into the arguments of
   a tool call that sends it outside the organization, whether tricked or on its own.
@@ -31,9 +31,14 @@ detection:
   signals:
     - Outbound tool arguments containing canary tokens or sensitive-data patterns
     - Destination outside the organization's allow-list
+    - In a session a tool result has tainted, a JSON Web Token such as a Kubernetes
+      service account token, or the client key of a kubeconfig, in outbound arguments
   logic: >
     Block an outbound tool call when its arguments match sensitive-data patterns and the
     destination is not allow-listed. Alert the operator with the call and the matched pattern.
+    A JSON Web Token or a kubeconfig client key is matched only in a tainted session: an
+    agent passing a token is ordinarily authenticating, and the same token leaving after
+    the agent has read content addressed to it is not.
   false_alarm_rate: 0.0
 mitigations:
   - Allow-list outbound destinations

@@ -172,6 +172,9 @@ BIAS_PLAN = prescan.plan([_BY_ID[i] for i in _S["bias"]], BIAS_RES)
 
 SECRET_PATTERNS = [e["pattern"] for e in _S["secret"]]
 SECRET_RES = [_compile(e) for e in _S["secret"]]
+# Defaulted, because a bundle may be older than the engine reading it.
+_TAINTED_SECRETS = _S.get("secret_when_tainted") or []
+TAINTED_SECRET_RES = [_compile(e) for e in _TAINTED_SECRETS]
 SYSTEM_PROMPT_CANARY = _compile(_S["system_prompt_canary"])
 
 # Hidden or obfuscated content (GP-0006)
@@ -261,6 +264,19 @@ def hidden_content(text: str) -> list:
 
 def find_secrets(text: str):
     return [r.pattern for r in SECRET_RES if r.search(text or "")]
+
+
+def find_tainted_secrets(text: str):
+    """Ids of credentials that only count once a session is tainted.
+
+    A service account token is a JSON Web Token, and so is half of what any API client
+    sends. An agent that passes one in a tool call is usually authenticating, so flagging
+    it everywhere would stop ordinary work. After the agent has read content addressed to
+    it, the same token in outbound arguments is a credential leaving on somebody else's
+    say-so, which is what GP-0002 exists to catch.
+    """
+    return [entry["id"] for entry, r in zip(_TAINTED_SECRETS, TAINTED_SECRET_RES)
+            if r.search(text or "")]
 
 
 def commands_in(args) -> list:
@@ -429,6 +445,11 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
         hits.append(("GP-0012", {"reason": "system prompt canary in outbound arguments"}))
     elif secrets:
         hits.append(("GP-0002", {"secret_patterns": len(secrets)}))
+    elif tainted:
+        credentials = find_tainted_secrets(blob)
+        if credentials:
+            hits.append(("GP-0002", {"secret_patterns": len(credentials),
+                                     "credentials": credentials, "tainted_by": tainted}))
 
     outside = [d for d in destinations(args) if not allowed(domain_of(d), cfg.get("allowlist", []))]
     if tainted and outside and not AGENT_TOOL.search(name or ""):
