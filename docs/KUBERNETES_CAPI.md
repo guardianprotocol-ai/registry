@@ -195,6 +195,11 @@ beside it (`-ca`, `-etcd`), and a get or a structured list of every Secret at on
 output expression that never mentions `data` prints names, and is left alone with them. `-o name` and the
 default table print no contents and are left alone.
 
+A credential leaving is a third thing, and it is GP-0002. Once a session is tainted, a
+JSON Web Token, which is what a Kubernetes service account token is, or the client key
+of a kubeconfig, in the arguments of any tool call, is flagged. In a clean session it is
+not, because an agent passing a token is ordinarily authenticating.
+
 All of it is data in
 [`sensor/guardian_sensor/signatures.json`](../sensor/guardian_sensor/signatures.json),
 under `shell.kubernetes_destructive`, `shell.kubernetes_fleet` and `kubernetes`, so the
