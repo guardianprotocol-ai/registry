@@ -31,6 +31,7 @@ CHECKS = [
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
     ("Delegated approval tests", "sensor", ["tests/test_approvals.py"]),
     ("Rule bundle safety tests", "sensor", ["tests/test_safety.py"]),
+    ("Word prescan tests", "sensor", ["tests/test_prescan.py"]),
     ("Sensor pinning tests", "sensor", ["tests/test_pinning.py"]),
     ("Fire drill tests", "sensor", ["tests/test_drill.py"]),
     ("Registered canary tests", "sensor", ["tests/test_canaries.py"]),
@@ -81,6 +82,7 @@ CHECKS = [
     ("Time to protection tests", ".", ["scripts/tests/test_time_to_protection.py"]),
     ("Rule lint", ".", ["scripts/lint_rules.py"]),
     ("Rule gate: attacks caught, ordinary work left alone", ".", ["scripts/rule_gate.py"]),
+    ("Prescan gate: skipping a pattern never hides a match", ".", ["scripts/prescan_gate.py"]),
 ]
 
 

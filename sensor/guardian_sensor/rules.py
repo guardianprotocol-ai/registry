@@ -14,6 +14,7 @@ import re
 import sys
 
 from . import home
+from . import prescan
 
 # ---------- Signatures ----------
 # The patterns live in signatures.json, as data. This module compiles them and runs fixed
@@ -163,6 +164,11 @@ INSTRUCTION_RES = [_compile(e) for e in _S["instruction"]]
 _BY_ID = {e["id"]: e for e in _S["instruction"]}
 BIAS_PATTERNS = [_BY_ID[i]["pattern"] for i in _S["bias"]]
 BIAS_RES = [re.compile(_BY_ID[i]["pattern"], re.I) for i in _S["bias"]]
+# Each pattern beside the words it cannot match without, so a pattern only runs on text
+# where it stands a chance. Derived from whatever bundle was loaded, a member's own
+# patterns included, and anything that cannot be proved always runs. See prescan.py.
+INSTRUCTION_PLAN = prescan.plan(_S["instruction"], INSTRUCTION_RES)
+BIAS_PLAN = prescan.plan([_BY_ID[i] for i in _S["bias"]], BIAS_RES)
 
 SECRET_PATTERNS = [e["pattern"] for e in _S["secret"]]
 SECRET_RES = [_compile(e) for e in _S["secret"]]
@@ -224,7 +230,7 @@ def has_instructions(text: str, raw: bool = False) -> bool:
     text = text or ""
     if not raw:
         text = ZERO_WIDTH.sub("", text + " " + decode_hidden(text))
-    return any(r.search(text) for r in INSTRUCTION_RES)
+    return prescan.any_match(INSTRUCTION_PLAN, text)
 
 
 def hidden_content(text: str) -> list:
@@ -424,7 +430,7 @@ def check_output(source: str, text: str, state: dict) -> list:
     hidden = hidden_content(text)
     if hidden:
         hits.append(("GP-0006", {"source": source, "reasons": hidden}))
-    if any(r.search(text or "") for r in BIAS_RES):
+    if prescan.any_match(BIAS_PLAN, text or ""):
         hits.append(("GP-0010", {"source": source}))
     if hidden or has_instructions(text):
         state["tainted_by"] = state.get("tainted_by") or source
