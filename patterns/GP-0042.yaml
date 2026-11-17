@@ -2,7 +2,7 @@ schema_version: "0.1"
 id: GP-0042
 title: A destructive Kubernetes command against cluster or fleet scoped infrastructure
 status: draft
-version: 1
+version: 2
 summary: >
   An agent holding kubectl is steered into a destructive command, and the thing it names
   is infrastructure rather than a workload. Deleting a pod is routine and an agent
@@ -43,7 +43,13 @@ detection:
       zero or patch
     - A resource the command names that is cluster or fleet scoped, for example a Cluster,
       a MachineDeployment, a MachineSet, a KubeadmControlPlane, a node, a namespace or a
-      custom resource definition
+      custom resource definition, by its full name or its short name
+    - The same operation written as a Kubernetes tool call with no command string, where
+      the verb is the tool's name or an operation argument, the kind is a kind argument
+      and scaling to zero is a number
+    - A Cluster API operation that deletes nothing and changes which machines exist or
+      who controls them, namely the delete-machine or paused annotation on a fleet
+      resource, `clusterctl move` and `clusterctl delete`
   logic: >
     While a session is tainted, flag a destructive kubectl command whose resource is
     cluster or fleet scoped. Block in enforcing mode. The verb alone is not the signal:
