@@ -281,7 +281,7 @@
     },
     "fleet_credential_secret": {
       "id": "capi-kubeconfig-secret",
-      "pattern": "[a-z0-9]-(kubeconfig|ca|etcd|sa|proxy)$",
+      "pattern": "[a-z0-9]-(kubeconfig|ca|etcd)$",
       "flags": ""
     },
     "fleet_kind_provider": {

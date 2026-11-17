@@ -37,7 +37,7 @@ detection:
     - A path in the call's arguments matching a known credential location
     - A read of the kubeconfig a Cluster API management cluster holds for a cluster it
       manages, by `clusterctl get kubeconfig`, by a get of the `<cluster>-kubeconfig`
-      Secret or of the certificate Secrets beside it that prints their contents, or by a
+      Secret or of the certificate authority Secrets beside it that prints their contents, or by a
       get or a structured list of every Secret at once
   logic: >
     While a session is tainted, flag a call whose arguments name a credential file: cloud

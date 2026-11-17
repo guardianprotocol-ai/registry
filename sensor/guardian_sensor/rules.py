@@ -375,6 +375,10 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
     cfg:   {"allowlist": [...], "max_repeat": int}
     """
     hits = []
+    # A tool's name comes from the server and is a string in every well formed call.
+    # Every check below treats it as one, so it is made one here.
+    if not isinstance(name, str):
+        name = "" if name is None else str(name)
     blob = text_of(args)
     tainted = state.get("tainted_by")
 
@@ -431,7 +435,8 @@ def check_call(name: str, args, state: dict, cfg: dict) -> list:
                                  "operation": fleet["operation"],
                                  "read_from": fleet["read_from"]}))
 
-    sig = hashlib.sha256(f"{name}|{blob}".encode()).hexdigest()[:16]
+    # A JSON string may hold half of a surrogate pair, which is not encodable as it stands.
+    sig = hashlib.sha256(f"{name}|{blob}".encode("utf-8", "surrogatepass")).hexdigest()[:16]
     counts = state.setdefault("counts", {})
     counts[sig] = counts.get(sig, 0) + 1
     if counts[sig] > cfg.get("max_repeat", 10):

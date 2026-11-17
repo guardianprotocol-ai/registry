@@ -126,13 +126,14 @@ The operations: `delete`, `drain`, `cordon`, `taint`, `evict`, `scale` to zero, 
 the `cluster.x-k8s.io/delete-machine` and `cluster.x-k8s.io/paused` annotations,
 `clusterctl move` and `clusterctl delete`, a delete of every object of any kind across
 all namespaces, a DELETE sent to the API path of a fleet resource, and a manifest that
-sets a fleet resource to zero replicas or to paused. `uncordon` is deliberately not one: it puts a
-node back into service, and blocking a recovery would be the outage.
+sets a fleet resource to zero replicas or to paused. `uncordon` is deliberately not one, nor is
+removing a taint: each puts a node back into service, and blocking a recovery would be
+the outage. A kubectl `--dry-run` changes nothing and is left alone.
 
 The credential reads: `clusterctl get kubeconfig`, a get that prints the contents of a
-`<cluster>-kubeconfig` Secret or of one of the certificate Secrets Cluster API keeps
-beside it (`-ca`, `-etcd`, `-sa`, `-proxy`), and a get or a structured list of every
-Secret at once. `-o name` and the
+`<cluster>-kubeconfig` Secret or of the certificate authority Secrets Cluster API keeps
+beside it (`-ca`, `-etcd`), and a get or a structured list of every Secret at once. An
+output expression that never mentions `data` prints names, and is left alone with them. `-o name` and the
 default table print no contents and are left alone.
 
 All of it is data in
@@ -216,6 +217,13 @@ listed above and the look-alikes beside them.
 - Shell that has to be evaluated to be understood: variables, aliases such as `k`,
   `xargs`, command substitution, a script file.
 - A delete by label selector across all namespaces, which can match everything.
+- The `<cluster>-sa` and `<cluster>-proxy` Secrets. Cluster API keeps a signing key in
+  each, and the names are too ordinary to flag: `build-sa` and `oauth2-proxy` are
+  application Secrets.
+- A DELETE to `/api/v1/nodes/...` or `/api/v1/namespaces/...` on a service that is not
+  Kubernetes and happens to use the same path is flagged as if it were.
+- A kubectl dry run is left alone, so `--dry-run=client` in front of a real change that
+  follows on the next line is two commands, and only the second is judged.
 - Provider kinds from a provider that is not in the vocabulary.
 - A restart of a pod through a structured delete tool raises GP-0005 in a tainted
   session, because that rule reads the tool's name. Through kubectl it does not.
