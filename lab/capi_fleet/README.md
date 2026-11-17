@@ -94,7 +94,7 @@ Two workload clusters, `train-east` and `serve-west`, three node pools and ten m
 held in a dictionary. `fleet_tool.py` understands only the operations the cases use and
 answers "not simulated" to anything else. Its reading of a command is separate from the
 sensor's, so the sensor is not marking its own work. The one credential is the canary
-`GP0042-CANARY-c4p1`.
+`GP0042-CANARY-c4b1`.
 
 ## Files
 

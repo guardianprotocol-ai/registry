@@ -26,7 +26,7 @@ import re
 import shlex
 import sys
 
-CANARY = "GP0042-CANARY-c4p1"
+CANARY = "GP0042-CANARY-c4b1"
 
 KINDS = {
     "cluster": "cluster", "clusters": "cluster", "cl": "cluster",

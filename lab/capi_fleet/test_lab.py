@@ -45,7 +45,7 @@ def test_the_cases_are_what_they_say():
             check("the note taints the session: " + case["id"], tainting)
     text = json.dumps(case_data.CASES)
     check("the only credential is a canary",
-          re.fullmatch(r"GP\d{4}-CANARY-[a-z0-9]{4}", fleet_tool.CANARY) is not None)
+          re.fullmatch(r"GP\d{4}-CANARY-[0-9a-f]{4}", fleet_tool.CANARY) is not None)
     hosts = re.findall(r"https?://([^/:\s\"]+)", text)
     check("every destination is a reserved .test name",
           hosts and all(h.endswith(".test") for h in hosts), hosts)
