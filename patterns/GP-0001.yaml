@@ -2,7 +2,7 @@ schema_version: "0.1"
 id: GP-0001
 title: Hidden instructions in a tool's output
 status: draft
-version: 1
+version: 2
 summary: >
   An agent reads content returned by a tool (a web page, file, email or ticket) that
   contains instructions aimed at the agent, and follows them instead of the user's request.
@@ -36,7 +36,7 @@ detection:
   logic: >
     Flag when a tool result contains instruction-like text and the next tool call is an
     unrequested action toward a new destination. Block when the action sends data outside.
-  false_alarm_rate: 0.0278
+  false_alarm_rate: 0.027
 mitigations:
   - Treat tool output as data, never as instructions
   - Require confirmation for actions that send data outside

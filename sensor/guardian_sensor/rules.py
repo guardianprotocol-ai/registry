@@ -294,6 +294,48 @@ def paths_in_command(command: str) -> list:
     return out
 
 
+_IPV4 = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
+# `logo@2x.png` is how an image for a dense display is named.
+_DENSITY_SUFFIX = re.compile(r"^\d+(\.\d+)?x$")
+
+
+def _is_a_host(host: str) -> bool:
+    """Whether the part after an `@` could be somewhere data is sent.
+
+    An `@` in a shell command is far more often a version than an address:
+    `npm install lodash@4.17.21`, `go get golang.org/x/text@v0.14.0`,
+    `brew install python@3.12`. Read as addresses, each of those is a send to a host
+    nobody has heard of, and after an agent has read anything addressed to it, a rule
+    that requires taint blocks every one. A name that ends in letters is a host, and so
+    is an IPv4 address. A version ends in a number.
+    """
+    host = host.lower().rstrip(".")
+    if _IPV4.match(host):
+        return True
+    labels = host.split(".")
+    if len(labels) < 2 or not labels[-1].isalpha() or len(labels[-1]) < 2:
+        return False
+    return not _DENSITY_SUFFIX.match(labels[0])
+
+
+def command_destinations(command: str) -> list:
+    """URLs and addresses in a shell command that could be where data is sent."""
+    out = []
+    for found in URL_RE.finditer(command or ""):
+        text = found.group(0)
+        if "://" in text:
+            out.append(text)
+            continue
+        # Part of a path, such as `public/logo@2x.png` or `pkg/mod/text@v0.14.0/doc`.
+        before = command[found.start() - 1] if found.start() else ""
+        after = command[found.end()] if found.end() < len(command) else ""
+        if before == "/" or after == "/":
+            continue
+        if _is_a_host(text.rsplit("@", 1)[-1]):
+            out.append(text)
+    return out
+
+
 def destinations(args) -> list:
     """Collect values that look like where data is being sent."""
     out = []
@@ -301,7 +343,7 @@ def destinations(args) -> list:
     # It still only matters to a rule that also requires taint, so an ordinary fetch in an
     # untainted session raises nothing.
     for command in commands_in(args):
-        out.extend(URL_RE.findall(command))
+        out.extend(command_destinations(command))
     if isinstance(args, dict):
         for k, v in args.items():
             if k.lower() in DESTINATION_KEYS:
