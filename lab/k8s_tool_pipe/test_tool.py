@@ -23,6 +23,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, SENSOR)
 
 import kubectl_tool  # noqa: E402
+import redact  # noqa: E402
 from guardian_sensor import rules  # noqa: E402
 
 failures = []
@@ -52,10 +53,7 @@ def _scrubbed(detail):
     replaced nothing and printed the secret it was meant to hide, which is worse than not
     having scrubbed at all because the output then looks safe.
     """
-    text = str(detail)
-    for expression in rules.SECRET_RES:
-        text = expression.sub("<redacted>", text)
-    return text
+    return redact.scrub(detail, rules.SECRET_RES)
 
 
 class Client:
@@ -265,7 +263,35 @@ def test_sensor_pipe():
               and "Blocked by Guardian sensor" not in _text(refused), _text(refused))
 
 
+def test_redaction():
+    """The lab's token is a JWT, and the sensor's secret signatures do not know a JWT.
+
+    Both scrubbers in this lab were built on those signatures alone, so the one credential
+    the lab mints would have gone through them untouched. The values below are made up
+    and are shaped like the real things, which is all a scrubber sees.
+    """
+    part = "c2lnbmF0dXJlLXBsYWNlaG9sZGVy"
+    token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJncC1sYWItdG9vbCJ9." + part
+    check("the sensor's signatures alone miss a service account token",
+          rules.find_secrets(token) == [])
+    for label, text in (
+        ("a service account token", "minted " + token + " for the tool"),
+        ("a token in a kubeconfig", "    token: " + token),
+        ("a client key in a kubeconfig", "    client-key-data: " + part * 3),
+        ("a bearer header", "Authorization: Bearer " + part * 2),
+        ("a token inside a failure message", "expected denial, got {'stderr': 'bad token " + token + "'}"),
+    ):
+        scrubbed = _scrubbed(text)
+        check("redacts " + label, part not in scrubbed and redact.REDACTED in scrubbed, scrubbed)
+    for text in ("configmap/gp-lab-marker created", "token: short", "Error from server (Forbidden)",
+                 "kubectl delete configmap gp-lab-marker --wait=true"):
+        check("leaves ordinary output alone: " + text, _scrubbed(text) == text, _scrubbed(text))
+    check("still redacts what the sensor does know",
+          "GP0002-CANARY-7f3a" not in _scrubbed("leaked GP0002-CANARY-7f3a"))
+
+
 def main():
+    test_redaction()
     test_allowlist()
     test_classifier_and_rules()
     test_sensor_pipe()
