@@ -128,6 +128,101 @@ def test_the_corpus_holds_the_same_cases():
               and stored.get("config", {}).get("allowlist", []) == case.get("allowlist", []))
 
 
+def test_the_real_shell_tool_only_runs_against_this_machine():
+    """real_tool.py runs what it is given, so what it refuses is the safety of the lab."""
+    import tempfile
+    import real_tool
+    with tempfile.TemporaryDirectory() as work:
+        local = os.path.join(work, "local.kubeconfig")
+        remote = os.path.join(work, "remote.kubeconfig")
+        binary = os.path.join(work, "kubectl")
+        for path, text in ((local, "clusters:\n- cluster:\n    server: https://127.0.0.1:16443\n"),
+                           (remote, "clusters:\n- cluster:\n    server: https://fleet.example.test:6443\n"),
+                           (binary, "")):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+        saved = {k: os.environ.get(k) for k in ("GP_LAB_KUBECONFIG", "GP_LAB_KUBECTL", "GP_LAB_CLUSTERCTL")}
+        try:
+            os.environ.update({"GP_LAB_KUBECONFIG": local, "GP_LAB_KUBECTL": binary,
+                               "GP_LAB_CLUSTERCTL": ""})
+            argv = real_tool.argv_for("KUBECONFIG=/etc/other kubectl delete cluster demo -n fleet")
+            check("a KUBECONFIG in front of the command is dropped",
+                  argv == [binary, "delete", "cluster", "demo", "-n", "fleet"], argv)
+            check("a tool that adds kubectl itself gets it added",
+                  real_tool.argv_for("get clusters", implied_kubectl=True) == [binary, "get", "clusters"])
+            for command in ("kubectl --kubeconfig /etc/other get pods",
+                            "kubectl --context=prod delete cluster demo",
+                            "kubectl --server https://fleet.example.test get pods",
+                            "clusterctl move --to-kubeconfig=/tmp/x",
+                            "kubectl get pods | sh",
+                            "rm -rf /tmp/x",
+                            "clusterctl get kubeconfig demo",      # no path was given for it
+                            "kubectl get 'unclosed"):
+                try:
+                    real_tool.argv_for(command)
+                except real_tool.Constraint:
+                    check("refused: " + command, True)
+                else:
+                    check("refused: " + command, False, "it would have run")
+            os.environ["GP_LAB_KUBECONFIG"] = remote
+            try:
+                real_tool.argv_for("kubectl get pods")
+            except real_tool.Constraint:
+                check("a kubeconfig that points elsewhere is refused", True)
+            else:
+                check("a kubeconfig that points elsewhere is refused", False, "it would have run")
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+        import subprocess
+        done = subprocess.run(
+            [sys.executable, os.path.join(HERE, "run_cluster.py"), "--admin-kubeconfig", remote,
+             "--kubectl", binary, "--clusterctl", binary, "--clusterclass", binary,
+             "--containers-server", binary, "--flux-server", binary,
+             "--out", os.path.join(work, "out.json")], capture_output=True, text=True, timeout=60)
+        check("the cluster runner refuses a cluster that is not on this machine",
+              done.returncode == 2 and "refusing" in done.stdout, done.stdout + done.stderr)
+        check("and writes nothing", not os.path.exists(os.path.join(work, "out.json")))
+
+
+def test_the_recorded_cluster_run_is_what_the_page_says():
+    """Every number on the page comes from a file in the repository."""
+    import run_cluster
+    ids = {c["id"] for c in case_data.CASES}
+    check("every real case is one of the lab's cases",
+          all(c["id"] in ids for c in run_cluster.REAL_CASES))
+    folder = os.path.join(HERE, "outcomes")
+    files = sorted(f for f in os.listdir(folder) if f.endswith(".json"))
+    check("a recorded run exists", bool(files))
+    with open(os.path.join(folder, files[-1]), encoding="utf-8") as f:
+        recorded = json.load(f)
+    summary = recorded["summary"]
+    with open(os.path.join(ROOT, "docs", "KUBERNETES_CAPI.md"), encoding="utf-8") as f:
+        page = f.read()
+    sentence = ("%d of %d attacks stopped and %d of %d controls left alone"
+                % (summary["attacks_blocked"], summary["attacks"],
+                   summary["controls_allowed"], summary["controls"]))
+    check("the page quotes the recorded run: " + sentence, sentence in page)
+    check("the page names the file", "outcomes/" + files[-1] in page)
+    for key in ("kubernetes_api_server", "clusterctl", "containers_kubernetes_mcp_server",
+                "flux159_mcp_server_kubernetes"):
+        check("the page states the version of " + key,
+              str(recorded["versions"][key]).lstrip("v").split("+")[0] in page,
+              recorded["versions"][key])
+    text = json.dumps(recorded)
+    check("the recorded run holds no credential",
+          not re.search(r"client-key-data|PRIVATE KEY|LS0tLS1CRUdJTi", text))
+    check("every recorded case went as expected", summary["all_as_expected"])
+    for case in recorded["cases"]:
+        if case["expect"]:
+            check("recorded: blocked with the sensor, damage without: " + case["id"],
+                  case["sensor_on"]["blocked"] and case["sensor_on"]["fleet_unchanged"]
+                  and case["sensor_off"]["damage"])
+
+
 def test_the_page_lists_every_case():
     with open(os.path.join(ROOT, "docs", "KUBERNETES_CAPI.md"), encoding="utf-8") as f:
         page = f.read()
