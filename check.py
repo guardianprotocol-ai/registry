@@ -58,6 +58,7 @@ CHECKS = [
     ("Sightings spec conformance", ".", ["spec/tests/test_conformance.py"]),
     ("Sensor end to end test", "sensor", ["tests/test_sensor.py"]),
     ("Lab kubectl tool pipe", ".", ["lab/k8s_tool_pipe/test_tool.py"]),
+    ("Lab Cluster API fleet, sensor off and on", ".", ["lab/capi_fleet/test_lab.py"]),
     ("Sensor shutdown tests", "sensor", ["tests/test_shutdown.py"]),
     ("Sharing hub tests", "sensor", ["tests/test_hub.py"]),
     ("Receiver contract tests", "receiver", ["tests/test_validate.py"]),
