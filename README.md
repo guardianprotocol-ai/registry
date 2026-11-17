@@ -220,6 +220,7 @@ move between them is in [GOVERNANCE.md](GOVERNANCE.md). Start at
 | `receiver/` | The HTTP contract a receiver implements, and one implementation of it |
 | `spec/` | The sightings format, normative, with a conformance suite |
 | `demo/` | A 90-second end-to-end demo with a visual report |
+| `lab/` | The sensor in front of Kubernetes: a real API server, and a simulated Cluster API fleet to try commands against |
 
 No dependencies beyond the Python 3.9+ standard library.
 
@@ -273,6 +274,7 @@ Don't open a public issue for an active attack or anything specific to one vendo
 - [CONTRIBUTORS.md](CONTRIBUTORS.md): everyone who has contributed
 - [THREAT_MODEL.md](THREAT_MODEL.md): how the protocol itself is protected
 - [docs/RULE_SAFETY.md](docs/RULE_SAFETY.md): how a bad rule is kept out
+- [docs/KUBERNETES_CAPI.md](docs/KUBERNETES_CAPI.md): what the sensor stops on Kubernetes and Cluster API, and how to try it
 - [docs/proposals/](docs/proposals/): designs under discussion
 - [GOVERNANCE.md](GOVERNANCE.md): roles, decisions and neutrality
 - [ROADMAP.md](ROADMAP.md): the next twelve months
