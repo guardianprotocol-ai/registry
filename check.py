@@ -30,6 +30,7 @@ CHECKS = [
     ("No live invisible characters", ".", ["scripts/check_invisible.py"]),
     ("Sensor rule tests", "sensor", ["tests/test_rules.py"]),
     ("Delegated approval tests", "sensor", ["tests/test_approvals.py"]),
+    ("Agent identity and access tests", "sensor", ["tests/test_agent_access.py"]),
     ("Rule bundle safety tests", "sensor", ["tests/test_safety.py"]),
     ("Word prescan tests", "sensor", ["tests/test_prescan.py"]),
     ("Sensor pinning tests", "sensor", ["tests/test_pinning.py"]),
