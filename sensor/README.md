@@ -329,6 +329,16 @@ GUARDIAN_HOME=/path/you/can/write ./guardian enroll \
 
 Nothing is shared by this. Building and sending a report stays a separate, deliberate act.
 
+## Agent identity and access (opt-in)
+
+With an `agent_access` block in `guardian.json`, every tool call is refused before it is
+forwarded unless the agent's OIDC-shaped token verifies, the agent is provisioned and
+active in a local directory, and, for sensitive tools, the host presents a recent passing
+posture attestation. The token check is HS256 only, because that is what the standard
+library can verify, and the posture attestation is a signed statement from the host, not
+MDM. Manage agents with `./guardian agents`. What it does, what it does not, and what has
+been tested: [../docs/AGENT_ACCESS.md](../docs/AGENT_ACCESS.md).
+
 ## Sharing hub, reference implementation
 
 `./guardian report --preview` and `./guardian update` are the
