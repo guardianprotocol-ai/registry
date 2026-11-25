@@ -11,6 +11,7 @@ How the project keeps a bad rule from reaching the people the protocol protects.
 | Rule lint | Every signature compiles, has a unique id, never matches empty text or plain prose, has no nested repetition, and finishes quickly on large crafted inputs. The rules file is plain ASCII | `scripts/lint_rules.py` |
 | Attack regression | Every case in `corpus/attacks/` still raises its pattern | `scripts/rule_gate.py` |
 | Ordinary work | Every case in `corpus/benign/` raises nothing, apart from known false alarms that are listed in the case | `scripts/rule_gate.py` |
+| Through the proxy | Up to two attack cases per pattern, the GP-0003 and GP-0019 test server fixtures, and every benign case, replayed through the sensor's own request path. Reports blocked, flagged or missed for every pattern in the catalog, including patterns with no fixture. A case no longer detected fails, and a change in outcome changes the generated [DETECTION_COVERAGE.md](DETECTION_COVERAGE.md) | `scripts/detection_coverage.py` |
 | Evidence | A pull request that changes the rules also adds or changes a test or corpus case | `scripts/require_rule_tests.py` |
 | Before and after | The base branch's engine and the change's engine run the same corpus; the run summary shows attacks newly missed or caught and ordinary work newly flagged | `.github/workflows/checks.yml` |
 | Promotion warning | A pattern promoted to `enforced` is flagged for two-organization approval | `scripts/require_rule_tests.py` |
