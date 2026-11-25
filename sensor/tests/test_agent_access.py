@@ -385,6 +385,12 @@ class Proxy(Base):
         out = s.inspect_request(call("read_file"))
         self.assertTrue(out["result"]["isError"])
 
+    def test_sensitive_tools_given_as_a_string_denies_everything(self):
+        cfg = self.fx.config()
+        cfg["agent_access"]["sensitive_tools"] = "deploy"
+        out = Sensor(cfg).inspect_request(call("read_file"))
+        self.assertTrue(out["result"]["isError"])
+
     def test_an_unexpected_fault_denies(self):
         s = self.fx.sensor()
         s.access.clock = lambda: (_ for _ in ()).throw(RuntimeError("clock broke"))

@@ -378,8 +378,14 @@ class Gate:
         self.clock = clock
         self.log_path = cfg.get("log_path") or home.path("access.jsonl")
         self.leeway = cfg.get("leeway_seconds", DEFAULT_LEEWAY_SECONDS)
-        self.sensitive_names = set(cfg.get("sensitive_tools") or [])
+        names = cfg.get("sensitive_tools") or []
         classes = cfg.get("sensitive_classes", list(DEFAULT_SENSITIVE_CLASSES))
+        # A string here would be read as a set of single characters, so a typo that
+        # dropped the brackets would quietly make almost nothing sensitive.
+        for key, value in (("sensitive_tools", names), ("sensitive_classes", classes)):
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                raise ValueError("%s must be a list of names" % key)
+        self.sensitive_names = set(names)
         if tool_classes is None:
             from . import rules
             tool_classes = {"destructive": rules.DESTRUCTIVE_TOOL,
