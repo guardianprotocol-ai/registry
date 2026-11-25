@@ -27,6 +27,7 @@ import subprocess
 import sys
 import threading
 
+from . import agent_access
 from . import breach
 from . import canaries
 from . import home
@@ -126,6 +127,17 @@ class Sensor:
         # joined. Not written anywhere. Replaced each call, not accumulated, so a long
         # session cannot keep every argument it has ever seen.
         self._canary_prior = []
+        # Agent identity and access, only when the host configured it. A block that cannot
+        # be built leaves a gate that denies every call rather than no gate, because an
+        # operator who wrote the block asked for calls to be refused unless checked.
+        self.access = None
+        if "agent_access" in self.cfg:
+            try:
+                self.access = agent_access.Gate(self.cfg["agent_access"])
+            except Exception as e:
+                sys.stderr.write("[guardian] agent_access unusable, every tool call will be "
+                                 "refused: %s\n" % e)
+                self.access = _DenyAll()
 
     # ---------- storage ----------
     def _load_json(self, path, default):
@@ -212,6 +224,16 @@ class Sensor:
         if method != "tools/call":
             return None
         name, args = params.get("name"), params.get("arguments") or {}
+        # Who the agent is, before anything else looks at the call, so an agent that is not
+        # allowed to call tools cannot spend an approval or reach a rule. Enforced in
+        # monitor mode too: access control that only reports is not access control.
+        if self.access is not None:
+            allowed, record = self.access.decide(name)
+            self.access.log(record)
+            if not allowed:
+                sys.stderr.write("[guardian] DENIED %s: %s\n" % (name, record.get("reason")))
+                return {"jsonrpc": "2.0", "id": mid, "result": {
+                    "isError": True, "content": [{"type": "text", "text": REFUSAL}]}}
         # Dedicated delegated-operation proxy: every tool call needs approval,
         # independent of taint and monitor mode. Identity comes from host config.
         if "delegated_approval" in self.cfg:
@@ -381,6 +403,17 @@ class Sensor:
         return msg
 
 
+class _DenyAll:
+    """Stands in for an agent_access block that could not be read."""
+
+    def decide(self, tool):
+        return False, {"time": int(datetime.datetime.now().timestamp()), "tool": tool,
+                       "decision": "denied", "reason": "agent_access config unusable"}
+
+    def log(self, record):
+        pass
+
+
 def _unique_json_object(pairs):
     result = {}
     for key, value in pairs:
@@ -440,6 +473,7 @@ MEASURE_COMMAND = "measure"
 PROTECT_COMMAND = "protect"
 VERIFY_COMMAND = "verify"
 SHARE_COMMAND = "share"
+AGENTS_COMMAND = "agents"
 
 
 COMMANDS = (
@@ -456,6 +490,7 @@ COMMANDS = (
     ("update", "fetch and verify a published rule set"),
     ("credit", "record how you want to be credited in the research"),
     ("status", "what this machine has done. Reads local files and nothing else"),
+    ("agents", "agent identities the proxy accepts: provision, deprovision, list, attest"),
 )
 
 
@@ -552,6 +587,8 @@ def main(argv=None):
     if args[:1] == [SHARE_COMMAND]:
         from . import share_cli
         return share_cli.main(args[1:])
+    if args[:1] == [AGENTS_COMMAND]:
+        return agent_access.main(args[1:])
 
     # A word that is not a command and not a flag, with no -- anywhere, is a mistyped
     # command rather than a server to launch. Without this it falls through to the proxy and
