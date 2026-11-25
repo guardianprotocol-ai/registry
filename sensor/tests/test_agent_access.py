@@ -23,8 +23,8 @@ from guardian_sensor.sensor import REFUSAL, Sensor  # noqa: E402
 ISSUER = "https://idp.example.test"
 OTHER_ISSUER = "https://other-idp.example.test"
 AUDIENCE = "guardian-sensor:lab"
-SECRET = "issuer-secret-for-tests-only-0123456789abcdef"
-POSTURE_SECRET = "posture-secret-for-tests-only-0123456789abcdef"
+ISSUER_HMAC = "issuer-hmac-for-tests-only-0123456789abcdef"
+POSTURE_HMAC = "posture-hmac-for-tests-only-0123456789abcdef"
 NOW = 1_800_000_000
 
 
@@ -39,8 +39,8 @@ class Fixture:
     def __init__(self, tmp):
         self.tmp = tmp
         self.path = lambda *p: os.path.join(tmp, *p)
-        self.write("issuer.key", SECRET)
-        self.write("posture.key", POSTURE_SECRET)
+        self.write("issuer.key", ISSUER_HMAC)
+        self.write("posture.key", POSTURE_HMAC)
         self.directory = self.path("agents.json")
         agent_access.provision(self.directory, "agent-1", ISSUER, "agent:build-bot")
         self.set_token()
@@ -56,14 +56,14 @@ class Fixture:
         claims.update(over)
         return {k: v for k, v in claims.items() if v is not None}
 
-    def set_token(self, secret=SECRET, **over):
-        self.write("token", encode_hs256(self.claims(**over), secret))
+    def set_token(self, signing=ISSUER_HMAC, **over):
+        self.write("token", encode_hs256(self.claims(**over), signing))
 
-    def set_attestation(self, secret=POSTURE_SECRET, **over):
+    def set_attestation(self, signing=POSTURE_HMAC, **over):
         claims = {"host": "build-host-1", "iat": NOW - 30, "posture": "pass",
                   "checks": {"disk_encrypted": True, "os_patched": True}}
         claims.update(over)
-        self.write("posture.jwt", encode_hs256(claims, secret))
+        self.write("posture.jwt", encode_hs256(claims, signing))
 
     def config(self, **over):
         access = {
@@ -164,7 +164,7 @@ class Tokens(Base):
         self.assertDenied(self.fx.sensor(), call("read_file"), "issuer")
 
     def test_known_issuer_wrong_key_denied(self):
-        self.fx.set_token(secret="an-attacker-chosen-secret-0123456789abcdef")
+        self.fx.set_token(signing="an-attacker-chosen-secret-0123456789abcdef")
         self.assertDenied(self.fx.sensor(), call("read_file"), "signature")
 
     def test_altered_claims_denied(self):
@@ -186,7 +186,7 @@ class Tokens(Base):
 
     def test_short_issuer_secret_refused(self):
         self.fx.write("issuer.key", "short")
-        self.fx.set_token(secret="short")
+        self.fx.set_token(signing="short")
         self.assertDenied(self.fx.sensor(), call("read_file"), "shorter")
 
     def test_token_refreshed_on_disk_is_picked_up(self):
@@ -210,7 +210,7 @@ class Directory(Base):
         self.assertDenied(self.fx.sensor(), call("read_file"), "not provisioned")
 
     def test_same_subject_from_another_issuer_is_another_agent(self):
-        self.fx.write("other.key", SECRET)
+        self.fx.write("other.key", ISSUER_HMAC)
         self.fx.set_token(iss=OTHER_ISSUER)
         s = self.fx.sensor(issuers=[
             {"issuer": ISSUER, "secret_path": self.fx.path("issuer.key")},
@@ -306,7 +306,7 @@ class Posture(Base):
         self.assertDenied(self.fx.sensor(), call("delete_records"), "failing check")
 
     def test_sensitive_tool_denied_with_a_forged_attestation(self):
-        self.fx.set_attestation(secret="not-the-posture-key-0123456789abcdefghij")
+        self.fx.set_attestation(signing="not-the-posture-key-0123456789abcdefghij")
         self.assertDenied(self.fx.sensor(), call("delete_records"), "signature")
 
     def test_attestation_for_another_host_denied(self):
@@ -405,9 +405,9 @@ class Proxy(Base):
         import time
         fx = self.fx
         now = int(time.time())
-        fx.write("token", encode_hs256(fx.claims(iat=now, exp=now + 600), SECRET))
+        fx.write("token", encode_hs256(fx.claims(iat=now, exp=now + 600), ISSUER_HMAC))
         fx.write("posture.jwt", encode_hs256(
-            {"host": "build-host-1", "iat": now, "posture": "fail"}, POSTURE_SECRET))
+            {"host": "build-host-1", "iat": now, "posture": "fail"}, POSTURE_HMAC))
         cfg_path = fx.path("guardian.json")
         with open(cfg_path, "w") as f:
             json.dump(fx.config(), f)
@@ -467,7 +467,7 @@ class CommandLine(Base):
              "--posture", "pass", "--out", target], out=out), 0)
         import time
         claims = agent_access.verify_attestation(
-            open(target).read().strip(), POSTURE_SECRET.encode(), time.time(), 60)
+            open(target).read().strip(), POSTURE_HMAC.encode(), time.time(), 60)
         self.assertEqual(claims["host"], "h1")
         self.assertEqual(os.stat(target).st_mode & 0o777, 0o600)
 
